@@ -45,6 +45,25 @@ class CliTests(unittest.TestCase):
             self.assertEqual(exit_code, 0)
             self.assertTrue(output_path.exists())
 
+    def test_generate_command_supports_the_same_tens_ones_sum_to_ten_preset(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "same-tens.pdf"
+
+            exit_code = main(
+                [
+                    "generate",
+                    "--preset",
+                    "presets/same_tens_ones_sum_to_ten_beginner.toml",
+                    "--output",
+                    str(output_path),
+                    "--seed",
+                    "20260524",
+                ]
+            )
+
+            self.assertEqual(exit_code, 0)
+            self.assertTrue(output_path.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

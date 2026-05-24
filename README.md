@@ -15,6 +15,11 @@
 - Warm-up：显示英文速算规则和完整进位示例，随后完成 4 道步骤题。
 - Practice：30 道专项题，默认均衡混合不进位与带进位。
 
+第三份英文 A4 入门练习卷训练“十位相同、个位之和为 10”的两位数乘法：
+
+- Warm-up：解释两段式速算规则，并提示尾部乘积不足两位时补零。
+- Practice：30 道专项题，均衡混合 `41 x 49 = 2009` 一类补零题与普通两位尾积题。
+
 ## 生成练习卷
 
 ```bash
@@ -27,6 +32,12 @@ python -m kids_exo generate --preset presets/distributive_property_beginner.toml
 
 ```bash
 python -m kids_exo generate --preset presets/multiply_by_11_beginner.toml --output output/multiply-by-11-practice.pdf --seed 20260524
+```
+
+生成十位相同、个位和为十的练习卷：
+
+```bash
+python -m kids_exo generate --preset presets/same_tens_ones_sum_to_ten_beginner.toml --output output/same-tens-practice.pdf --seed 20260524
 ```
 
 ## 配置结构
