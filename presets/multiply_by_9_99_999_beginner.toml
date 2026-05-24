@@ -1,0 +1,48 @@
+version = 1
+
+[worksheet]
+title = "Multiplying by 9, 99, and 999 Practice"
+locale = "en-CA"
+student_fields = ["name", "date", "time"]
+
+[output]
+renderer = "pdf"
+theme = "classic_a4"
+
+[output.options]
+paper_size = "A4"
+orientation = "portrait"
+
+[[sections]]
+name = "warmup"
+plugin = "multiply_by_9_99_999"
+count = 3
+columns = 1
+format = "guided_round_minus_one"
+
+[sections.settings]
+multiplicand_digits = [2]
+strategies = ["times_9", "times_99", "times_999"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+times_9 = 1.0
+times_99 = 1.0
+times_999 = 1.0
+
+[[sections]]
+name = "practice"
+plugin = "multiply_by_9_99_999"
+count = 30
+columns = 2
+format = "expression_with_answer_blank"
+
+[sections.settings]
+multiplicand_digits = [2]
+strategies = ["times_9", "times_99", "times_999"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+times_9 = 1.0
+times_99 = 1.0
+times_999 = 1.0

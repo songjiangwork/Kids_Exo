@@ -38,6 +38,18 @@
 - Warm-up：用英文提示从右向左处理进位，并展示 `386 x 11 = 4246` 的进位示例。
 - Practice：30 道专项题，均衡混合不进位与至少一处进位的三位数乘法。
 
+第七份练习卷训练乘以 `9`、`99` 和 `999`：
+
+- 把这些乘数理解为 `10 - 1`、`100 - 1` 与 `1000 - 1`，复用分配律思想。
+- Warm-up：显示例如 `36 x 99 = 36 x (100 - 1)` 的英文引导。
+- Practice：30 道专项题，三个乘数各 10 道。
+
+第八份练习卷训练乘以 `5`、`25` 和 `125`：
+
+- 分别将题目改写为先除以 `2`、`4`、`8`，再乘以 `10`、`100`、`1000`。
+- Beginner preset 仅生成可整除的两位数，先让孩子专注速算规则。
+- Practice：30 道专项题，三个乘数各 10 道。
+
 ## 生成练习卷
 
 ```bash
@@ -74,6 +86,18 @@ python -m kids_exo generate --preset presets/three_digit_same_prefix_ones_sum_to
 
 ```bash
 python -m kids_exo generate --preset presets/multiply_by_11_three_digit_beginner.toml --output output/multiply-by-11-three-digit.pdf --seed 20260524
+```
+
+生成乘以 `9`、`99`、`999` 练习卷：
+
+```bash
+python -m kids_exo generate --preset presets/multiply_by_9_99_999_beginner.toml --output output/multiply-by-nines.pdf --seed 20260524
+```
+
+生成乘以 `5`、`25`、`125` 练习卷：
+
+```bash
+python -m kids_exo generate --preset presets/multiply_by_5_25_125_beginner.toml --output output/multiply-by-five-family.pdf --seed 20260524
 ```
 
 ## 配置结构

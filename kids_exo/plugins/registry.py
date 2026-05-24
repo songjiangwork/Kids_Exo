@@ -36,6 +36,30 @@ def get_plugin_definition(plugin_name: str) -> PluginDefinition:
             validate_format=validate_format,
             create=MultiplyBy11Plugin,
         )
+    if plugin_name == "multiply_by_9_99_999":
+        from kids_exo.plugins.multiply_by_9_99_999.plugin import MultiplyByNinesPlugin
+        from kids_exo.plugins.multiply_by_9_99_999.settings import (
+            load_settings,
+            validate_format,
+        )
+
+        return PluginDefinition(
+            load_settings=load_settings,
+            validate_format=validate_format,
+            create=MultiplyByNinesPlugin,
+        )
+    if plugin_name == "multiply_by_5_25_125":
+        from kids_exo.plugins.multiply_by_5_25_125.plugin import MultiplyByFiveFamilyPlugin
+        from kids_exo.plugins.multiply_by_5_25_125.settings import (
+            load_settings,
+            validate_format,
+        )
+
+        return PluginDefinition(
+            load_settings=load_settings,
+            validate_format=validate_format,
+            create=MultiplyByFiveFamilyPlugin,
+        )
     if plugin_name == "same_tens_ones_sum_to_ten":
         from kids_exo.plugins.same_tens_ones_sum_to_ten.plugin import (
             SameTensOnesSumToTenPlugin,

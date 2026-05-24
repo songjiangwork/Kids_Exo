@@ -1,0 +1,48 @@
+version = 1
+
+[worksheet]
+title = "Multiplying by 5, 25, and 125 Practice"
+locale = "en-CA"
+student_fields = ["name", "date", "time"]
+
+[output]
+renderer = "pdf"
+theme = "classic_a4"
+
+[output.options]
+paper_size = "A4"
+orientation = "portrait"
+
+[[sections]]
+name = "warmup"
+plugin = "multiply_by_5_25_125"
+count = 3
+columns = 1
+format = "guided_divide_then_scale"
+
+[sections.settings]
+multiplicand_digits = [2]
+strategies = ["times_5", "times_25", "times_125"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+times_5 = 1.0
+times_25 = 1.0
+times_125 = 1.0
+
+[[sections]]
+name = "practice"
+plugin = "multiply_by_5_25_125"
+count = 30
+columns = 2
+format = "expression_with_answer_blank"
+
+[sections.settings]
+multiplicand_digits = [2]
+strategies = ["times_5", "times_25", "times_125"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+times_5 = 1.0
+times_25 = 1.0
+times_125 = 1.0

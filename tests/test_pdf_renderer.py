@@ -49,6 +49,30 @@ class PdfRendererTests(unittest.TestCase):
         self.assertIn(b"Add each pair of neighbouring digits.", data)
         self.assertIn(b"Example: 386 x 11", data)
 
+    def test_renders_the_multiply_by_9_99_999_rule(self) -> None:
+        preset = load_preset("presets/multiply_by_9_99_999_beginner.toml")
+        worksheet = generate_worksheet(preset, seed=42)
+
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "multiply-by-nines.pdf"
+            write_pdf(worksheet, preset.output.options, output_path)
+            data = output_path.read_bytes()
+
+        self.assertIn(b"Multiplying by 9, 99, and 999 Practice", data)
+        self.assertIn(b"one less than 10, 100, or 1000", data)
+
+    def test_renders_the_multiply_by_5_25_125_rule(self) -> None:
+        preset = load_preset("presets/multiply_by_5_25_125_beginner.toml")
+        worksheet = generate_worksheet(preset, seed=42)
+
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "multiply-by-five-family.pdf"
+            write_pdf(worksheet, preset.output.options, output_path)
+            data = output_path.read_bytes()
+
+        self.assertIn(b"Multiplying by 5, 25, and 125 Practice", data)
+        self.assertIn(b"Divide first", data)
+
     def test_renders_the_same_tens_ones_sum_to_ten_rule_and_example(self) -> None:
         preset = load_preset("presets/same_tens_ones_sum_to_ten_beginner.toml")
         worksheet = generate_worksheet(preset, seed=42)

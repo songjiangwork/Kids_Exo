@@ -64,6 +64,44 @@ class CliTests(unittest.TestCase):
             self.assertEqual(exit_code, 0)
             self.assertTrue(output_path.exists())
 
+    def test_generate_command_supports_the_multiply_by_9_99_999_preset(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "multiply-by-nines.pdf"
+
+            exit_code = main(
+                [
+                    "generate",
+                    "--preset",
+                    "presets/multiply_by_9_99_999_beginner.toml",
+                    "--output",
+                    str(output_path),
+                    "--seed",
+                    "20260524",
+                ]
+            )
+
+            self.assertEqual(exit_code, 0)
+            self.assertTrue(output_path.exists())
+
+    def test_generate_command_supports_the_multiply_by_5_25_125_preset(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "multiply-by-five-family.pdf"
+
+            exit_code = main(
+                [
+                    "generate",
+                    "--preset",
+                    "presets/multiply_by_5_25_125_beginner.toml",
+                    "--output",
+                    str(output_path),
+                    "--seed",
+                    "20260524",
+                ]
+            )
+
+            self.assertEqual(exit_code, 0)
+            self.assertTrue(output_path.exists())
+
     def test_generate_command_supports_the_same_tens_ones_sum_to_ten_preset(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             output_path = Path(directory) / "same-tens.pdf"
