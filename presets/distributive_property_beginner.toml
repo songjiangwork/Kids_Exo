@@ -1,0 +1,52 @@
+version = 1
+
+[worksheet]
+title = "Distributive Property Multiplication Practice"
+locale = "en-CA"
+student_fields = ["name", "date", "time"]
+
+[output]
+renderer = "pdf"
+theme = "classic_a4"
+
+[output.options]
+paper_size = "A4"
+orientation = "portrait"
+
+[[sections]]
+name = "warmup"
+plugin = "integer_multiplication_distributive"
+count = 4
+columns = 1
+format = "guided_full_expansion"
+
+[sections.settings]
+left_operand_digits = [2]
+right_operand_digits = [1]
+decomposable_operand = "left"
+strategies = ["place_value_addition", "near_round_number_subtraction"]
+allow_duplicates = false
+near_round_distances = [1, 2]
+
+[sections.settings.strategy_weights]
+place_value_addition = 0.5
+near_round_number_subtraction = 0.5
+
+[[sections]]
+name = "practice"
+plugin = "integer_multiplication_distributive"
+count = 30
+columns = 2
+format = "expression_with_answer_blank"
+
+[sections.settings]
+left_operand_digits = [2]
+right_operand_digits = [1]
+decomposable_operand = "left"
+strategies = ["place_value_addition", "near_round_number_subtraction"]
+allow_duplicates = false
+near_round_distances = [1, 2]
+
+[sections.settings.strategy_weights]
+place_value_addition = 0.6
+near_round_number_subtraction = 0.4

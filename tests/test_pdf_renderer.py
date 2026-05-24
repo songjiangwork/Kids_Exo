@@ -1,0 +1,28 @@
+import tempfile
+import unittest
+from pathlib import Path
+
+from kids_exo.config import load_preset
+from kids_exo.generator import generate_worksheet
+from kids_exo.renderers.pdf import write_pdf
+
+
+class PdfRendererTests(unittest.TestCase):
+    def test_writes_an_a4_english_pdf_with_both_section_headings(self) -> None:
+        preset = load_preset("presets/distributive_property_beginner.toml")
+        worksheet = generate_worksheet(preset, seed=42)
+
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "worksheet.pdf"
+            write_pdf(worksheet, preset.output.options, output_path)
+            data = output_path.read_bytes()
+
+        self.assertTrue(data.startswith(b"%PDF-1.4"))
+        self.assertIn(b"/MediaBox [0 0 595.28 841.89]", data)
+        self.assertIn(b"Distributive Property Multiplication Practice", data)
+        self.assertIn(b"Warm-up", data)
+        self.assertIn(b"Practice", data)
+
+
+if __name__ == "__main__":
+    unittest.main()
