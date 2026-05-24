@@ -37,8 +37,8 @@ def validate_format(format_name: str, section_name: str) -> None:
 
 
 def _validate_settings(settings: MultiplyBy11Settings) -> None:
-    if settings.multiplicand_digits != (2,):
-        raise ValueError("Version 1 supports two-digit multiplication by 11 only")
+    if settings.multiplicand_digits not in {(2,), (3,)}:
+        raise ValueError("Multiply-by-11 beginner presets support two- or three-digit numbers")
     if not settings.strategies or set(settings.strategies) - SUPPORTED_STRATEGIES:
         raise ValueError("Unsupported multiply-by-11 strategy")
     if set(settings.strategy_weights) != set(settings.strategies):

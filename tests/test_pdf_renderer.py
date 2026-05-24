@@ -36,6 +36,19 @@ class PdfRendererTests(unittest.TestCase):
         self.assertIn(b"Add the two digits.", data)
         self.assertIn(b"Example: 68 x 11", data)
 
+    def test_renders_the_three_digit_multiply_by_11_rule_and_example(self) -> None:
+        preset = load_preset("presets/multiply_by_11_three_digit_beginner.toml")
+        worksheet = generate_worksheet(preset, seed=42)
+
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "multiply-by-11-three-digit.pdf"
+            write_pdf(worksheet, preset.output.options, output_path)
+            data = output_path.read_bytes()
+
+        self.assertIn(b"Three-Digit Multiplying by 11 Practice", data)
+        self.assertIn(b"Add each pair of neighbouring digits.", data)
+        self.assertIn(b"Example: 386 x 11", data)
+
     def test_renders_the_same_tens_ones_sum_to_ten_rule_and_example(self) -> None:
         preset = load_preset("presets/same_tens_ones_sum_to_ten_beginner.toml")
         worksheet = generate_worksheet(preset, seed=42)

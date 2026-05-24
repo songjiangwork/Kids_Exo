@@ -45,6 +45,25 @@ class CliTests(unittest.TestCase):
             self.assertEqual(exit_code, 0)
             self.assertTrue(output_path.exists())
 
+    def test_generate_command_supports_the_three_digit_multiply_by_11_preset(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "multiply-by-11-three-digit.pdf"
+
+            exit_code = main(
+                [
+                    "generate",
+                    "--preset",
+                    "presets/multiply_by_11_three_digit_beginner.toml",
+                    "--output",
+                    str(output_path),
+                    "--seed",
+                    "20260524",
+                ]
+            )
+
+            self.assertEqual(exit_code, 0)
+            self.assertTrue(output_path.exists())
+
     def test_generate_command_supports_the_same_tens_ones_sum_to_ten_preset(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             output_path = Path(directory) / "same-tens.pdf"
