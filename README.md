@@ -26,6 +26,12 @@
 - Warm-up：说明先计算十位乘下一数，再在末尾写 `25`。
 - Practice：30 道专项题；由于两位数范围内只有 9 道不同题，允许重复以服务熟练度训练。
 
+第五份练习卷将“相同前缀、个位和为 10”的规则扩展到三位数：
+
+- 例如 `123 x 127 = 15621`，先算共同前缀 `12 x 13 = 156`，再接 `3 x 7 = 21`。
+- Warm-up：用英文说明共同的前两位规则与补零要求。
+- Practice：30 道专项题，均衡覆盖尾积补零与普通两位尾积。
+
 ## 生成练习卷
 
 ```bash
@@ -52,6 +58,12 @@ python -m kids_exo generate --preset presets/same_tens_ones_sum_to_ten_beginner.
 python -m kids_exo generate --preset presets/square_ending_in_5_beginner.toml --output output/squares-ending-in-5.pdf --seed 20260524
 ```
 
+生成三位数相同前缀、个位和为十的练习卷：
+
+```bash
+python -m kids_exo generate --preset presets/three_digit_same_prefix_ones_sum_to_ten_beginner.toml --output output/three-digit-same-prefix.pdf --seed 20260524
+```
+
 ## 配置结构
 
 - `presets/` 保存一份完整练习卷的组合选择，包括输出方式和各区域使用的题型。
@@ -60,7 +72,7 @@ python -m kids_exo generate --preset presets/square_ending_in_5_beginner.toml --
 
 目前一个 preset 的每个区域都可以独立选择插件，为以后同一份卷子混合多个题型预留了结构。
 
-题型之间也可以形成扩展关系；例如 `square_ending_in_5` 继承并收窄 `same_tens_ones_sum_to_ten` 的通用构题逻辑，只覆盖自己的数字约束和教学展示。
+题型之间也可以形成扩展关系；例如 `square_ending_in_5` 收窄共同规则，而 `three_digit_same_prefix_ones_sum_to_ten` 将同一套前缀构题逻辑扩展至更长的前缀，只覆盖自己的数字范围和教学展示。
 
 题型区域还可以通过 `strategy_weights` 调整生成策略的题目比例。例如当前 Practice 区的 `0.6/0.4` 会在 `30` 道题中生成 `18` 道按数位加法拆分题和 `12` 道近整十/整百减法拆分题。
 

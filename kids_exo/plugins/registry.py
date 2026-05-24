@@ -62,4 +62,18 @@ def get_plugin_definition(plugin_name: str) -> PluginDefinition:
             validate_format=validate_format,
             create=SquareEndingIn5Plugin,
         )
+    if plugin_name == "three_digit_same_prefix_ones_sum_to_ten":
+        from kids_exo.plugins.three_digit_same_prefix_ones_sum_to_ten.plugin import (
+            ThreeDigitSamePrefixOnesSumToTenPlugin,
+        )
+        from kids_exo.plugins.three_digit_same_prefix_ones_sum_to_ten.settings import (
+            load_settings,
+            validate_format,
+        )
+
+        return PluginDefinition(
+            load_settings=load_settings,
+            validate_format=validate_format,
+            create=ThreeDigitSamePrefixOnesSumToTenPlugin,
+        )
     raise ValueError(f"Unsupported question type plugin: {plugin_name}")

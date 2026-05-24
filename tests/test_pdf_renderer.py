@@ -62,6 +62,19 @@ class PdfRendererTests(unittest.TestCase):
         self.assertIn(b"Write 25 at the end.", data)
         self.assertIn(b"Example: 35 x 35", data)
 
+    def test_renders_the_three_digit_same_prefix_rule_and_example(self) -> None:
+        preset = load_preset("presets/three_digit_same_prefix_ones_sum_to_ten_beginner.toml")
+        worksheet = generate_worksheet(preset, seed=42)
+
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "three-digit-same-prefix.pdf"
+            write_pdf(worksheet, preset.output.options, output_path)
+            data = output_path.read_bytes()
+
+        self.assertIn(b"Three-Digit Same Prefix, Ones Sum to 10 Practice", data)
+        self.assertIn(b"Use the matching first two digits.", data)
+        self.assertIn(b"Example: 123 x 127", data)
+
 
 if __name__ == "__main__":
     unittest.main()

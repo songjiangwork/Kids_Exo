@@ -1,0 +1,44 @@
+version = 1
+
+[worksheet]
+title = "Three-Digit Same Prefix, Ones Sum to 10 Practice"
+locale = "en-CA"
+student_fields = ["name", "date", "time"]
+
+[output]
+renderer = "pdf"
+theme = "classic_a4"
+
+[output.options]
+paper_size = "A4"
+orientation = "portrait"
+
+[[sections]]
+name = "warmup"
+plugin = "three_digit_same_prefix_ones_sum_to_ten"
+count = 4
+columns = 1
+format = "guided_prefix_product"
+
+[sections.settings]
+strategies = ["zero_padded_ones_product", "two_digit_ones_product"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+zero_padded_ones_product = 0.5
+two_digit_ones_product = 0.5
+
+[[sections]]
+name = "practice"
+plugin = "three_digit_same_prefix_ones_sum_to_ten"
+count = 30
+columns = 2
+format = "expression_with_answer_blank"
+
+[sections.settings]
+strategies = ["zero_padded_ones_product", "two_digit_ones_product"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+zero_padded_ones_product = 0.5
+two_digit_ones_product = 0.5

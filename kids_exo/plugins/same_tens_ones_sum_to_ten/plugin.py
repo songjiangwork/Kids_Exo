@@ -70,7 +70,7 @@ class SameTensOnesSumToTenPlugin:
         strategy: str,
         rng: random.Random,
     ) -> Question:
-        tens = rng.randint(1, 9)
+        prefix = rng.randint(1, 9)
         if strategy == ZERO_PADDED:
             left_ones = rng.choice((1, 9))
         elif strategy == TWO_DIGIT:
@@ -82,7 +82,7 @@ class SameTensOnesSumToTenPlugin:
             section_name,
             format_name,
             strategy,
-            tens,
+            prefix,
             left_ones,
             right_ones,
         )
@@ -92,12 +92,12 @@ class SameTensOnesSumToTenPlugin:
         section_name: str,
         format_name: str,
         strategy: str,
-        tens: int,
+        prefix: int,
         left_ones: int,
         right_ones: int,
     ) -> Question:
-        left = tens * 10 + left_ones
-        right = tens * 10 + right_ones
+        left = prefix * 10 + left_ones
+        right = prefix * 10 + right_ones
         return Question(
             section=section_name,
             format=format_name,
@@ -108,7 +108,7 @@ class SameTensOnesSumToTenPlugin:
             display_text=self._render_question(
                 left,
                 right,
-                tens,
+                prefix,
                 left_ones,
                 right_ones,
                 format_name,
@@ -119,7 +119,7 @@ class SameTensOnesSumToTenPlugin:
         self,
         left: int,
         right: int,
-        tens: int,
+        prefix: int,
         left_ones: int,
         right_ones: int,
         format_name: str,
@@ -130,6 +130,6 @@ class SameTensOnesSumToTenPlugin:
             raise ValueError(f"Unsupported format: {format_name}")
         tail_hint = " (write two digits)" if left_ones * right_ones < 10 else ""
         return (
-            f"{left} x {right}: {tens} x ({tens} + 1) = ___; "
+            f"{left} x {right}: {prefix} x ({prefix} + 1) = ___; "
             f"{left_ones} x {right_ones} = ___{tail_hint}; answer = ______"
         )
