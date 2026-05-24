@@ -20,6 +20,12 @@
 - Warm-up：解释两段式速算规则，并提示尾部乘积不足两位时补零。
 - Practice：30 道专项题，均衡混合 `41 x 49 = 2009` 一类补零题与普通两位尾积题。
 
+第四份练习卷训练尾数为 `5` 的两位数平方：
+
+- 该题型复用“十位相同、个位和为 10”的构题核心，是其专项子插件。
+- Warm-up：说明先计算十位乘下一数，再在末尾写 `25`。
+- Practice：30 道专项题；由于两位数范围内只有 9 道不同题，允许重复以服务熟练度训练。
+
 ## 生成练习卷
 
 ```bash
@@ -40,6 +46,12 @@ python -m kids_exo generate --preset presets/multiply_by_11_beginner.toml --outp
 python -m kids_exo generate --preset presets/same_tens_ones_sum_to_ten_beginner.toml --output output/same-tens-practice.pdf --seed 20260524
 ```
 
+生成尾数为 `5` 的平方练习卷：
+
+```bash
+python -m kids_exo generate --preset presets/square_ending_in_5_beginner.toml --output output/squares-ending-in-5.pdf --seed 20260524
+```
+
 ## 配置结构
 
 - `presets/` 保存一份完整练习卷的组合选择，包括输出方式和各区域使用的题型。
@@ -47,6 +59,8 @@ python -m kids_exo generate --preset presets/same_tens_ones_sum_to_ten_beginner.
 - `kids_exo/renderers/` 保存 PDF 等输出方式自己的排版设置与渲染实现。
 
 目前一个 preset 的每个区域都可以独立选择插件，为以后同一份卷子混合多个题型预留了结构。
+
+题型之间也可以形成扩展关系；例如 `square_ending_in_5` 继承并收窄 `same_tens_ones_sum_to_ten` 的通用构题逻辑，只覆盖自己的数字约束和教学展示。
 
 题型区域还可以通过 `strategy_weights` 调整生成策略的题目比例。例如当前 Practice 区的 `0.6/0.4` 会在 `30` 道题中生成 `18` 道按数位加法拆分题和 `12` 道近整十/整百减法拆分题。
 

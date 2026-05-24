@@ -78,6 +78,24 @@ class SameTensOnesSumToTenPlugin:
         else:
             raise ValueError(f"Unsupported strategy: {strategy}")
         right_ones = 10 - left_ones
+        return self._build_question(
+            section_name,
+            format_name,
+            strategy,
+            tens,
+            left_ones,
+            right_ones,
+        )
+
+    def _build_question(
+        self,
+        section_name: str,
+        format_name: str,
+        strategy: str,
+        tens: int,
+        left_ones: int,
+        right_ones: int,
+    ) -> Question:
         left = tens * 10 + left_ones
         right = tens * 10 + right_ones
         return Question(
@@ -87,7 +105,7 @@ class SameTensOnesSumToTenPlugin:
             right_operand=right,
             strategy=strategy,
             decomposition=None,
-            display_text=_render_question(
+            display_text=self._render_question(
                 left,
                 right,
                 tens,
@@ -97,21 +115,21 @@ class SameTensOnesSumToTenPlugin:
             ),
         )
 
-
-def _render_question(
-    left: int,
-    right: int,
-    tens: int,
-    left_ones: int,
-    right_ones: int,
-    format_name: str,
-) -> str:
-    if format_name == "expression_with_answer_blank":
-        return f"{left} x {right} = __________"
-    if format_name != "guided_two_part_product":
-        raise ValueError(f"Unsupported format: {format_name}")
-    tail_hint = " (write two digits)" if left_ones * right_ones < 10 else ""
-    return (
-        f"{left} x {right}: {tens} x ({tens} + 1) = ___; "
-        f"{left_ones} x {right_ones} = ___{tail_hint}; answer = ______"
-    )
+    def _render_question(
+        self,
+        left: int,
+        right: int,
+        tens: int,
+        left_ones: int,
+        right_ones: int,
+        format_name: str,
+    ) -> str:
+        if format_name == "expression_with_answer_blank":
+            return f"{left} x {right} = __________"
+        if format_name != "guided_two_part_product":
+            raise ValueError(f"Unsupported format: {format_name}")
+        tail_hint = " (write two digits)" if left_ones * right_ones < 10 else ""
+        return (
+            f"{left} x {right}: {tens} x ({tens} + 1) = ___; "
+            f"{left_ones} x {right_ones} = ___{tail_hint}; answer = ______"
+        )

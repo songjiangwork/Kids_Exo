@@ -1,0 +1,42 @@
+version = 1
+
+[worksheet]
+title = "Squares Ending in 5 Practice"
+locale = "en-CA"
+student_fields = ["name", "date", "time"]
+
+[output]
+renderer = "pdf"
+theme = "classic_a4"
+
+[output.options]
+paper_size = "A4"
+orientation = "portrait"
+
+[[sections]]
+name = "warmup"
+plugin = "square_ending_in_5"
+count = 4
+columns = 1
+format = "guided_ending_in_5_square"
+
+[sections.settings]
+strategies = ["ending_in_5_square"]
+allow_duplicates = true
+
+[sections.settings.strategy_weights]
+ending_in_5_square = 1.0
+
+[[sections]]
+name = "practice"
+plugin = "square_ending_in_5"
+count = 30
+columns = 2
+format = "expression_with_answer_blank"
+
+[sections.settings]
+strategies = ["ending_in_5_square"]
+allow_duplicates = true
+
+[sections.settings.strategy_weights]
+ending_in_5_square = 1.0
