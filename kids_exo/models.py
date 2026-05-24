@@ -19,7 +19,7 @@ class Question:
     left_operand: int
     right_operand: int
     strategy: str
-    decomposition: Decomposition
+    decomposition: Decomposition | None
     display_text: str
 
     @property
@@ -34,6 +34,9 @@ class Worksheet:
     student_fields: tuple[str, ...]
     sections: dict[str, tuple[Question, ...]]
     section_columns: dict[str, int]
+    section_order: tuple[str, ...]
+    section_headings: dict[str, str]
+    section_intros: dict[str, tuple[str, ...]]
 
     @property
     def all_questions(self) -> tuple[Question, ...]:

@@ -1,0 +1,46 @@
+version = 1
+
+[worksheet]
+title = "Multiplying by 11 Practice"
+locale = "en-CA"
+student_fields = ["name", "date", "time"]
+
+[output]
+renderer = "pdf"
+theme = "classic_a4"
+
+[output.options]
+paper_size = "A4"
+orientation = "portrait"
+
+[[sections]]
+name = "warmup"
+plugin = "multiply_by_11"
+count = 4
+columns = 1
+format = "guided_digit_sum"
+
+[sections.settings]
+multiplicand_digits = [2]
+strategies = ["no_carrying", "with_carrying"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+no_carrying = 0.5
+with_carrying = 0.5
+
+[[sections]]
+name = "practice"
+plugin = "multiply_by_11"
+count = 30
+columns = 2
+format = "expression_with_answer_blank"
+
+[sections.settings]
+multiplicand_digits = [2]
+strategies = ["no_carrying", "with_carrying"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+no_carrying = 0.5
+with_carrying = 0.5

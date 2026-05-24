@@ -2,9 +2,7 @@ import random
 
 from kids_exo.config import Preset, SectionSettings
 from kids_exo.models import Worksheet
-from kids_exo.plugins.integer_multiplication_distributive.plugin import (
-    IntegerMultiplicationDistributivePlugin,
-)
+from kids_exo.plugins.registry import get_plugin_definition
 
 
 def generate_worksheet(preset: Preset, seed: int | None = None) -> Worksheet:
@@ -12,8 +10,9 @@ def generate_worksheet(preset: Preset, seed: int | None = None) -> Worksheet:
 
     rng = random.Random(seed)
     used_expressions: set[str] = set()
+    plugins = {section.name: _create_plugin(section) for section in preset.sections}
     sections = {
-        section.name: _create_plugin(section).generate(
+        section.name: plugins[section.name].generate(
             section.name,
             section,
             rng,
@@ -28,10 +27,17 @@ def generate_worksheet(preset: Preset, seed: int | None = None) -> Worksheet:
         student_fields=worksheet.student_fields,
         sections=sections,
         section_columns={section.name: section.columns for section in preset.sections},
+        section_order=tuple(section.name for section in preset.sections),
+        section_headings={
+            section.name: plugins[section.name].presentation(section.name, worksheet.locale)[0]
+            for section in preset.sections
+        },
+        section_intros={
+            section.name: plugins[section.name].presentation(section.name, worksheet.locale)[1]
+            for section in preset.sections
+        },
     )
 
 
-def _create_plugin(section: SectionSettings) -> IntegerMultiplicationDistributivePlugin:
-    if section.plugin == "integer_multiplication_distributive":
-        return IntegerMultiplicationDistributivePlugin(section.settings)
-    raise ValueError(f"Unsupported question type plugin: {section.plugin}")
+def _create_plugin(section: SectionSettings):
+    return get_plugin_definition(section.plugin).create(section.settings)

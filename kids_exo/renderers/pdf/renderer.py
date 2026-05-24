@@ -15,16 +15,6 @@ TEXT_RESOURCES = {
             "time": "Time",
             "score": "Score",
         },
-        "sections": {
-            "warmup": (
-                "A. Warm-up",
-                "Follow the given decomposition and complete each step.",
-            ),
-            "practice": (
-                "B. Practice",
-                "Use a convenient decomposition to calculate.",
-            ),
-        },
     }
 }
 
@@ -59,32 +49,27 @@ def _build_pdf(worksheet: Worksheet, options: PdfOutputOptions) -> bytes:
     commands.append("0.65 w 48 748 m 547 748 l S")
 
     y = 720
-    warmup = worksheet.sections.get("warmup", ())
-    if warmup:
-        heading, instruction = text["sections"]["warmup"]
+    for section_name in worksheet.section_order:
+        questions = worksheet.sections.get(section_name, ())
+        if not questions:
+            continue
+        heading = worksheet.section_headings[section_name]
         _add_text(commands, heading, 48, y, 13, bold=True)
-        _add_text(commands, instruction, 48, y - 20, 10)
-        y -= 48
-        for index, question in enumerate(warmup, start=1):
-            _add_text(commands, f"{index}.  {question.display_text}", 58, y, 11)
-            y -= 31
-        y -= 4
-
-    practice = worksheet.sections.get("practice", ())
-    if practice:
-        heading, instruction = text["sections"]["practice"]
-        _add_text(commands, heading, 48, y, 13, bold=True)
-        _add_text(commands, instruction, 48, y - 20, 10)
-        y -= 53
-        columns = worksheet.section_columns.get("practice", 2)
-        rows = (len(practice) + columns - 1) // columns
+        y -= 20
+        for instruction in worksheet.section_intros.get(section_name, ()):
+            _add_text(commands, instruction, 48, y, 9)
+            y -= 17
+        y -= 14
+        columns = worksheet.section_columns.get(section_name, 1)
+        rows = (len(questions) + columns - 1) // columns
         column_width = 250
-        for index, question in enumerate(practice):
+        for index, question in enumerate(questions):
             column = index // rows
             row = index % rows
             x = 58 + column * column_width
-            question_y = y - row * 29
+            question_y = y - row * (31 if columns == 1 else 29)
             _add_text(commands, f"{index + 1}.  {question.display_text}", x, question_y, 11)
+        y -= rows * (31 if columns == 1 else 29) + 8
 
     _add_text(commands, "Generated practice worksheet", 48, 28, 8)
     stream = "\n".join(commands).encode("latin-1")

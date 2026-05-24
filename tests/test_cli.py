@@ -26,6 +26,25 @@ class CliTests(unittest.TestCase):
             self.assertTrue(output_path.exists())
             self.assertGreater(output_path.stat().st_size, 1000)
 
+    def test_generate_command_supports_the_multiply_by_11_preset(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "multiply-by-11.pdf"
+
+            exit_code = main(
+                [
+                    "generate",
+                    "--preset",
+                    "presets/multiply_by_11_beginner.toml",
+                    "--output",
+                    str(output_path),
+                    "--seed",
+                    "20260524",
+                ]
+            )
+
+            self.assertEqual(exit_code, 0)
+            self.assertTrue(output_path.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

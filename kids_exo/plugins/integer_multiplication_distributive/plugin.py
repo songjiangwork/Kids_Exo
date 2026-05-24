@@ -1,8 +1,8 @@
 import random
-import math
 
 from kids_exo.config import SectionSettings
 from kids_exo.models import Decomposition, Question
+from kids_exo.plugins.base import allocate_strategies
 from kids_exo.plugins.integer_multiplication_distributive.settings import (
     DistributiveSettings,
 )
@@ -30,33 +30,26 @@ class IntegerMultiplicationDistributivePlugin:
         ]
         return tuple(questions)
 
-    def _section_strategies(self, section_name: str, count: int, rng: random.Random) -> list[str]:
-        enabled = list(self.settings.strategies)
-        if len(enabled) == 1:
-            return enabled * count
-
-        total_weight = sum(self.settings.strategy_weights.values())
-        quotas = {
-            strategy: count * self.settings.strategy_weights[strategy] / total_weight
-            for strategy in enabled
-        }
-        allocations = {strategy: math.floor(quota) for strategy, quota in quotas.items()}
-        remaining = count - sum(allocations.values())
-        priority = sorted(
-            enabled,
-            key=lambda strategy: (quotas[strategy] - allocations[strategy], -enabled.index(strategy)),
-            reverse=True,
+    def presentation(self, section_name: str, locale: str) -> tuple[str, tuple[str, ...]]:
+        if locale != "en-CA":
+            raise ValueError(f"Unsupported plugin locale: {locale}")
+        if section_name == "warmup":
+            return (
+                "A. Warm-up",
+                ("Follow the given decomposition and complete each step.",),
+            )
+        return (
+            "B. Practice",
+            ("Use a convenient decomposition to calculate.",),
         )
-        for strategy in priority[:remaining]:
-            allocations[strategy] += 1
 
-        strategies = [
-            strategy
-            for strategy in enabled
-            for _ in range(allocations[strategy])
-        ]
-        rng.shuffle(strategies)
-        return strategies
+    def _section_strategies(self, section_name: str, count: int, rng: random.Random) -> list[str]:
+        return allocate_strategies(
+            self.settings.strategies,
+            self.settings.strategy_weights,
+            count,
+            rng,
+        )
 
     def _unique_question(
         self,

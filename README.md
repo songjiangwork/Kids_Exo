@@ -10,6 +10,11 @@
 - Practice：30 道只显示算式与答题空位的专项题。
 - 策略：按数位加法拆分，以及接近整十/整百的减法拆分。
 
+项目也支持英文 A4 的乘以 `11` 入门练习卷：
+
+- Warm-up：显示英文速算规则和完整进位示例，随后完成 4 道步骤题。
+- Practice：30 道专项题，默认均衡混合不进位与带进位。
+
 ## 生成练习卷
 
 ```bash
@@ -17,6 +22,12 @@ python -m kids_exo generate --preset presets/distributive_property_beginner.toml
 ```
 
 指定 `--seed` 可以重复生成完全相同的一套题目；不指定则每次随机生成。
+
+生成乘以 `11` 练习卷：
+
+```bash
+python -m kids_exo generate --preset presets/multiply_by_11_beginner.toml --output output/multiply-by-11-practice.pdf --seed 20260524
+```
 
 ## 配置结构
 

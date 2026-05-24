@@ -3,10 +3,6 @@ from pathlib import Path
 from typing import Any
 import tomllib
 
-
-SUPPORTED_PLUGINS = {"integer_multiplication_distributive"}
-
-
 @dataclass(frozen=True)
 class WorksheetSettings:
     title: str
@@ -76,15 +72,11 @@ def _load_output(data: dict) -> OutputSettings:
 
 def _load_section(data: dict) -> SectionSettings:
     plugin = data["plugin"]
-    if plugin not in SUPPORTED_PLUGINS:
-        raise ValueError(f"Unsupported question type plugin: {plugin}")
-    format_name = data["format"]
-    from kids_exo.plugins.integer_multiplication_distributive.settings import (
-        load_settings,
-        validate_format,
-    )
+    from kids_exo.plugins.registry import get_plugin_definition
 
-    validate_format(format_name, data["name"])
+    definition = get_plugin_definition(plugin)
+    format_name = data["format"]
+    definition.validate_format(format_name, data["name"])
     count = int(data["count"])
     columns = int(data["columns"])
     if count < 0 or columns < 1:
@@ -95,5 +87,5 @@ def _load_section(data: dict) -> SectionSettings:
         count=count,
         columns=columns,
         format=format_name,
-        settings=load_settings(data.get("settings", {})),
+        settings=definition.load_settings(data.get("settings", {})),
     )

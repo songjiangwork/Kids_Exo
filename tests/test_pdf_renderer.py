@@ -23,6 +23,19 @@ class PdfRendererTests(unittest.TestCase):
         self.assertIn(b"Warm-up", data)
         self.assertIn(b"Practice", data)
 
+    def test_renders_the_multiply_by_11_english_rule_and_example(self) -> None:
+        preset = load_preset("presets/multiply_by_11_beginner.toml")
+        worksheet = generate_worksheet(preset, seed=42)
+
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "multiply-by-11.pdf"
+            write_pdf(worksheet, preset.output.options, output_path)
+            data = output_path.read_bytes()
+
+        self.assertIn(b"Multiplying by 11 Practice", data)
+        self.assertIn(b"Add the two digits.", data)
+        self.assertIn(b"Example: 68 x 11", data)
+
 
 if __name__ == "__main__":
     unittest.main()
