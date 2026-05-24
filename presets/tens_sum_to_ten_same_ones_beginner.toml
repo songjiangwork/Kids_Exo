@@ -1,0 +1,44 @@
+version = 1
+
+[worksheet]
+title = "Tens Sum to 10, Same Ones Practice"
+locale = "en-CA"
+student_fields = ["name", "date", "time"]
+
+[output]
+renderer = "pdf"
+theme = "classic_a4"
+
+[output.options]
+paper_size = "A4"
+orientation = "portrait"
+
+[[sections]]
+name = "warmup"
+plugin = "tens_sum_to_ten_same_ones"
+count = 4
+columns = 1
+format = "guided_front_plus_tail_square"
+
+[sections.settings]
+strategies = ["zero_padded_ones_square", "two_digit_ones_square"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+zero_padded_ones_square = 0.5
+two_digit_ones_square = 0.5
+
+[[sections]]
+name = "practice"
+plugin = "tens_sum_to_ten_same_ones"
+count = 30
+columns = 2
+format = "expression_with_answer_blank"
+
+[sections.settings]
+strategies = ["zero_padded_ones_square", "two_digit_ones_square"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+zero_padded_ones_square = 0.5
+two_digit_ones_square = 0.5

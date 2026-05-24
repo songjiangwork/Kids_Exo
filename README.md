@@ -50,6 +50,12 @@
 - Beginner preset 仅生成可整除的两位数，先让孩子专注速算规则。
 - Practice：30 道专项题，三个乘数各 10 道。
 
+第九份练习卷训练“十位和为 `10`、个位相同”的两位数乘法：
+
+- 例如 `43 x 63 = 2709`，前半部分为 `4 x 6 + 3 = 27`，后半部分为 `3 x 3 = 09`。
+- Warm-up：用英文解释前半部分需加共同个位，并强调尾部平方保持两位。
+- Practice：30 道专项题，均衡混合尾部平方补零与普通两位尾积。
+
 ## 生成练习卷
 
 ```bash
@@ -100,6 +106,12 @@ python -m kids_exo generate --preset presets/multiply_by_9_99_999_beginner.toml 
 python -m kids_exo generate --preset presets/multiply_by_5_25_125_beginner.toml --output output/multiply-by-five-family.pdf --seed 20260524
 ```
 
+生成十位和为十、个位相同的练习卷：
+
+```bash
+python -m kids_exo generate --preset presets/tens_sum_to_ten_same_ones_beginner.toml --output output/tens-sum-to-ten-same-ones.pdf --seed 20260524
+```
+
 ## 配置结构
 
 - `presets/` 保存一份完整练习卷的组合选择，包括输出方式和各区域使用的题型。
@@ -108,7 +120,7 @@ python -m kids_exo generate --preset presets/multiply_by_5_25_125_beginner.toml 
 
 目前一个 preset 的每个区域都可以独立选择插件，为以后同一份卷子混合多个题型预留了结构。
 
-题型之间也可以形成扩展关系；例如 `square_ending_in_5` 收窄共同规则，而 `three_digit_same_prefix_ones_sum_to_ten` 将同一套前缀构题逻辑扩展至更长的前缀，只覆盖自己的数字范围和教学展示。对于数学算法完全一致、仅数字范围不同的情况，例如两位数与三位数乘以 `11`，则由同一个插件配合不同 preset 复用规则。
+题型之间也可以形成扩展关系；例如 `square_ending_in_5` 收窄共同规则，而 `three_digit_same_prefix_ones_sum_to_ten` 将同一套前缀构题逻辑扩展至更长的前缀，只覆盖自己的数字范围和教学展示。对于数学算法完全一致、仅数字范围不同的情况，例如两位数与三位数乘以 `11`，则由同一个插件配合不同 preset 复用规则。表面相似但实际步骤不同的镜像方法，例如“十位相同、个位和为十”与“十位和为十、个位相同”，则各自保留独立插件与清晰教学文案。
 
 题型区域还可以通过 `strategy_weights` 调整生成策略的题目比例。例如当前 Practice 区的 `0.6/0.4` 会在 `30` 道题中生成 `18` 道按数位加法拆分题和 `12` 道近整十/整百减法拆分题。
 

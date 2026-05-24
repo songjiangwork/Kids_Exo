@@ -86,6 +86,19 @@ class PdfRendererTests(unittest.TestCase):
         self.assertIn(b"Multiply the tens digit by the next number.", data)
         self.assertIn(b"Example: 43 x 47", data)
 
+    def test_renders_the_tens_sum_to_ten_same_ones_rule_and_example(self) -> None:
+        preset = load_preset("presets/tens_sum_to_ten_same_ones_beginner.toml")
+        worksheet = generate_worksheet(preset, seed=42)
+
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "tens-sum-to-ten-same-ones.pdf"
+            write_pdf(worksheet, preset.output.options, output_path)
+            data = output_path.read_bytes()
+
+        self.assertIn(b"Tens Sum to 10, Same Ones Practice", data)
+        self.assertIn(b"Add the shared ones digit.", data)
+        self.assertIn(b"Example: 43 x 63", data)
+
     def test_renders_the_square_ending_in_5_rule_and_example(self) -> None:
         preset = load_preset("presets/square_ending_in_5_beginner.toml")
         worksheet = generate_worksheet(preset, seed=42)

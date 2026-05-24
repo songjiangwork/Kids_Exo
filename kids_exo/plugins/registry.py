@@ -74,6 +74,20 @@ def get_plugin_definition(plugin_name: str) -> PluginDefinition:
             validate_format=validate_format,
             create=SameTensOnesSumToTenPlugin,
         )
+    if plugin_name == "tens_sum_to_ten_same_ones":
+        from kids_exo.plugins.tens_sum_to_ten_same_ones.plugin import (
+            TensSumToTenSameOnesPlugin,
+        )
+        from kids_exo.plugins.tens_sum_to_ten_same_ones.settings import (
+            load_settings,
+            validate_format,
+        )
+
+        return PluginDefinition(
+            load_settings=load_settings,
+            validate_format=validate_format,
+            create=TensSumToTenSameOnesPlugin,
+        )
     if plugin_name == "square_ending_in_5":
         from kids_exo.plugins.square_ending_in_5.plugin import SquareEndingIn5Plugin
         from kids_exo.plugins.square_ending_in_5.settings import (
