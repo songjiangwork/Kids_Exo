@@ -70,6 +70,28 @@
 
 ## 生成练习卷
 
+日常使用推荐直接启动程序进入交互式菜单；程序会显示当前可用练习卷，并使用预设的 PDF 文件名写入 `output/`：
+
+```bash
+python -m kids_exo
+```
+
+显式写为 `python -m kids_exo interactive` 也具有相同行为。
+
+查看所有可选练习卷及其稳定 ID：
+
+```bash
+python -m kids_exo list
+```
+
+无需手写 TOML 路径，也可以通过稳定 ID 直接生成一份练习卷：
+
+```bash
+python -m kids_exo generate --preset-id math.mental_multiplication.difference_of_squares.beginner --seed 20260524
+```
+
+开发、调试或自行修改 preset 时，仍可直接指定 TOML 文件与输出路径：
+
 ```bash
 python -m kids_exo generate --preset presets/distributive_property_beginner.toml --output output/distributive-practice.pdf --seed 20260523
 ```
@@ -139,10 +161,11 @@ python -m kids_exo generate --preset presets/difference_of_squares_beginner.toml
 ## 配置结构
 
 - `presets/` 保存一份完整练习卷的组合选择，包括输出方式和各区域使用的题型。
+- `kids_exo/catalog.py` 保存面向用户的练习卷目录，包括稳定 ID、科目分类、preset 路径和默认 PDF 文件名。
 - `kids_exo/plugins/` 保存题型自己的生成规则、格式与专属设置。
 - `kids_exo/renderers/` 保存 PDF 等输出方式自己的排版设置与渲染实现。
 
-目前一个 preset 的每个区域都可以独立选择插件，为以后同一份卷子混合多个题型预留了结构。
+交互式入口让用户选择练习卷 preset，而不是直接选择 plugin，因为一份可打印练习卷还需要题量、展示格式、教学文字和输出配置。目前一个 preset 的每个区域都可以独立选择插件，为以后同一份卷子混合多个题型预留了结构。
 
 题型之间也可以形成扩展关系；例如 `square_ending_in_5` 收窄共同规则，而 `three_digit_same_prefix_ones_sum_to_ten` 将同一套前缀构题逻辑扩展至更长的前缀，只覆盖自己的数字范围和教学展示。对于数学算法完全一致、仅数字范围不同的情况，例如两位数与三位数乘以 `11`，则由同一个插件配合不同 preset 复用规则。表面相似但实际步骤不同的镜像方法，例如“十位相同、个位和为十”与“十位和为十、个位相同”，则各自保留独立插件与清晰教学文案。
 

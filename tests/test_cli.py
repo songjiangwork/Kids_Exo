@@ -1,3 +1,4 @@
+import io
 import tempfile
 import unittest
 from pathlib import Path
@@ -215,6 +216,87 @@ class CliTests(unittest.TestCase):
 
             self.assertEqual(exit_code, 0)
             self.assertTrue(output_path.exists())
+
+    def test_list_command_shows_catalog_hierarchy_and_preset_ids(self) -> None:
+        output = io.StringIO()
+
+        exit_code = main(["list"], output_stream=output)
+
+        self.assertEqual(exit_code, 0)
+        menu = output.getvalue()
+        self.assertIn("Math", menu)
+        self.assertIn("Mental Multiplication", menu)
+        self.assertIn("Multiply by 11 - Two Digits", menu)
+        self.assertIn(
+            "math.mental_multiplication.multiply_by_11.two_digit_beginner",
+            menu,
+        )
+
+    def test_generate_command_accepts_preset_id_and_derives_default_output_name(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output_dir = Path(directory)
+
+            exit_code = main(
+                [
+                    "generate",
+                    "--preset-id",
+                    "math.mental_multiplication.difference_of_squares.beginner",
+                    "--output-dir",
+                    str(output_dir),
+                    "--seed",
+                    "20260524",
+                ]
+            )
+
+            self.assertEqual(exit_code, 0)
+            self.assertTrue((output_dir / "difference-of-squares.pdf").exists())
+
+    def test_interactive_command_generates_selected_preset_with_default_name(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output_dir = Path(directory)
+            user_input = io.StringIO("2\n")
+            output = io.StringIO()
+
+            exit_code = main(
+                [
+                    "interactive",
+                    "--output-dir",
+                    str(output_dir),
+                    "--seed",
+                    "20260524",
+                ],
+                input_stream=user_input,
+                output_stream=output,
+            )
+
+            self.assertEqual(exit_code, 0)
+            self.assertIn("Choose a worksheet", output.getvalue())
+            self.assertIn("Generated:", output.getvalue())
+            self.assertTrue((output_dir / "multiply-by-11-practice.pdf").exists())
+
+    def test_no_command_defaults_to_interactive_selection(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output_dir = Path(directory)
+            output = io.StringIO()
+
+            exit_code = main(
+                [],
+                input_stream=io.StringIO("11\n"),
+                output_stream=output,
+                default_output_dir=output_dir,
+            )
+
+            self.assertEqual(exit_code, 0)
+            self.assertIn("Choose a worksheet", output.getvalue())
+            self.assertTrue((output_dir / "difference-of-squares.pdf").exists())
+
+    def test_interactive_command_rejects_zero_instead_of_selecting_the_last_entry(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Invalid worksheet selection"):
+            main(
+                ["interactive"],
+                input_stream=io.StringIO("0\n"),
+                output_stream=io.StringIO(),
+            )
 
 
 if __name__ == "__main__":
