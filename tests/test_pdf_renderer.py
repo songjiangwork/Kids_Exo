@@ -138,6 +138,21 @@ class PdfRendererTests(unittest.TestCase):
         self.assertIn(b"A. Mixed Practice", data)
         self.assertNotIn(b"Warm-up", data)
 
+    def test_paginates_a_hundred_question_mixed_practice_pdf(self) -> None:
+        preset = load_preset("presets/mental_multiplication_mixed_100.toml")
+        worksheet = generate_worksheet(preset, seed=42)
+
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "mixed-practice-100.pdf"
+            write_pdf(worksheet, preset.output.options, output_path)
+            data = output_path.read_bytes()
+
+        self.assertIn(b"/Count 3", data)
+        self.assertIn(b"Page 1 of 3", data)
+        self.assertIn(b"Page 3 of 3", data)
+        self.assertIn(b"A. Mixed Practice \\(continued\\)", data)
+        self.assertIn(b"100.", data)
+
     def test_renders_the_square_ending_in_5_rule_and_example(self) -> None:
         preset = load_preset("presets/square_ending_in_5_beginner.toml")
         worksheet = generate_worksheet(preset, seed=42)

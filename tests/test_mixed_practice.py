@@ -46,6 +46,16 @@ class MixedPracticeWorksheetTests(unittest.TestCase):
             ("Choose a helpful shortcut for each problem.",),
         )
 
+    def test_hundred_question_preset_is_mixed_and_has_no_warmup(self) -> None:
+        preset = load_preset("presets/mental_multiplication_mixed_100.toml")
+        worksheet = generate_worksheet(preset, seed=100)
+        questions = worksheet.sections["mixed_practice"]
+
+        self.assertNotIn("warmup", worksheet.sections)
+        self.assertEqual(len(questions), 100)
+        self.assertEqual(sum(section.count for section in preset.sections), 100)
+        self.assertGreaterEqual(len({question.section for question in questions}), 6)
+
 
 if __name__ == "__main__":
     unittest.main()

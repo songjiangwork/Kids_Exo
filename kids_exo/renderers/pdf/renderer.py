@@ -39,41 +39,81 @@ def _build_pdf(worksheet: Worksheet, options: PdfOutputOptions) -> bytes:
     except KeyError as exc:
         raise ValueError(f"Unsupported PDF locale: {worksheet.locale}") from exc
 
-    commands: list[str] = []
-    _add_text(commands, worksheet.title, 48, 795, 18, bold=True)
-    field_line = "       ".join(
-        f"{text['fields'].get(field, field.title())}: ____________________"
-        for field in worksheet.student_fields
-    )
-    _add_text(commands, field_line, 48, 763, 10)
-    commands.append("0.65 w 48 748 m 547 748 l S")
-
+    pages: list[list[str]] = []
+    commands = _start_page(worksheet, text, first_page=True)
     y = 720
     for section_name in worksheet.section_order:
         questions = worksheet.sections.get(section_name, ())
         if not questions:
             continue
         heading = worksheet.section_headings[section_name]
-        _add_text(commands, heading, 48, y, 13, bold=True)
-        y -= 20
-        for instruction in worksheet.section_intros.get(section_name, ()):
-            _add_text(commands, instruction, 48, y, 9)
-            y -= 17
-        y -= 14
         columns = worksheet.section_columns.get(section_name, 1)
-        rows = (len(questions) + columns - 1) // columns
-        column_width = 250
-        for index, question in enumerate(questions):
-            column = index // rows
-            row = index % rows
-            x = 58 + column * column_width
-            question_y = y - row * (31 if columns == 1 else 29)
-            _add_text(commands, f"{index + 1}.  {question.display_text}", x, question_y, 11)
-        y -= rows * (31 if columns == 1 else 29) + 8
+        question_index = 0
+        continued = False
+        while question_index < len(questions):
+            section_heading = f"{heading} (continued)" if continued else heading
+            instructions = () if continued else worksheet.section_intros.get(section_name, ())
+            required_header_space = 20 + (len(instructions) * 17) + 14
+            if y - required_header_space < 82:
+                pages.append(commands)
+                commands = _start_page(worksheet, text, first_page=False)
+                y = 755
 
-    _add_text(commands, "Generated practice worksheet", 48, 28, 8)
-    stream = "\n".join(commands).encode("latin-1")
-    return _pdf_document(stream)
+            _add_text(commands, section_heading, 48, y, 13, bold=True)
+            y -= 20
+            for instruction in instructions:
+                _add_text(commands, instruction, 48, y, 9)
+                y -= 17
+            y -= 14
+
+            row_height = 31 if columns == 1 else 29
+            available_rows = max(1, int((y - 58) // row_height) + 1)
+            page_capacity = available_rows * columns
+            chunk = questions[question_index : question_index + page_capacity]
+            rows = (len(chunk) + columns - 1) // columns
+            for local_index, question in enumerate(chunk):
+                column = local_index // rows
+                row = local_index % rows
+                x = 58 + column * 250
+                question_y = y - row * row_height
+                _add_text(
+                    commands,
+                    f"{question_index + local_index + 1}.  {question.display_text}",
+                    x,
+                    question_y,
+                    11,
+                )
+            y -= rows * row_height + 8
+            question_index += len(chunk)
+            continued = True
+            if question_index < len(questions):
+                pages.append(commands)
+                commands = _start_page(worksheet, text, first_page=False)
+                y = 755
+
+    pages.append(commands)
+    total_pages = len(pages)
+    for page_number, page_commands in enumerate(pages, start=1):
+        _add_text(page_commands, "Generated practice worksheet", 48, 28, 8)
+        _add_text(page_commands, f"Page {page_number} of {total_pages}", 476, 28, 8)
+    streams = ["\n".join(page).encode("latin-1") for page in pages]
+    return _pdf_document(streams)
+
+
+def _start_page(worksheet: Worksheet, text: dict[str, dict[str, str]], first_page: bool) -> list[str]:
+    commands: list[str] = []
+    if first_page:
+        _add_text(commands, worksheet.title, 48, 795, 18, bold=True)
+        field_line = "       ".join(
+            f"{text['fields'].get(field, field.title())}: ____________________"
+            for field in worksheet.student_fields
+        )
+        _add_text(commands, field_line, 48, 763, 10)
+        commands.append("0.65 w 48 748 m 547 748 l S")
+    else:
+        _add_text(commands, worksheet.title, 48, 795, 13, bold=True)
+        commands.append("0.65 w 48 778 m 547 778 l S")
+    return commands
 
 
 def _add_text(
@@ -94,18 +134,44 @@ def _escape_text(value: str) -> str:
     return value.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
 
 
-def _pdf_document(stream: bytes) -> bytes:
+def _pdf_document(streams: list[bytes]) -> bytes:
+    page_count = len(streams)
+    page_ids = list(range(3, 3 + page_count))
+    content_ids = list(range(3 + page_count, 3 + (2 * page_count)))
+    normal_font_id = 3 + (2 * page_count)
+    bold_font_id = normal_font_id + 1
+    kid_references = " ".join(f"{page_id} 0 R" for page_id in page_ids).encode("ascii")
     objects = [
         b"<< /Type /Catalog /Pages 2 0 R >>",
-        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-        (
-            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] "
-            b"/Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>"
-        ),
-        b"<< /Length " + str(len(stream)).encode("ascii") + b" >>\nstream\n" + stream + b"\nendstream",
-        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
+        b"<< /Type /Pages /Kids [" + kid_references + b"] /Count " + str(page_count).encode("ascii") + b" >>",
     ]
+    for content_id in content_ids:
+        objects.append(
+            (
+                b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] "
+                b"/Resources << /Font << /F1 "
+                + str(normal_font_id).encode("ascii")
+                + b" 0 R /F2 "
+                + str(bold_font_id).encode("ascii")
+                + b" 0 R >> >> /Contents "
+                + str(content_id).encode("ascii")
+                + b" 0 R >>"
+            )
+        )
+    for stream in streams:
+        objects.append(
+            b"<< /Length "
+            + str(len(stream)).encode("ascii")
+            + b" >>\nstream\n"
+            + stream
+            + b"\nendstream"
+        )
+    objects.extend(
+        [
+            b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+            b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
+        ]
+    )
     document = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
     offsets = [0]
     for number, obj in enumerate(objects, start=1):

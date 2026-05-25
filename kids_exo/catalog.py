@@ -108,6 +108,14 @@ _PRESET_ENTRIES = (
         "presets/mental_multiplication_mixed_practice.toml",
         "mental-multiplication-mixed-practice.pdf",
     ),
+    PresetCatalogEntry(
+        "math.mental_multiplication.mixed_practice_100",
+        "Math",
+        "Mental Multiplication",
+        "Mixed Practice - 100 Questions",
+        "presets/mental_multiplication_mixed_100.toml",
+        "mental-multiplication-mixed-100.pdf",
+    ),
 )
 
 

@@ -20,6 +20,10 @@ class PresetCatalogTests(unittest.TestCase):
             "math.mental_multiplication.mixed_practice",
             {entry.identifier for entry in entries},
         )
+        self.assertIn(
+            "math.mental_multiplication.mixed_practice_100",
+            {entry.identifier for entry in entries},
+        )
 
     def test_entry_resolves_preset_path_and_default_pdf_filename(self) -> None:
         entry = get_preset_entry(
