@@ -88,6 +88,34 @@ def get_plugin_definition(plugin_name: str) -> PluginDefinition:
             validate_format=validate_format,
             create=TensSumToTenSameOnesPlugin,
         )
+    if plugin_name == "near_round_pair_multiplication":
+        from kids_exo.plugins.near_round_pair_multiplication.plugin import (
+            NearRoundPairMultiplicationPlugin,
+        )
+        from kids_exo.plugins.near_round_pair_multiplication.settings import (
+            load_settings,
+            validate_format,
+        )
+
+        return PluginDefinition(
+            load_settings=load_settings,
+            validate_format=validate_format,
+            create=NearRoundPairMultiplicationPlugin,
+        )
+    if plugin_name == "difference_of_squares":
+        from kids_exo.plugins.difference_of_squares.plugin import (
+            DifferenceOfSquaresPlugin,
+        )
+        from kids_exo.plugins.difference_of_squares.settings import (
+            load_settings,
+            validate_format,
+        )
+
+        return PluginDefinition(
+            load_settings=load_settings,
+            validate_format=validate_format,
+            create=DifferenceOfSquaresPlugin,
+        )
     if plugin_name == "square_ending_in_5":
         from kids_exo.plugins.square_ending_in_5.plugin import SquareEndingIn5Plugin
         from kids_exo.plugins.square_ending_in_5.settings import (

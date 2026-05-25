@@ -1,0 +1,46 @@
+version = 1
+
+[worksheet]
+title = "Difference of Squares Multiplication Practice"
+locale = "en-CA"
+student_fields = ["name", "date", "time"]
+
+[output]
+renderer = "pdf"
+theme = "classic_a4"
+
+[output.options]
+paper_size = "A4"
+orientation = "portrait"
+
+[[sections]]
+name = "warmup"
+plugin = "difference_of_squares"
+count = 4
+columns = 1
+format = "guided_difference_of_squares"
+
+[sections.settings]
+round_numbers = [20, 30, 40, 50, 60, 70, 80, 90, 100]
+near_round_distances = [1, 2, 3, 4]
+strategies = ["symmetric_around_round"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+symmetric_around_round = 1.0
+
+[[sections]]
+name = "practice"
+plugin = "difference_of_squares"
+count = 30
+columns = 2
+format = "expression_with_answer_blank"
+
+[sections.settings]
+round_numbers = [20, 30, 40, 50, 60, 70, 80, 90, 100]
+near_round_distances = [1, 2, 3, 4]
+strategies = ["symmetric_around_round"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+symmetric_around_round = 1.0

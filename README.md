@@ -56,6 +56,18 @@
 - Warm-up：用英文解释前半部分需加共同个位，并强调尾部平方保持两位。
 - Practice：30 道专项题，均衡混合尾部平方补零与普通两位尾积。
 
+第十份练习卷训练两个因数同侧接近整十或整百数的乘法：
+
+- 例如 `48 x 47` 以 `50` 为基准，可计算 `50 x (50 - 2 - 3) + 2 x 3`。
+- Warm-up：用英文说明共同基准数与两个小偏移量。
+- Practice：30 道专项题，均衡包含都低于基准数与都高于基准数的题。
+
+第十一份练习卷训练平方差公式：
+
+- 例如 `47 x 53 = (50 - 3) x (50 + 3) = 50 x 50 - 3 x 3`。
+- Warm-up：用英文说明两个因数必须关于基准数等距对称。
+- Practice：30 道专项题，聚焦识别对称形式并快速计算。
+
 ## 生成练习卷
 
 ```bash
@@ -110,6 +122,18 @@ python -m kids_exo generate --preset presets/multiply_by_5_25_125_beginner.toml 
 
 ```bash
 python -m kids_exo generate --preset presets/tens_sum_to_ten_same_ones_beginner.toml --output output/tens-sum-to-ten-same-ones.pdf --seed 20260524
+```
+
+生成同侧接近整十/整百数的乘法练习卷：
+
+```bash
+python -m kids_exo generate --preset presets/near_round_pair_multiplication_beginner.toml --output output/near-round-pair.pdf --seed 20260524
+```
+
+生成平方差公式练习卷：
+
+```bash
+python -m kids_exo generate --preset presets/difference_of_squares_beginner.toml --output output/difference-of-squares.pdf --seed 20260524
 ```
 
 ## 配置结构

@@ -99,6 +99,32 @@ class PdfRendererTests(unittest.TestCase):
         self.assertIn(b"Add the shared ones digit.", data)
         self.assertIn(b"Example: 43 x 63", data)
 
+    def test_renders_the_near_round_pair_rule_and_example(self) -> None:
+        preset = load_preset("presets/near_round_pair_multiplication_beginner.toml")
+        worksheet = generate_worksheet(preset, seed=42)
+
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "near-round-pair.pdf"
+            write_pdf(worksheet, preset.output.options, output_path)
+            data = output_path.read_bytes()
+
+        self.assertIn(b"Near Round-Number Pair Multiplication Practice", data)
+        self.assertIn(b"close to the same round number", data)
+        self.assertIn(b"Example: 48 x 47", data)
+
+    def test_renders_the_difference_of_squares_rule_and_example(self) -> None:
+        preset = load_preset("presets/difference_of_squares_beginner.toml")
+        worksheet = generate_worksheet(preset, seed=42)
+
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "difference-of-squares.pdf"
+            write_pdf(worksheet, preset.output.options, output_path)
+            data = output_path.read_bytes()
+
+        self.assertIn(b"Difference of Squares Multiplication Practice", data)
+        self.assertIn(b"same distance below and above", data)
+        self.assertIn(b"Example: 47 x 53", data)
+
     def test_renders_the_square_ending_in_5_rule_and_example(self) -> None:
         preset = load_preset("presets/square_ending_in_5_beginner.toml")
         worksheet = generate_worksheet(preset, seed=42)
