@@ -312,9 +312,35 @@ python -m kids_exo generate --preset-id math.mental_multiplication.difference_of
 当前优先级确定如下：
 
 1. 已实现：preset catalog 与交互式 CLI，减少日常生成 PDF 的操作成本。
-2. 下一步：加入混合题型 preset，并补充区域名称唯一性与自定义展示说明的校验/能力。
-3. 随后：让 PDF renderer 支持自动分页，以覆盖 100 题练习卷和跨页混合专题。
+2. 已实现：加入不含 warm-up 的混合题型 preset，并支持多个 plugin 来源合并、混排到同一显示区域。
+3. 下一步：让 PDF renderer 支持自动分页，以覆盖 100 题练习卷和跨页混合专题。
 4. 之后：在上述数据与输出流程稳定后开始网页应用原型，让网页复用相同的 catalog、preset 与题目生成核心。
+
+## 混合专项练习卷
+
+当孩子已经分别学习过多个速算方法，混合训练的目标就不再是跟随提示步骤，而是识别一道题适合采用什么方法。因此 `presets/mental_multiplication_mixed_practice.toml` 不设置 warm-up 区域，只生成一个显示为 `A. Mixed Practice` 的专项区。
+
+这份初始混合卷由 6 种题目来源构成，每种各 5 道，共 30 道：
+
+```text
+Multiply by 11
+Multiply by 9, 99, and 999
+Same Tens, Ones Sum to 10
+Tens Sum to 10, Same Ones
+Near Round-Number Pair Multiplication
+Difference of Squares
+```
+
+为了支持这样的组合，section 设置可以使用：
+
+```toml
+combine_into = "mixed_practice"
+heading = "A. Mixed Practice"
+instructions = ["Choose a helpful shortcut for each problem."]
+shuffle = true
+```
+
+多个生成来源保留各自的 plugin 设置和题数，但最终合并到一个显示区域并随机混排。配置加载时要求 source section 名称唯一，并校验同一个合并区域的排版与展示设置一致，防止悄悄丢失题目或生成冲突页面。
 
 ## 后续题型想法
 

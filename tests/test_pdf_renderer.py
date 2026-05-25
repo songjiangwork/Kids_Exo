@@ -125,6 +125,19 @@ class PdfRendererTests(unittest.TestCase):
         self.assertIn(b"same distance below and above", data)
         self.assertIn(b"Example: 47 x 53", data)
 
+    def test_renders_mixed_practice_without_a_warmup_section(self) -> None:
+        preset = load_preset("presets/mental_multiplication_mixed_practice.toml")
+        worksheet = generate_worksheet(preset, seed=42)
+
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "mixed-practice.pdf"
+            write_pdf(worksheet, preset.output.options, output_path)
+            data = output_path.read_bytes()
+
+        self.assertIn(b"Mental Multiplication Mixed Practice", data)
+        self.assertIn(b"A. Mixed Practice", data)
+        self.assertNotIn(b"Warm-up", data)
+
     def test_renders_the_square_ending_in_5_rule_and_example(self) -> None:
         preset = load_preset("presets/square_ending_in_5_beginner.toml")
         worksheet = generate_worksheet(preset, seed=42)

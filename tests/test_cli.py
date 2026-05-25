@@ -179,6 +179,25 @@ class CliTests(unittest.TestCase):
             self.assertEqual(exit_code, 0)
             self.assertTrue(output_path.exists())
 
+    def test_generate_command_supports_the_mixed_practice_preset(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output_path = Path(directory) / "mixed-practice.pdf"
+
+            exit_code = main(
+                [
+                    "generate",
+                    "--preset",
+                    "presets/mental_multiplication_mixed_practice.toml",
+                    "--output",
+                    str(output_path),
+                    "--seed",
+                    "20260524",
+                ]
+            )
+
+            self.assertEqual(exit_code, 0)
+            self.assertTrue(output_path.exists())
+
     def test_generate_command_supports_the_square_ending_in_5_preset(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             output_path = Path(directory) / "squares-ending-in-5.pdf"

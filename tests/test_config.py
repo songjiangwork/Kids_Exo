@@ -108,6 +108,15 @@ class LoadConfigTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "strategy_weights"):
                 load_preset(path)
 
+    def test_rejects_duplicate_source_section_names(self) -> None:
+        invalid_text = CONFIG_TEXT.replace('name = "practice"', 'name = "warmup"')
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "duplicate-sections.toml"
+            path.write_text(invalid_text, encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "unique"):
+                load_preset(path)
+
 
 if __name__ == "__main__":
     unittest.main()

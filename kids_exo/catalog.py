@@ -100,6 +100,14 @@ _PRESET_ENTRIES = (
         "presets/difference_of_squares_beginner.toml",
         "difference-of-squares.pdf",
     ),
+    PresetCatalogEntry(
+        "math.mental_multiplication.mixed_practice",
+        "Math",
+        "Mental Multiplication",
+        "Mixed Practice - No Warm-up",
+        "presets/mental_multiplication_mixed_practice.toml",
+        "mental-multiplication-mixed-practice.pdf",
+    ),
 )
 
 

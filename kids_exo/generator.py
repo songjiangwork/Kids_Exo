@@ -10,31 +10,49 @@ def generate_worksheet(preset: Preset, seed: int | None = None) -> Worksheet:
 
     rng = random.Random(seed)
     used_expressions: set[str] = set()
-    plugins = {section.name: _create_plugin(section) for section in preset.sections}
-    sections = {
-        section.name: plugins[section.name].generate(
+    plugin_sources = [(section, _create_plugin(section)) for section in preset.sections]
+    grouped_questions: dict[str, list] = {}
+    first_sources: dict[str, tuple[SectionSettings, object]] = {}
+    for section, plugin in plugin_sources:
+        questions = plugin.generate(
             section.name,
             section,
             rng,
             used_expressions,
         )
-        for section in preset.sections
-    }
+        grouped_questions.setdefault(section.display_name, []).extend(questions)
+        first_sources.setdefault(section.display_name, (section, plugin))
+    for display_name, (section, _) in first_sources.items():
+        if section.shuffle:
+            rng.shuffle(grouped_questions[display_name])
+
     worksheet = preset.worksheet
     return Worksheet(
         title=worksheet.title,
         locale=worksheet.locale,
         student_fields=worksheet.student_fields,
-        sections=sections,
-        section_columns={section.name: section.columns for section in preset.sections},
-        section_order=tuple(section.name for section in preset.sections),
+        sections={
+            display_name: tuple(questions)
+            for display_name, questions in grouped_questions.items()
+        },
+        section_columns={
+            display_name: section.columns
+            for display_name, (section, _) in first_sources.items()
+        },
+        section_order=tuple(first_sources),
         section_headings={
-            section.name: plugins[section.name].presentation(section.name, worksheet.locale)[0]
-            for section in preset.sections
+            display_name: (
+                section.heading
+                or plugin.presentation(section.name, worksheet.locale)[0]
+            )
+            for display_name, (section, plugin) in first_sources.items()
         },
         section_intros={
-            section.name: plugins[section.name].presentation(section.name, worksheet.locale)[1]
-            for section in preset.sections
+            display_name: (
+                section.instructions
+                or plugin.presentation(section.name, worksheet.locale)[1]
+            )
+            for display_name, (section, plugin) in first_sources.items()
         },
     )
 

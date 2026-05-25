@@ -1,0 +1,134 @@
+version = 1
+
+[worksheet]
+title = "Mental Multiplication Mixed Practice"
+locale = "en-CA"
+student_fields = ["name", "date", "time"]
+
+[output]
+renderer = "pdf"
+theme = "classic_a4"
+
+[output.options]
+paper_size = "A4"
+orientation = "portrait"
+
+[[sections]]
+name = "source_multiply_by_11"
+combine_into = "mixed_practice"
+heading = "A. Mixed Practice"
+instructions = ["Choose a helpful shortcut for each problem."]
+shuffle = true
+plugin = "multiply_by_11"
+count = 5
+columns = 2
+format = "expression_with_answer_blank"
+
+[sections.settings]
+multiplicand_digits = [2]
+strategies = ["no_carrying", "with_carrying"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+no_carrying = 0.5
+with_carrying = 0.5
+
+[[sections]]
+name = "source_multiply_by_nines"
+combine_into = "mixed_practice"
+heading = "A. Mixed Practice"
+instructions = ["Choose a helpful shortcut for each problem."]
+shuffle = true
+plugin = "multiply_by_9_99_999"
+count = 5
+columns = 2
+format = "expression_with_answer_blank"
+
+[sections.settings]
+multiplicand_digits = [2]
+strategies = ["times_9", "times_99", "times_999"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+times_9 = 1.0
+times_99 = 1.0
+times_999 = 1.0
+
+[[sections]]
+name = "source_same_tens"
+combine_into = "mixed_practice"
+heading = "A. Mixed Practice"
+instructions = ["Choose a helpful shortcut for each problem."]
+shuffle = true
+plugin = "same_tens_ones_sum_to_ten"
+count = 5
+columns = 2
+format = "expression_with_answer_blank"
+
+[sections.settings]
+strategies = ["zero_padded_ones_product", "two_digit_ones_product"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+zero_padded_ones_product = 0.5
+two_digit_ones_product = 0.5
+
+[[sections]]
+name = "source_tens_sum_to_ten"
+combine_into = "mixed_practice"
+heading = "A. Mixed Practice"
+instructions = ["Choose a helpful shortcut for each problem."]
+shuffle = true
+plugin = "tens_sum_to_ten_same_ones"
+count = 5
+columns = 2
+format = "expression_with_answer_blank"
+
+[sections.settings]
+strategies = ["zero_padded_ones_square", "two_digit_ones_square"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+zero_padded_ones_square = 0.5
+two_digit_ones_square = 0.5
+
+[[sections]]
+name = "source_near_round_pair"
+combine_into = "mixed_practice"
+heading = "A. Mixed Practice"
+instructions = ["Choose a helpful shortcut for each problem."]
+shuffle = true
+plugin = "near_round_pair_multiplication"
+count = 5
+columns = 2
+format = "expression_with_answer_blank"
+
+[sections.settings]
+round_numbers = [20, 30, 40, 50, 60, 70, 80, 90, 100]
+near_round_distances = [1, 2, 3]
+strategies = ["both_below_round", "both_above_round"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+both_below_round = 0.5
+both_above_round = 0.5
+
+[[sections]]
+name = "source_difference_of_squares"
+combine_into = "mixed_practice"
+heading = "A. Mixed Practice"
+instructions = ["Choose a helpful shortcut for each problem."]
+shuffle = true
+plugin = "difference_of_squares"
+count = 5
+columns = 2
+format = "expression_with_answer_blank"
+
+[sections.settings]
+round_numbers = [20, 30, 40, 50, 60, 70, 80, 90, 100]
+near_round_distances = [1, 2, 3, 4]
+strategies = ["symmetric_around_round"]
+allow_duplicates = false
+
+[sections.settings.strategy_weights]
+symmetric_around_round = 1.0

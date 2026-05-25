@@ -68,6 +68,12 @@
 - Warm-up：用英文说明两个因数必须关于基准数等距对称。
 - Practice：30 道专项题，聚焦识别对称形式并快速计算。
 
+混合专项练习卷用于孩子已经学过多种方法之后的识别与应用训练：
+
+- 不包含 Warm-up，只保留一个 `Mixed Practice` 区域。
+- 从 6 种已学速算方法各抽取 5 道题，合并后随机打乱为 30 道题。
+- 训练重点从“按提示使用方法”转为“自行识别最合适的快捷方法”。
+
 ## 生成练习卷
 
 日常使用推荐直接启动程序进入交互式菜单；程序会显示当前可用练习卷，并使用预设的 PDF 文件名写入 `output/`：
@@ -158,6 +164,12 @@ python -m kids_exo generate --preset presets/near_round_pair_multiplication_begi
 python -m kids_exo generate --preset presets/difference_of_squares_beginner.toml --output output/difference-of-squares.pdf --seed 20260524
 ```
 
+生成不含 warm-up 的混合专项练习卷：
+
+```bash
+python -m kids_exo generate --preset-id math.mental_multiplication.mixed_practice --seed 20260524
+```
+
 ## 配置结构
 
 - `presets/` 保存一份完整练习卷的组合选择，包括输出方式和各区域使用的题型。
@@ -165,7 +177,7 @@ python -m kids_exo generate --preset presets/difference_of_squares_beginner.toml
 - `kids_exo/plugins/` 保存题型自己的生成规则、格式与专属设置。
 - `kids_exo/renderers/` 保存 PDF 等输出方式自己的排版设置与渲染实现。
 
-交互式入口让用户选择练习卷 preset，而不是直接选择 plugin，因为一份可打印练习卷还需要题量、展示格式、教学文字和输出配置。目前一个 preset 的每个区域都可以独立选择插件，为以后同一份卷子混合多个题型预留了结构。
+交互式入口让用户选择练习卷 preset，而不是直接选择 plugin，因为一份可打印练习卷还需要题量、展示格式、教学文字和输出配置。一个 preset 的不同出题来源可以通过 `combine_into` 合并到同一展示区域，并使用 `shuffle = true` 混排，支持真正的混合专项卷而不是按题型分块排列。
 
 题型之间也可以形成扩展关系；例如 `square_ending_in_5` 收窄共同规则，而 `three_digit_same_prefix_ones_sum_to_ten` 将同一套前缀构题逻辑扩展至更长的前缀，只覆盖自己的数字范围和教学展示。对于数学算法完全一致、仅数字范围不同的情况，例如两位数与三位数乘以 `11`，则由同一个插件配合不同 preset 复用规则。表面相似但实际步骤不同的镜像方法，例如“十位相同、个位和为十”与“十位和为十、个位相同”，则各自保留独立插件与清晰教学文案。
 

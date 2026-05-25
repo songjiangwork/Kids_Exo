@@ -9,11 +9,15 @@ class PresetCatalogTests(unittest.TestCase):
     def test_lists_current_math_mental_multiplication_presets(self) -> None:
         entries = list_preset_entries()
 
-        self.assertGreaterEqual(len(entries), 11)
+        self.assertGreaterEqual(len(entries), 12)
         self.assertTrue(all(entry.subject == "Math" for entry in entries))
         self.assertTrue(all(entry.category == "Mental Multiplication" for entry in entries))
         self.assertIn(
             "math.mental_multiplication.multiply_by_11.two_digit_beginner",
+            {entry.identifier for entry in entries},
+        )
+        self.assertIn(
+            "math.mental_multiplication.mixed_practice",
             {entry.identifier for entry in entries},
         )
 
