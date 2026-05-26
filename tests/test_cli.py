@@ -215,7 +215,9 @@ class CliTests(unittest.TestCase):
             )
 
             self.assertEqual(exit_code, 0)
-            self.assertTrue((output_dir / "mental-multiplication-mixed-100.pdf").exists())
+            self.assertTrue(
+                (output_dir / "mental-multiplication-mixed-100-seed-20260524.pdf").exists()
+            )
 
     def test_generate_command_supports_the_square_ending_in_5_preset(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -287,7 +289,32 @@ class CliTests(unittest.TestCase):
             )
 
             self.assertEqual(exit_code, 0)
-            self.assertTrue((output_dir / "difference-of-squares.pdf").exists())
+            self.assertTrue(
+                (output_dir / "difference-of-squares-seed-20260524.pdf").exists()
+            )
+
+    def test_automatic_seed_filename_does_not_overwrite_an_existing_pdf(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output_dir = Path(directory)
+            arguments = [
+                "generate",
+                "--preset-id",
+                "math.mental_multiplication.difference_of_squares.beginner",
+                "--output-dir",
+                str(output_dir),
+                "--seed",
+                "20260524",
+            ]
+
+            main(arguments)
+            main(arguments)
+
+            self.assertTrue(
+                (output_dir / "difference-of-squares-seed-20260524.pdf").exists()
+            )
+            self.assertTrue(
+                (output_dir / "difference-of-squares-seed-20260524-2.pdf").exists()
+            )
 
     def test_interactive_command_generates_selected_preset_with_default_name(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -310,7 +337,31 @@ class CliTests(unittest.TestCase):
             self.assertEqual(exit_code, 0)
             self.assertIn("Choose a worksheet", output.getvalue())
             self.assertIn("Generated:", output.getvalue())
-            self.assertTrue((output_dir / "multiply-by-11-practice.pdf").exists())
+            self.assertTrue(
+                (output_dir / "multiply-by-11-practice-seed-20260524.pdf").exists()
+            )
+
+    def test_interactive_command_without_a_seed_does_not_overwrite_a_previous_pdf(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output_dir = Path(directory)
+
+            first_exit_code = main(
+                ["interactive", "--output-dir", str(output_dir)],
+                input_stream=io.StringIO("11\n"),
+                output_stream=io.StringIO(),
+            )
+            second_exit_code = main(
+                ["interactive", "--output-dir", str(output_dir)],
+                input_stream=io.StringIO("11\n"),
+                output_stream=io.StringIO(),
+            )
+
+            self.assertEqual(first_exit_code, 0)
+            self.assertEqual(second_exit_code, 0)
+            self.assertEqual(
+                len(list(output_dir.glob("difference-of-squares-*.pdf"))),
+                2,
+            )
 
     def test_no_command_defaults_to_interactive_selection(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -326,7 +377,7 @@ class CliTests(unittest.TestCase):
 
             self.assertEqual(exit_code, 0)
             self.assertIn("Choose a worksheet", output.getvalue())
-            self.assertTrue((output_dir / "difference-of-squares.pdf").exists())
+            self.assertEqual(len(list(output_dir.glob("difference-of-squares-*.pdf"))), 1)
 
     def test_interactive_command_rejects_zero_instead_of_selecting_the_last_entry(self) -> None:
         with self.assertRaisesRegex(ValueError, "Invalid worksheet selection"):

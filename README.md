@@ -82,7 +82,7 @@
 
 ## 生成练习卷
 
-日常使用推荐直接启动程序进入交互式菜单；程序会显示当前可用练习卷，并使用预设的 PDF 文件名写入 `output/`：
+日常使用推荐直接启动程序进入交互式菜单；程序会显示当前可用练习卷，并在 `output/` 中生成不会覆盖旧文件的 PDF：
 
 ```bash
 python -m kids_exo
@@ -107,6 +107,8 @@ python -m kids_exo generate --preset-id math.mental_multiplication.difference_of
 ```bash
 python -m kids_exo generate --preset presets/distributive_property_beginner.toml --output output/distributive-practice.pdf --seed 20260523
 ```
+
+自动决定输出文件名时，指定 `--seed` 会生成如 `difference-of-squares-seed-20260524.pdf` 的名称；不指定种子则使用如 `difference-of-squares-20260525-143015.pdf` 的生成时间。若同名文件已存在，程序自动追加 `-2`、`-3`，因此重复运行不会覆盖已有练习卷。显式传入 `--output` 时，程序使用用户指定的精确路径。
 
 指定 `--seed` 可以重复生成完全相同的一套题目；不指定则每次随机生成。
 

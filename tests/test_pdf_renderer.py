@@ -8,6 +8,32 @@ from kids_exo.renderers.pdf import write_pdf
 
 
 class PdfRendererTests(unittest.TestCase):
+    def test_keeps_current_beginner_worksheets_on_one_page(self) -> None:
+        preset_paths = (
+            "presets/distributive_property_beginner.toml",
+            "presets/multiply_by_11_beginner.toml",
+            "presets/multiply_by_11_three_digit_beginner.toml",
+            "presets/multiply_by_9_99_999_beginner.toml",
+            "presets/multiply_by_5_25_125_beginner.toml",
+            "presets/same_tens_ones_sum_to_ten_beginner.toml",
+            "presets/square_ending_in_5_beginner.toml",
+            "presets/three_digit_same_prefix_ones_sum_to_ten_beginner.toml",
+            "presets/tens_sum_to_ten_same_ones_beginner.toml",
+            "presets/near_round_pair_multiplication_beginner.toml",
+            "presets/difference_of_squares_beginner.toml",
+        )
+
+        for preset_path in preset_paths:
+            with self.subTest(preset_path=preset_path):
+                preset = load_preset(preset_path)
+                worksheet = generate_worksheet(preset, seed=42)
+                with tempfile.TemporaryDirectory() as directory:
+                    output_path = Path(directory) / "worksheet.pdf"
+                    write_pdf(worksheet, preset.output.options, output_path)
+                    data = output_path.read_bytes()
+
+                self.assertIn(b"/Count 1", data)
+
     def test_writes_an_a4_english_pdf_with_both_section_headings(self) -> None:
         preset = load_preset("presets/distributive_property_beginner.toml")
         worksheet = generate_worksheet(preset, seed=42)
@@ -85,6 +111,8 @@ class PdfRendererTests(unittest.TestCase):
         self.assertIn(b"Same Tens, Ones Sum to 10 Practice", data)
         self.assertIn(b"Multiply the tens digit by the next number.", data)
         self.assertIn(b"Example: 43 x 47", data)
+        self.assertIn(b"/Count 1", data)
+        self.assertNotIn(b"Page 2 of", data)
 
     def test_renders_the_tens_sum_to_ten_same_ones_rule_and_example(self) -> None:
         preset = load_preset("presets/tens_sum_to_ten_same_ones_beginner.toml")

@@ -6,6 +6,7 @@ from kids_exo.renderers.pdf.settings import PdfOutputOptions
 
 A4_WIDTH = 595.28
 A4_HEIGHT = 841.89
+QUESTION_BOTTOM_Y = 46
 
 TEXT_RESOURCES = {
     "en-CA": {
@@ -67,7 +68,7 @@ def _build_pdf(worksheet: Worksheet, options: PdfOutputOptions) -> bytes:
             y -= 14
 
             row_height = 31 if columns == 1 else 29
-            available_rows = max(1, int((y - 58) // row_height) + 1)
+            available_rows = max(1, int((y - QUESTION_BOTTOM_Y) // row_height) + 1)
             page_capacity = available_rows * columns
             chunk = questions[question_index : question_index + page_capacity]
             rows = (len(chunk) + columns - 1) // columns

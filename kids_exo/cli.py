@@ -1,5 +1,6 @@
 import argparse
 from collections.abc import Sequence
+from datetime import datetime
 from pathlib import Path
 import sys
 from typing import TextIO
@@ -65,7 +66,10 @@ def main(
             entry = entries[selection_number - 1]
         except ValueError as exc:
             raise ValueError(f"Invalid worksheet selection: {selection}") from exc
-        output_path = Path(options.output_dir) / entry.default_output_filename
+        output_path = _automatic_output_path(
+            Path(options.output_dir) / entry.default_output_filename,
+            options.seed,
+        )
         _generate_pdf(entry.preset_path, output_path, options.seed)
         output_stream.write(f"Generated: {output_path}\n")
         return 0
@@ -78,13 +82,33 @@ def _resolve_generate_paths(options: argparse.Namespace) -> tuple[str, Path]:
         output_path = (
             Path(options.output)
             if options.output
-            else Path(options.output_dir) / entry.default_output_filename
+            else _automatic_output_path(
+                Path(options.output_dir) / entry.default_output_filename,
+                options.seed,
+            )
         )
         return entry.preset_path, output_path
+    if options.output:
+        return options.preset or DEFAULT_PRESET_PATH, Path(options.output)
     return (
         options.preset or DEFAULT_PRESET_PATH,
-        Path(options.output or DEFAULT_OUTPUT_PATH),
+        _automatic_output_path(Path(DEFAULT_OUTPUT_PATH), options.seed),
     )
+
+
+def _automatic_output_path(base_path: Path, seed: int | None) -> Path:
+    marker = f"seed-{seed}" if seed is not None else datetime.now().strftime("%Y%m%d-%H%M%S")
+    candidate = base_path.with_name(f"{base_path.stem}-{marker}{base_path.suffix}")
+    if not candidate.exists():
+        return candidate
+    counter = 2
+    while True:
+        numbered_candidate = candidate.with_name(
+            f"{candidate.stem}-{counter}{candidate.suffix}"
+        )
+        if not numbered_candidate.exists():
+            return numbered_candidate
+        counter += 1
 
 
 def _generate_pdf(preset_path: str, output_path: str | Path, seed: int | None) -> None:

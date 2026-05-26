@@ -305,7 +305,7 @@ python -m kids_exo interactive
 python -m kids_exo generate --preset-id math.mental_multiplication.difference_of_squares.beginner
 ```
 
-其中不带参数的 `python -m kids_exo` 默认进入交互式选择，作为家庭日常使用的最短入口。`--preset` 与 `--output` 继续保留，服务于开发调试和用户自定义 TOML。未来新增英语等科目时，catalog 已可以自然扩充到多层级菜单。
+其中不带参数的 `python -m kids_exo` 默认进入交互式选择，作为家庭日常使用的最短入口。由程序自动决定的 PDF 文件名需要可区分且不覆盖旧练习卷：提供 seed 时加入 `seed-<value>`，未提供 seed 时加入生成时间；若候选路径已存在则追加序号。显式 `--output` 继续代表用户指定的准确覆盖路径，`--preset` 则继续服务于开发调试和用户自定义 TOML。未来新增英语等科目时，catalog 已可以自然扩充到多层级菜单。
 
 ## 下一阶段路线
 
