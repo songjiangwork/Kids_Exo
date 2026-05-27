@@ -29,10 +29,12 @@ def write_pdf(
 
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(_build_pdf(worksheet, options))
+    path.write_bytes(render_pdf(worksheet, options))
 
 
-def _build_pdf(worksheet: Worksheet, options: PdfOutputOptions) -> bytes:
+def render_pdf(worksheet: Worksheet, options: PdfOutputOptions) -> bytes:
+    """Render a worksheet in memory for callers such as HTTP downloads."""
+
     if options.paper_size != "A4" or options.orientation != "portrait":
         raise ValueError("The first PDF renderer supports A4 portrait worksheets only")
     try:

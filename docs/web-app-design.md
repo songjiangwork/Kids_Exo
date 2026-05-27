@@ -391,6 +391,7 @@ MVP 报告可从 session 与 attempts 聚合得到：
 | `/manage/learners` | 查看和创建 learner profiles |
 | `/manage/learners/:id` | 查看某个孩子近期练习与薄弱技能 |
 | `/manage/assign` | 选择题型，设置题量、数字范围、反馈与计时方式，创建练习 |
+| `/manage/worksheets` | 从现有打印练习卷目录选择 preset 并下载 PDF |
 | `/manage/sessions/:id` | 查看一次练习结果、打印或再次生成类似练习 |
 
 家长首页最应突出：
@@ -1090,6 +1091,7 @@ Student completes session -> Parent sees score and time
 - 以默认英文跑通第一条流程，并使界面/请求模型可接受 locale 与展示英文 fallback 提示。
 - 已完成基础实现：使用独立 Parent/Student 视觉布局、mobile-first 响应式样式与 lazy feature routes；仍需在真实手机/平板上试用验证。
 - 已完成首版：Parent 查看单次结果、错题复盘和 learner 的近期 session 历史。
+- 已完成首版：独立 Printable worksheet 页面列出全部已有 PDF preset，支持可选 seed 并通过 FastAPI 直接下载 PDF；当前复用 curated preset，不在服务器保存 PDF 记录。
 
 ### Phase 4：家庭体验增强
 
@@ -1103,6 +1105,8 @@ Student completes session -> Parent sees score and time
 - 组合多个 plugin 的混合在线练习。
 - `streak_challenge` 连续正确挑战模式和个人记录。
 - 在线 session 与 PDF export 更紧密互通。
+- 将 printable preset 逐步提升为可编辑 worksheet composer，允许选择 warm-up/practice sections、题量和 plugin settings，而不丢失现有快捷模板。
+- 为 Student 在线练习加入可选 warm-up 教学 section；探索使用清晰动画演示计算步骤，并在适当时由 AI 辅助生成讲解内容，始终保持家长可控且判分由确定性规则负责。
 - 增加中文等完整 UI translation，并逐步补充 plugin 教学内容的 locale resources。
 - 在安全与家长控制设计完成后探索大模型错题讲解。
 

@@ -44,6 +44,46 @@ class PracticeWebApiTests(unittest.TestCase):
             ["multiplicand_digits", "strategies"],
         )
 
+    def test_printable_catalog_exposes_all_existing_pdf_presets(self) -> None:
+        response = self.client.get("/api/printable-worksheets")
+
+        self.assertEqual(response.status_code, 200)
+        entries = response.json()
+        self.assertGreaterEqual(len(entries), 13)
+        self.assertIn(
+            "math.mental_multiplication.mixed_practice_100",
+            [entry["identifier"] for entry in entries],
+        )
+        self.assertIn(
+            "Squares Ending in 5",
+            [entry["title"] for entry in entries],
+        )
+
+    def test_parent_can_download_a_pdf_from_a_printable_preset(self) -> None:
+        response = self.client.post(
+            "/api/printable-worksheets/pdf",
+            json={
+                "preset_id": "math.mental_multiplication.square_ending_in_5.beginner",
+                "seed": 525,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["content-type"], "application/pdf")
+        self.assertIn(
+            "squares-ending-in-5-seed-525.pdf",
+            response.headers["content-disposition"],
+        )
+        self.assertTrue(response.content.startswith(b"%PDF-1.4"))
+
+    def test_pdf_download_rejects_an_unknown_preset(self) -> None:
+        response = self.client.post(
+            "/api/printable-worksheets/pdf",
+            json={"preset_id": "math.unknown"},
+        )
+
+        self.assertEqual(response.status_code, 404)
+
     def test_parent_can_create_a_session_for_an_added_online_plugin(self) -> None:
         learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
 

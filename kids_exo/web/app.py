@@ -2,11 +2,14 @@ import secrets
 import os
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import Response
 
+from kids_exo.catalog import list_preset_entries
 from kids_exo.online.catalog import get_online_catalog
 from kids_exo.online.session import OnlineSessionRequest, create_practice_session
 from kids_exo.persistence.database import build_engine, build_session_factory
 from kids_exo.persistence.repository import PracticeRepository
+from kids_exo.printable import generate_printable_pdf
 from kids_exo.web.schemas import (
     AnswerSubmissionRequest,
     AnswerSubmissionResponse,
@@ -17,6 +20,8 @@ from kids_exo.web.schemas import (
     PracticeResultsResponse,
     PracticePreviewRequest,
     PracticePreviewResponse,
+    PrintablePdfRequest,
+    PrintableWorksheetResponse,
     SavedPracticeSessionResponse,
     SessionSummaryResponse,
     StudentQuestionResponse,
@@ -30,6 +35,30 @@ def create_app(repository: PracticeRepository | None = None) -> FastAPI:
     @app.get("/api/practice-plugins", response_model=OnlineCatalogResponse)
     def list_practice_plugins() -> OnlineCatalogResponse:
         return OnlineCatalogResponse.model_validate(get_online_catalog())
+
+    @app.get(
+        "/api/printable-worksheets",
+        response_model=list[PrintableWorksheetResponse],
+    )
+    def list_printable_worksheets() -> list[PrintableWorksheetResponse]:
+        return [
+            PrintableWorksheetResponse.model_validate(entry)
+            for entry in list_preset_entries()
+        ]
+
+    @app.post("/api/printable-worksheets/pdf")
+    def download_printable_pdf(request: PrintablePdfRequest) -> Response:
+        try:
+            pdf = generate_printable_pdf(request.preset_id, seed=request.seed)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return Response(
+            content=pdf.content,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="{pdf.filename}"',
+            },
+        )
 
     @app.post("/api/practice-sessions/preview", response_model=PracticePreviewResponse)
     def create_practice_preview(

@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { HttpResponse } from '@angular/common/http';
 
 export interface SettingOption {
   value: number | string;
@@ -94,6 +95,13 @@ export interface PracticeResults {
   incorrect_questions: IncorrectQuestion[];
 }
 
+export interface PrintableWorksheetChoice {
+  identifier: string;
+  subject: string;
+  category: string;
+  title: string;
+}
+
 export interface StudentSession {
   plugin: string;
   requested_locale: string;
@@ -141,6 +149,23 @@ export class PracticeApi {
 
   studentResults(token: string): Observable<PracticeResults> {
     return this.http.get<PracticeResults>(`/api/student/sessions/${token}/results`);
+  }
+
+  printableWorksheets(): Observable<PrintableWorksheetChoice[]> {
+    return this.http.get<PrintableWorksheetChoice[]>('/api/printable-worksheets');
+  }
+
+  downloadPrintablePdf(
+    presetId: string,
+    seed: number | null,
+  ): Observable<HttpResponse<Blob>> {
+    return this.http.post('/api/printable-worksheets/pdf', {
+      preset_id: presetId,
+      ...(seed === null ? {} : { seed }),
+    }, {
+      observe: 'response',
+      responseType: 'blob',
+    });
   }
 
   submitAnswer(token: string, questionId: string, answer: string): Observable<AnswerResult> {

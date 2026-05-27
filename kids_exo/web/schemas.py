@@ -46,6 +46,18 @@ class OnlineCatalogResponse(FromDomainModel):
     plugins: tuple[OnlinePluginResponse, ...]
 
 
+class PrintableWorksheetResponse(FromDomainModel):
+    identifier: str
+    subject: str
+    category: str
+    title: str
+
+
+class PrintablePdfRequest(BaseModel):
+    preset_id: str
+    seed: int | None = None
+
+
 class PracticePreviewRequest(BaseModel):
     plugin: str
     plugin_settings: dict[str, Any] = Field(default_factory=dict)

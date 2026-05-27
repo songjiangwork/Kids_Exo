@@ -1,0 +1,76 @@
+<section class="print-shell">
+  <header class="hero">
+    <p class="eyebrow">Printable worksheet</p>
+    <h1>Print a focused practice set</h1>
+    <p class="lede">
+      Choose from the full worksheet library and download an A4 English PDF for pencil-and-paper practice.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <div class="loading"><mat-spinner diameter="32" /> Loading worksheet choices...</div>
+  } @else {
+    <div class="workspace">
+      <mat-card class="composer" appearance="outlined">
+        <mat-card-content>
+          <mat-form-field appearance="outline" class="control">
+            <mat-label>Worksheet</mat-label>
+            <mat-select [(ngModel)]="selectedPresetId">
+              @for (choice of choices(); track choice.identifier) {
+                <mat-option [value]="choice.identifier">{{ choice.title }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="control">
+            <mat-label>Seed (optional)</mat-label>
+            <input matInput type="number" [(ngModel)]="seed" />
+            <mat-hint>Use the same seed to generate the same questions again.</mat-hint>
+          </mat-form-field>
+
+          <div class="print-settings">
+            <span>A4 portrait</span>
+            <span>English</span>
+            <span>PDF download</span>
+          </div>
+
+          <button mat-flat-button class="generate-button" (click)="generatePdf()" [disabled]="generating()">
+            @if (generating()) { Generating PDF... } @else { Generate PDF }
+          </button>
+        </mat-card-content>
+      </mat-card>
+
+      <aside class="library">
+        <p class="eyebrow">Selected set</p>
+        <h2>{{ selectedChoice()?.title }}</h2>
+        <p>{{ selectedChoice()?.category }}</p>
+        <p class="note">
+          Current worksheets keep their curated warm-up and practice layout. Flexible section editing is coming later.
+        </p>
+      </aside>
+    </div>
+
+    <section class="available">
+      <p class="eyebrow">Full library</p>
+      <div class="choice-grid">
+        @for (choice of choices(); track choice.identifier) {
+          <button
+            type="button"
+            class="choice-card"
+            [class.selected]="choice.identifier === selectedPresetId"
+            (click)="selectedPresetId = choice.identifier"
+          >
+            <span>{{ choice.title }}</span>
+            <small>{{ choice.category }}</small>
+          </button>
+        }
+      </div>
+    </section>
+  }
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  <a mat-button routerLink="/manage">Back to Parent Studio</a>
+</section>

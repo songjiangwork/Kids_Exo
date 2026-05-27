@@ -35,6 +35,13 @@ h1 {
   margin: 0;
 }
 
+.print-link {
+  border-color: var(--teal);
+  color: var(--teal);
+  font-weight: 700;
+  margin-top: 24px;
+}
+
 .workspace {
   align-items: start;
   display: grid;
