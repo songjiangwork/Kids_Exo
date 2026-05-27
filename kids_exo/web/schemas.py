@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -79,6 +80,34 @@ class LearnerResponse(FromDomainModel):
     id: int
     nickname: str
     active: bool
+
+
+class SessionSummaryResponse(BaseModel):
+    id: int
+    student_token: str
+    plugin: str
+    status: str
+    total_questions: int
+    answered_questions: int
+    correct_answers: int
+    elapsed_seconds: int | None
+    created_at: datetime
+    completed_at: datetime | None
+
+
+class IncorrectQuestionResponse(BaseModel):
+    prompt: str
+    submitted_answer: int
+    expected_answer: int
+
+
+class PracticeResultsResponse(BaseModel):
+    status: str
+    total_questions: int
+    answered_questions: int
+    correct_answers: int
+    elapsed_seconds: int | None
+    incorrect_questions: tuple[IncorrectQuestionResponse, ...]
 
 
 class SavedPracticeSessionResponse(BaseModel):

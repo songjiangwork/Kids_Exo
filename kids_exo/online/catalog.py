@@ -82,12 +82,88 @@ _MULTIPLY_BY_11 = OnlinePluginDescriptor(
     ),
 )
 
+_SAME_TENS_ONES_SUM_TO_TEN = OnlinePluginDescriptor(
+    plugin="same_tens_ones_sum_to_ten",
+    subject="Math",
+    category="Mental Multiplication",
+    title="Same Tens, Ones Sum to 10",
+    description="Multiply two two-digit numbers with matching tens and ones that total 10.",
+    default_locale="en-CA",
+    locale_coverage=(LocaleCoverage("en-CA", ("practice", "warmup")),),
+    settings=(
+        PluginSettingSchema(
+            name="strategies",
+            label="Question types",
+            control="multiple_choice",
+            default=("zero_padded_ones_product", "two_digit_ones_product"),
+            options=(
+                SettingOption("zero_padded_ones_product", "Products needing a leading zero"),
+                SettingOption("two_digit_ones_product", "Two-digit ending products"),
+            ),
+        ),
+    ),
+)
+
+_SQUARE_ENDING_IN_5 = OnlinePluginDescriptor(
+    plugin="square_ending_in_5",
+    subject="Math",
+    category="Mental Multiplication",
+    title="Squares Ending in 5",
+    description="Square two-digit numbers that end in 5 using the ending-in-25 shortcut.",
+    default_locale="en-CA",
+    locale_coverage=(LocaleCoverage("en-CA", ("practice", "warmup")),),
+    settings=(
+        PluginSettingSchema(
+            name="strategies",
+            label="Question types",
+            control="multiple_choice",
+            default=("ending_in_5_square",),
+            options=(SettingOption("ending_in_5_square", "Squares ending in 5"),),
+        ),
+    ),
+)
+
+_MULTIPLY_BY_NINES = OnlinePluginDescriptor(
+    plugin="multiply_by_9_99_999",
+    subject="Math",
+    category="Mental Multiplication",
+    title="Multiply by 9, 99, and 999",
+    description="Use a round-number subtraction shortcut to multiply by strings of nines.",
+    default_locale="en-CA",
+    locale_coverage=(LocaleCoverage("en-CA", ("practice", "warmup")),),
+    settings=(
+        PluginSettingSchema(
+            name="multiplicand_digits",
+            label="Number of digits",
+            control="single_choice",
+            default=(2,),
+            options=(SettingOption(2, "Two digits"),),
+        ),
+        PluginSettingSchema(
+            name="strategies",
+            label="Question types",
+            control="multiple_choice",
+            default=("times_9", "times_99", "times_999"),
+            options=(
+                SettingOption("times_9", "Multiply by 9"),
+                SettingOption("times_99", "Multiply by 99"),
+                SettingOption("times_999", "Multiply by 999"),
+            ),
+        ),
+    ),
+)
+
 _ONLINE_CATALOG = OnlineCatalog(
     default_locale="en-CA",
     question_counts=(10, 20, 30),
     feedback_modes=("immediate", "deferred"),
     show_timer_configurable=True,
-    plugins=(_MULTIPLY_BY_11,),
+    plugins=(
+        _MULTIPLY_BY_11,
+        _SAME_TENS_ONES_SUM_TO_TEN,
+        _SQUARE_ENDING_IN_5,
+        _MULTIPLY_BY_NINES,
+    ),
 )
 
 

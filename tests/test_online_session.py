@@ -70,6 +70,42 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "10, 20, or 30"):
             create_practice_session(self._request(question_count=12))
 
+    def test_each_added_online_plugin_generates_integer_answer_questions(self) -> None:
+        requests = (
+            OnlineSessionRequest(
+                plugin="same_tens_ones_sum_to_ten",
+                plugin_settings={"strategies": ["two_digit_ones_product"]},
+                question_count=10,
+                seed=12,
+            ),
+            OnlineSessionRequest(
+                plugin="square_ending_in_5",
+                plugin_settings={"strategies": ["ending_in_5_square"]},
+                question_count=10,
+                seed=12,
+            ),
+            OnlineSessionRequest(
+                plugin="multiply_by_9_99_999",
+                plugin_settings={
+                    "multiplicand_digits": [2],
+                    "strategies": ["times_9", "times_99", "times_999"],
+                },
+                question_count=10,
+                seed=12,
+            ),
+        )
+
+        for request in requests:
+            with self.subTest(plugin=request.plugin):
+                session = create_practice_session(request)
+                first = session.questions[0]
+                self.assertEqual(len(session.questions), 10)
+                self.assertIn("= __________", first.prompt)
+                self.assertTrue(
+                    session.evaluate_answer(first.identifier, str(first.expected_answer)).is_correct
+                )
+                self.assertEqual(session.presentation.heading.locale, "en-CA")
+
 
 if __name__ == "__main__":
     unittest.main()

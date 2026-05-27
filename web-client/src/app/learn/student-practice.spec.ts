@@ -62,4 +62,37 @@ describe('StudentPractice', () => {
 
     expect(fixture.nativeElement.textContent).toContain('Nice work. That is correct.');
   });
+
+  it('loads server results after the last answered question', async () => {
+    const { fixture, http } = await createFixture();
+    const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
+    input.value = '0';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('.check-button') as HTMLButtonElement).click();
+    http.expectOne('/api/student/sessions/student-token/questions/question-1/attempts').flush({
+      normalized_answer: 0,
+      is_correct: false,
+    });
+    fixture.detectChanges();
+
+    (fixture.nativeElement.querySelector('.next-button') as HTMLButtonElement).click();
+    http.expectOne('/api/student/sessions/student-token/results').flush({
+      status: 'completed',
+      total_questions: 1,
+      answered_questions: 1,
+      correct_answers: 0,
+      elapsed_seconds: 12,
+      incorrect_questions: [
+        { prompt: '42 x 11 = __________', submitted_answer: 0, expected_answer: 462 },
+      ],
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('0 / 1 correct');
+    expect(fixture.nativeElement.textContent).toContain('42 x 11');
+    expect(fixture.nativeElement.textContent).toContain('Your answer: 0');
+    expect(fixture.nativeElement.textContent).toContain('Answer: 462');
+  });
 });

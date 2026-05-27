@@ -13,9 +13,12 @@ from kids_exo.web.schemas import (
     LearnerCreateRequest,
     LearnerResponse,
     OnlineCatalogResponse,
+    IncorrectQuestionResponse,
+    PracticeResultsResponse,
     PracticePreviewRequest,
     PracticePreviewResponse,
     SavedPracticeSessionResponse,
+    SessionSummaryResponse,
     StudentQuestionResponse,
     StudentSessionResponse,
 )
@@ -63,6 +66,14 @@ def create_app(repository: PracticeRepository | None = None) -> FastAPI:
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    @app.get("/api/learners", response_model=list[LearnerResponse])
+    def list_learners() -> list[LearnerResponse]:
+        storage = _require_repository(repository)
+        return [
+            LearnerResponse.model_validate(learner)
+            for learner in storage.list_learners()
+        ]
+
     @app.post(
         "/api/learners/{learner_id}/sessions",
         response_model=SavedPracticeSessionResponse,
@@ -85,12 +96,43 @@ def create_app(repository: PracticeRepository | None = None) -> FastAPI:
         return _saved_session_response(saved)
 
     @app.get(
+        "/api/learners/{learner_id}/sessions",
+        response_model=list[SessionSummaryResponse],
+    )
+    def list_learner_sessions(learner_id: int) -> list[SessionSummaryResponse]:
+        storage = _require_repository(repository)
+        try:
+            return [
+                _session_summary_response(saved)
+                for saved in storage.list_sessions_for_learner(learner_id)
+            ]
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get(
+        "/api/learners/{learner_id}/sessions/{session_id}/results",
+        response_model=PracticeResultsResponse,
+    )
+    def get_parent_session_results(
+        learner_id: int,
+        session_id: int,
+    ) -> PracticeResultsResponse:
+        storage = _require_repository(repository)
+        try:
+            saved = storage.get_results_for_learner(learner_id, session_id)
+        except ValueError as exc:
+            status_code = 409 if "not completed" in str(exc) else 404
+            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
+        return _practice_results_response(saved)
+
+    @app.get(
         "/api/student/sessions/{token}",
         response_model=StudentSessionResponse,
     )
     def get_student_session(token: str) -> StudentSessionResponse:
         storage = _require_repository(repository)
         try:
+            storage.start_student_session(token)
             saved = storage.get_session_by_student_token(token)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -101,6 +143,19 @@ def create_app(repository: PracticeRepository | None = None) -> FastAPI:
             show_timer=saved.show_timer,
             questions=_student_questions(saved),
         )
+
+    @app.get(
+        "/api/student/sessions/{token}/results",
+        response_model=PracticeResultsResponse,
+    )
+    def get_student_session_results(token: str) -> PracticeResultsResponse:
+        storage = _require_repository(repository)
+        try:
+            saved = storage.get_completed_results_by_student_token(token)
+        except ValueError as exc:
+            status_code = 409 if "not completed" in str(exc) else 404
+            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
+        return _practice_results_response(saved)
 
     @app.post(
         "/api/student/sessions/{token}/questions/{question_identifier}/attempts",
@@ -173,6 +228,65 @@ def _saved_session_response(saved_session) -> SavedPracticeSessionResponse:
         localization_fallback_keys=tuple(saved_session.localization_fallback_keys),
         questions=_student_questions(saved_session),
     )
+
+
+def _elapsed_seconds(saved_session) -> int | None:
+    if saved_session.started_at is None or saved_session.completed_at is None:
+        return None
+    return max(0, int((saved_session.completed_at - saved_session.started_at).total_seconds()))
+
+
+def _session_summary_response(saved_session) -> SessionSummaryResponse:
+    attempts = [
+        question.attempts[0]
+        for question in saved_session.questions
+        if question.attempts
+    ]
+    status = _display_status(saved_session, attempts)
+    return SessionSummaryResponse(
+        id=saved_session.id,
+        student_token=saved_session.student_token,
+        plugin=saved_session.plugin,
+        status=status,
+        total_questions=len(saved_session.questions),
+        answered_questions=len(attempts),
+        correct_answers=sum(attempt.is_correct for attempt in attempts),
+        elapsed_seconds=_elapsed_seconds(saved_session),
+        created_at=saved_session.created_at,
+        completed_at=saved_session.completed_at,
+    )
+
+
+def _practice_results_response(saved_session) -> PracticeResultsResponse:
+    attempts = [
+        (question, question.attempts[0])
+        for question in saved_session.questions
+        if question.attempts
+    ]
+    return PracticeResultsResponse(
+        status=_display_status(saved_session, [attempt for _, attempt in attempts]),
+        total_questions=len(saved_session.questions),
+        answered_questions=len(attempts),
+        correct_answers=sum(attempt.is_correct for _, attempt in attempts),
+        elapsed_seconds=_elapsed_seconds(saved_session),
+        incorrect_questions=tuple(
+            IncorrectQuestionResponse(
+                prompt=question.prompt,
+                submitted_answer=attempt.normalized_answer,
+                expected_answer=question.expected_answer,
+            )
+            for question, attempt in attempts
+            if not attempt.is_correct
+        ),
+    )
+
+
+def _display_status(saved_session, attempts) -> str:
+    if saved_session.questions and len(attempts) == len(saved_session.questions):
+        return "completed"
+    if attempts:
+        return "in_progress"
+    return saved_session.status
 
 
 def _default_repository() -> PracticeRepository:

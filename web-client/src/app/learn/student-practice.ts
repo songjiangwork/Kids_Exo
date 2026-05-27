@@ -9,7 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { PracticeApi, StudentSession } from '../core/practice-api';
+import { PracticeApi, PracticeResults, StudentSession } from '../core/practice-api';
 
 @Component({
   selector: 'app-student-practice',
@@ -34,7 +34,7 @@ export class StudentPractice implements OnInit, OnDestroy {
   protected readonly index = signal(0);
   protected readonly feedback = signal<'correct' | 'incorrect' | 'saved' | null>(null);
   protected readonly complete = signal(false);
-  protected readonly correctCount = signal(0);
+  protected readonly results = signal<PracticeResults | null>(null);
   protected readonly elapsedSeconds = signal(0);
   protected answer: string | number | null = '';
 
@@ -93,7 +93,6 @@ export class StudentPractice implements OnInit, OnDestroy {
       next: (result) => {
         if (result.is_correct === true) {
           this.feedback.set('correct');
-          this.correctCount.update((count) => count + 1);
         } else if (result.is_correct === false) {
           this.feedback.set('incorrect');
         } else {
@@ -111,10 +110,21 @@ export class StudentPractice implements OnInit, OnDestroy {
   protected nextQuestion(): void {
     const total = this.session()?.questions.length ?? 0;
     if (this.index() + 1 >= total) {
-      this.complete.set(true);
       if (this.timer) {
         clearInterval(this.timer);
       }
+      this.submitting.set(true);
+      this.api.studentResults(this.token).subscribe({
+        next: (results) => {
+          this.results.set(results);
+          this.complete.set(true);
+          this.submitting.set(false);
+        },
+        error: () => {
+          this.error.set('Your results could not be loaded.');
+          this.submitting.set(false);
+        },
+      });
       return;
     }
     this.index.update((value) => value + 1);
@@ -123,7 +133,14 @@ export class StudentPractice implements OnInit, OnDestroy {
   }
 
   protected timerText(): string {
-    const seconds = this.elapsedSeconds();
+    return this.formatSeconds(this.elapsedSeconds());
+  }
+
+  protected resultTimeText(): string {
+    return this.formatSeconds(this.results()?.elapsed_seconds ?? 0);
+  }
+
+  private formatSeconds(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
     return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
   }

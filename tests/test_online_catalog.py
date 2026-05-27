@@ -5,7 +5,7 @@ from kids_exo.online.session import OnlineSessionRequest, create_practice_sessio
 
 
 class OnlinePluginCatalogTests(unittest.TestCase):
-    def test_catalog_exposes_mvp_session_options_and_first_plugin(self) -> None:
+    def test_catalog_exposes_initial_online_mental_multiplication_plugins(self) -> None:
         catalog = get_online_catalog()
 
         self.assertEqual(catalog.default_locale, "en-CA")
@@ -14,7 +14,12 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         self.assertTrue(catalog.show_timer_configurable)
         self.assertEqual(
             tuple(plugin.plugin for plugin in catalog.plugins),
-            ("multiply_by_11",),
+            (
+                "multiply_by_11",
+                "same_tens_ones_sum_to_ten",
+                "square_ending_in_5",
+                "multiply_by_9_99_999",
+            ),
         )
 
     def test_multiply_by_11_schema_exposes_only_parent_configurable_settings(self) -> None:
@@ -69,6 +74,20 @@ class OnlinePluginCatalogTests(unittest.TestCase):
                     question_count=10,
                 )
             )
+
+    def test_new_online_plugins_expose_only_their_meaningful_settings(self) -> None:
+        same_tens = get_online_plugin("same_tens_ones_sum_to_ten")
+        squares = get_online_plugin("square_ending_in_5")
+        nines = get_online_plugin("multiply_by_9_99_999")
+
+        self.assertEqual(same_tens.title, "Same Tens, Ones Sum to 10")
+        self.assertEqual(tuple(setting.name for setting in same_tens.settings), ("strategies",))
+        self.assertEqual(squares.title, "Squares Ending in 5")
+        self.assertEqual(tuple(setting.name for setting in squares.settings), ("strategies",))
+        self.assertEqual(
+            tuple(setting.name for setting in nines.settings),
+            ("multiplicand_digits", "strategies"),
+        )
 
 
 if __name__ == "__main__":

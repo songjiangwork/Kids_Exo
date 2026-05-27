@@ -60,6 +60,40 @@ export interface SavedSession {
   questions: StudentQuestion[];
 }
 
+export interface Learner {
+  id: number;
+  nickname: string;
+  active: boolean;
+}
+
+export interface SessionSummary {
+  id: number;
+  student_token: string;
+  plugin: string;
+  status: string;
+  total_questions: number;
+  answered_questions: number;
+  correct_answers: number;
+  elapsed_seconds: number | null;
+  created_at?: string;
+  completed_at?: string | null;
+}
+
+export interface IncorrectQuestion {
+  prompt: string;
+  submitted_answer: number;
+  expected_answer: number;
+}
+
+export interface PracticeResults {
+  status: string;
+  total_questions: number;
+  answered_questions: number;
+  correct_answers: number;
+  elapsed_seconds: number | null;
+  incorrect_questions: IncorrectQuestion[];
+}
+
 export interface StudentSession {
   plugin: string;
   requested_locale: string;
@@ -81,8 +115,12 @@ export class PracticeApi {
     return this.http.get<OnlineCatalog>('/api/practice-plugins');
   }
 
-  createLearner(nickname: string): Observable<{ id: number; nickname: string }> {
-    return this.http.post<{ id: number; nickname: string }>('/api/learners', { nickname });
+  createLearner(nickname: string): Observable<Learner> {
+    return this.http.post<Learner>('/api/learners', { nickname });
+  }
+
+  learners(): Observable<Learner[]> {
+    return this.http.get<Learner[]>('/api/learners');
   }
 
   createSession(learnerId: number, request: PracticeRequest): Observable<SavedSession> {
@@ -91,6 +129,18 @@ export class PracticeApi {
 
   studentSession(token: string): Observable<StudentSession> {
     return this.http.get<StudentSession>(`/api/student/sessions/${token}`);
+  }
+
+  learnerSessions(learnerId: number): Observable<SessionSummary[]> {
+    return this.http.get<SessionSummary[]>(`/api/learners/${learnerId}/sessions`);
+  }
+
+  parentResults(learnerId: number, sessionId: number): Observable<PracticeResults> {
+    return this.http.get<PracticeResults>(`/api/learners/${learnerId}/sessions/${sessionId}/results`);
+  }
+
+  studentResults(token: string): Observable<PracticeResults> {
+    return this.http.get<PracticeResults>(`/api/student/sessions/${token}/results`);
   }
 
   submitAnswer(token: string, questionId: string, answer: string): Observable<AnswerResult> {

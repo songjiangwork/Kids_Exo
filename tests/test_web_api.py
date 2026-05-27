@@ -28,12 +28,38 @@ class PracticeWebApiTests(unittest.TestCase):
         catalog = response.json()
         self.assertEqual(catalog["question_counts"], [10, 20, 30])
         self.assertEqual(catalog["feedback_modes"], ["immediate", "deferred"])
+        self.assertEqual(
+            [plugin["plugin"] for plugin in catalog["plugins"]],
+            [
+                "multiply_by_11",
+                "same_tens_ones_sum_to_ten",
+                "square_ending_in_5",
+                "multiply_by_9_99_999",
+            ],
+        )
         plugin = catalog["plugins"][0]
         self.assertEqual(plugin["plugin"], "multiply_by_11")
         self.assertEqual(
             [setting["name"] for setting in plugin["settings"]],
             ["multiplicand_digits", "strategies"],
         )
+
+    def test_parent_can_create_a_session_for_an_added_online_plugin(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+
+        response = self.client.post(
+            f"/api/learners/{learner['id']}/sessions",
+            json={
+                "plugin": "square_ending_in_5",
+                "plugin_settings": {"strategies": ["ending_in_5_square"]},
+                "question_count": 10,
+                "seed": 15,
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["plugin"], "square_ending_in_5")
+        self.assertIn(" x ", response.json()["questions"][0]["prompt"])
 
     def test_preview_endpoint_returns_student_safe_questions_and_fallback_warning(self) -> None:
         response = self.client.post(
@@ -97,6 +123,29 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(student.status_code, 200)
         self.assertEqual(len(student.json()["questions"]), 10)
         self.assertNotIn("expected_answer", student.text)
+
+    def test_parent_can_list_learners_and_their_session_history(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        created = self.client.post(
+            f"/api/learners/{learner['id']}/sessions",
+            json={
+                "plugin": "multiply_by_11",
+                "plugin_settings": {"multiplicand_digits": [2]},
+                "question_count": 10,
+                "seed": 23,
+            },
+        ).json()
+
+        learners = self.client.get("/api/learners")
+        history = self.client.get(f"/api/learners/{learner['id']}/sessions")
+
+        self.assertEqual(learners.status_code, 200)
+        self.assertEqual(learners.json()[0]["nickname"], "Alex")
+        self.assertEqual(history.status_code, 200)
+        self.assertEqual(history.json()[0]["id"], created["id"])
+        self.assertEqual(history.json()[0]["status"], "created")
+        self.assertEqual(history.json()[0]["total_questions"], 10)
+        self.assertEqual(history.json()[0]["answered_questions"], 0)
 
     def test_student_can_submit_a_saved_question_answer(self) -> None:
         learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
@@ -165,6 +214,55 @@ class PracticeWebApiTests(unittest.TestCase):
 
         self.assertEqual(repeated.status_code, 422)
         self.assertIn("already submitted", repeated.json()["detail"])
+
+    def test_finished_session_reveals_student_results_and_parent_review(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        created = self.client.post(
+            f"/api/learners/{learner['id']}/sessions",
+            json={
+                "plugin": "multiply_by_11",
+                "plugin_settings": {"multiplicand_digits": [2]},
+                "question_count": 10,
+                "feedback_mode": "deferred",
+                "show_timer": True,
+                "seed": 23,
+            },
+        ).json()
+        token = created["student_token"]
+        self.client.get(f"/api/student/sessions/{token}")
+
+        incomplete = self.client.get(f"/api/student/sessions/{token}/results")
+        self.assertEqual(incomplete.status_code, 409)
+
+        for position, question in enumerate(created["questions"]):
+            first_number = int(question["prompt"].split(" x ")[0])
+            correct_answer = first_number * 11
+            submitted_answer = correct_answer if position else 0
+            response = self.client.post(
+                f"/api/student/sessions/{token}/questions/{question['identifier']}/attempts",
+                json={"answer": str(submitted_answer)},
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertIsNone(response.json()["is_correct"])
+
+        student_results = self.client.get(f"/api/student/sessions/{token}/results")
+        parent_results = self.client.get(
+            f"/api/learners/{learner['id']}/sessions/{created['id']}/results"
+        )
+        history = self.client.get(f"/api/learners/{learner['id']}/sessions").json()
+
+        self.assertEqual(student_results.status_code, 200)
+        results = student_results.json()
+        self.assertEqual(results["status"], "completed")
+        self.assertEqual(results["correct_answers"], 9)
+        self.assertEqual(results["answered_questions"], 10)
+        self.assertEqual(len(results["incorrect_questions"]), 1)
+        self.assertEqual(results["incorrect_questions"][0]["submitted_answer"], 0)
+        self.assertIn("expected_answer", results["incorrect_questions"][0])
+        self.assertIsNotNone(results["elapsed_seconds"])
+        self.assertEqual(parent_results.json(), results)
+        self.assertEqual(history[0]["status"], "completed")
+        self.assertEqual(history[0]["correct_answers"], 9)
 
 
 if __name__ == "__main__":

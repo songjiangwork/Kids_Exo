@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload, sessionmaker
@@ -25,6 +26,14 @@ class PracticeRepository:
             database_session.add(learner)
             database_session.commit()
             return learner
+
+    def list_learners(self) -> list[LearnerEntity]:
+        with self._session_factory() as database_session:
+            return list(
+                database_session.scalars(
+                    select(LearnerEntity).order_by(LearnerEntity.nickname, LearnerEntity.id)
+                )
+            )
 
     def create_practice_session(
         self,
@@ -68,11 +77,77 @@ class PracticeRepository:
             result = database_session.scalars(
                 select(PracticeSessionEntity)
                 .where(PracticeSessionEntity.student_token == token)
-                .options(selectinload(PracticeSessionEntity.questions))
+                .options(
+                    selectinload(PracticeSessionEntity.questions).selectinload(
+                        QuestionInstanceEntity.attempts
+                    )
+                )
             ).one_or_none()
             if result is None:
                 raise ValueError("Unknown student session token")
             return result
+
+    def start_student_session(self, token: str) -> PracticeSessionEntity:
+        with self._session_factory() as database_session:
+            practice_session = database_session.scalars(
+                select(PracticeSessionEntity).where(
+                    PracticeSessionEntity.student_token == token
+                )
+            ).one_or_none()
+            if practice_session is None:
+                raise ValueError("Unknown student session token")
+            if practice_session.status == "created":
+                practice_session.status = "in_progress"
+                practice_session.started_at = datetime.now(timezone.utc)
+                database_session.commit()
+            return practice_session
+
+    def list_sessions_for_learner(self, learner_id: int) -> list[PracticeSessionEntity]:
+        with self._session_factory() as database_session:
+            if database_session.get(LearnerEntity, learner_id) is None:
+                raise ValueError(f"Unknown learner: {learner_id}")
+            return list(
+                database_session.scalars(
+                    select(PracticeSessionEntity)
+                    .where(PracticeSessionEntity.learner_id == learner_id)
+                    .options(
+                        selectinload(PracticeSessionEntity.questions).selectinload(
+                            QuestionInstanceEntity.attempts
+                        )
+                    )
+                    .order_by(PracticeSessionEntity.id.desc())
+                )
+            )
+
+    def get_results_for_learner(
+        self,
+        learner_id: int,
+        session_id: int,
+    ) -> PracticeSessionEntity:
+        with self._session_factory() as database_session:
+            result = database_session.scalars(
+                select(PracticeSessionEntity)
+                .where(
+                    PracticeSessionEntity.id == session_id,
+                    PracticeSessionEntity.learner_id == learner_id,
+                )
+                .options(
+                    selectinload(PracticeSessionEntity.questions).selectinload(
+                        QuestionInstanceEntity.attempts
+                    )
+                )
+            ).one_or_none()
+            if result is None:
+                raise ValueError("Unknown practice session")
+            if not self._is_complete(result):
+                raise ValueError("Practice session is not completed")
+            return result
+
+    def get_completed_results_by_student_token(self, token: str) -> PracticeSessionEntity:
+        result = self.get_session_by_student_token(token)
+        if not self._is_complete(result):
+            raise ValueError("Practice session is not completed")
+        return result
 
     def submit_answer(
         self,
@@ -85,15 +160,25 @@ class PracticeRepository:
         except ValueError as exc:
             raise ValueError("Submitted answer must be an integer") from exc
         with self._session_factory() as database_session:
-            question = database_session.scalars(
-                select(QuestionInstanceEntity)
-                .join(QuestionInstanceEntity.practice_session)
-                .where(
-                    PracticeSessionEntity.student_token == token,
-                    QuestionInstanceEntity.public_identifier == question_identifier,
+            practice_session = database_session.scalars(
+                select(PracticeSessionEntity)
+                .where(PracticeSessionEntity.student_token == token)
+                .options(
+                    selectinload(PracticeSessionEntity.questions).selectinload(
+                        QuestionInstanceEntity.attempts
+                    )
                 )
-                .options(selectinload(QuestionInstanceEntity.attempts))
             ).one_or_none()
+            if practice_session is None:
+                raise ValueError("Unknown student session token")
+            question = next(
+                (
+                    saved_question
+                    for saved_question in practice_session.questions
+                    if saved_question.public_identifier == question_identifier
+                ),
+                None,
+            )
             if question is None:
                 raise ValueError("Unknown student question")
             if question.attempts:
@@ -106,5 +191,20 @@ class PracticeRepository:
                 is_correct=normalized_answer == question.expected_answer,
             )
             database_session.add(attempt)
+            if practice_session.status == "created":
+                practice_session.status = "in_progress"
+                practice_session.started_at = datetime.now(timezone.utc)
+            if all(
+                saved_question.attempts or saved_question.id == question.id
+                for saved_question in practice_session.questions
+            ):
+                practice_session.status = "completed"
+                practice_session.completed_at = datetime.now(timezone.utc)
             database_session.commit()
             return attempt
+
+    @staticmethod
+    def _is_complete(practice_session: PracticeSessionEntity) -> bool:
+        return bool(practice_session.questions) and all(
+            question.attempts for question in practice_session.questions
+        )

@@ -8,7 +8,7 @@ from sqlalchemy import inspect
 
 from kids_exo.online.session import OnlineSessionRequest, create_practice_session
 from kids_exo.persistence.database import build_engine, build_session_factory
-from kids_exo.persistence.models import Base
+from kids_exo.persistence.models import Base, PracticeSessionEntity
 from kids_exo.persistence.repository import PracticeRepository
 
 
@@ -16,7 +16,8 @@ class PracticeRepositoryTests(unittest.TestCase):
     def setUp(self) -> None:
         self.engine = build_engine("sqlite+pysqlite:///:memory:")
         Base.metadata.create_all(self.engine)
-        self.repository = PracticeRepository(build_session_factory(self.engine))
+        self.session_factory = build_session_factory(self.engine)
+        self.repository = PracticeRepository(self.session_factory)
 
     def _snapshot(self):
         return create_practice_session(
@@ -69,6 +70,57 @@ class PracticeRepositoryTests(unittest.TestCase):
         self.assertTrue(attempt.is_correct)
         self.assertEqual(attempt.normalized_answer, question.expected_answer)
 
+    def test_tracks_session_progress_and_lists_learner_history(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        self.repository.create_practice_session(
+            learner.id,
+            self._snapshot(),
+            student_token="student-token",
+        )
+        self.repository.start_student_session("student-token")
+        session = self.repository.get_session_by_student_token("student-token")
+
+        for question in session.questions:
+            self.repository.submit_answer(
+                "student-token",
+                question.public_identifier,
+                str(question.expected_answer),
+            )
+
+        history = self.repository.list_sessions_for_learner(learner.id)
+        completed = self.repository.get_completed_results_by_student_token("student-token")
+
+        self.assertEqual(self.repository.list_learners()[0].nickname, "Alex")
+        self.assertEqual(history[0].status, "completed")
+        self.assertIsNotNone(history[0].started_at)
+        self.assertIsNotNone(history[0].completed_at)
+        self.assertEqual(completed.id, history[0].id)
+
+    def test_completed_results_remain_available_for_sessions_answered_before_timing_upgrade(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        self.repository.create_practice_session(
+            learner.id,
+            self._snapshot(),
+            student_token="legacy-student-token",
+        )
+        session = self.repository.get_session_by_student_token("legacy-student-token")
+        for question in session.questions:
+            self.repository.submit_answer(
+                "legacy-student-token",
+                question.public_identifier,
+                str(question.expected_answer),
+            )
+        with self.session_factory() as database_session:
+            legacy_session = database_session.get(PracticeSessionEntity, session.id)
+            legacy_session.status = "created"
+            legacy_session.started_at = None
+            legacy_session.completed_at = None
+            database_session.commit()
+
+        results = self.repository.get_completed_results_by_student_token("legacy-student-token")
+
+        self.assertEqual(results.id, session.id)
+
 
 class AlembicMigrationTests(unittest.TestCase):
     def test_initial_migration_creates_online_practice_tables(self) -> None:
@@ -87,6 +139,13 @@ class AlembicMigrationTests(unittest.TestCase):
                 {"learners", "practice_sessions", "question_instances", "response_attempts"}
                 <= tables
             )
+            session_columns = {
+                column["name"]
+                for column in inspect(
+                    build_engine(f"sqlite+pysqlite:///{database_path}")
+                ).get_columns("practice_sessions")
+            }
+            self.assertTrue({"created_at", "started_at", "completed_at"} <= session_columns)
 
 
 if __name__ == "__main__":

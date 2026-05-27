@@ -1,6 +1,7 @@
+from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import Boolean, ForeignKey, Integer, JSON, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, JSON, String, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -34,6 +35,12 @@ class PracticeSessionEntity(Base):
     seed: Mapped[int | None] = mapped_column(Integer, nullable=True)
     localization_fallback_keys: Mapped[list[str]] = mapped_column(JSON)
     status: Mapped[str] = mapped_column(String(20), default="created")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     learner: Mapped[LearnerEntity] = relationship(back_populates="practice_sessions")
     questions: Mapped[list["QuestionInstanceEntity"]] = relationship(
         back_populates="practice_session",
@@ -60,6 +67,7 @@ class QuestionInstanceEntity(Base):
     attempts: Mapped[list["ResponseAttemptEntity"]] = relationship(
         back_populates="question",
         cascade="all, delete-orphan",
+        order_by="ResponseAttemptEntity.attempt_number",
     )
 
 

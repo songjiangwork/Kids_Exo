@@ -3,6 +3,7 @@ import random
 from typing import Any
 
 from kids_exo.config import SectionSettings
+from kids_exo.localization import DEFAULT_LOCALE, LocalizedPresentation, LocalizedText
 from kids_exo.online.catalog import (
     get_online_catalog,
     get_online_plugin,
@@ -45,7 +46,7 @@ def create_practice_session(request: OnlineSessionRequest) -> PracticeSessionSna
         random.Random(request.seed),
         set(),
     )
-    presentation = plugin.localized_presentation("practice", request.requested_locale)
+    presentation = _localized_practice_presentation(plugin, request.requested_locale)
     questions = tuple(
         OnlineQuestionSnapshot(
             identifier=f"question-{position}",
@@ -75,3 +76,18 @@ def _validate_request(request: OnlineSessionRequest) -> None:
         raise ValueError("Online MVP question_count must be 10, 20, or 30")
     if request.feedback_mode not in catalog.feedback_modes:
         raise ValueError("feedback_mode must be immediate or deferred")
+
+
+def _localized_practice_presentation(plugin, requested_locale: str) -> LocalizedPresentation:
+    localized_presentation = getattr(plugin, "localized_presentation", None)
+    if localized_presentation is not None:
+        return localized_presentation("practice", requested_locale)
+    heading, instructions = plugin.presentation("practice", DEFAULT_LOCALE)
+    used_fallback = requested_locale != DEFAULT_LOCALE
+    return LocalizedPresentation(
+        heading=LocalizedText(heading, DEFAULT_LOCALE, used_fallback),
+        instructions=tuple(
+            LocalizedText(instruction, DEFAULT_LOCALE, used_fallback)
+            for instruction in instructions
+        ),
+    )

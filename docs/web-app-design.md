@@ -12,9 +12,9 @@
 | 练习配置模型 | 内置模板提供起点，Parent 可选择题型并配置插件参数；session 保存最终快照 |
 | 语言策略 | 默认 `en-CA`；plugin 可携带部分 locale 资源；缺失文案逐 key 回退至英文并记录 |
 | 已有基础 | Python 题型插件、preset 组卷、混合练习、PDF 生成与分页 |
-| Phase 1 当前进展 | `multiply_by_11` 已作为首条在线题型切片：session 快照、服务端整数判分、安全 Student view、plugin locale fallback，以及可供 Web UI/API 使用的公开 settings schema/catalog 已建立 |
-| Phase 2 当前进展 | FastAPI 已提供 catalog、preview 与保存/答题 API；SQLAlchemy repository 与首个 Alembic SQLite migration 已覆盖 learner、session、question 和 attempt |
-| Phase 3 当前进展 | Angular Material 可视原型已提供 Parent Studio 与 Student Practice 页面，接入真实 session API，并使用 lazy feature routes 与 mobile-first 布局 |
+| Phase 1 当前进展 | 在线单题型已扩展至 `multiply_by_11`、`same_tens_ones_sum_to_ten`、`square_ending_in_5` 与 `multiply_by_9_99_999`：session 快照、服务端整数判分、安全 Student view、locale fallback 与公开 settings schema/catalog 已建立 |
+| Phase 2 当前进展 | FastAPI 已提供 catalog、保存/答题、learner session history 与 results API；SQLAlchemy repository 与 Alembic migrations 已覆盖 learner、session lifecycle、question 和 attempt |
+| Phase 3 当前进展 | Angular Material 原型已提供 Parent Studio 与 Student Practice 页面、完成成绩和错题复盘、近期 session 列表，并使用 lazy feature routes 与 mobile-first 布局 |
 
 本文档描述从当前 PDF 生成器演进到在线练习应用的产品边界、数据模型、技术结构和分阶段路线。它不是立即实施清单；在动手编码前，我们应先用它确认第一条用户流程和需要扩展的插件契约。
 
@@ -1065,7 +1065,7 @@ Student completes session -> Parent sees score and time
 - 定义 plugin locale resource 契约、逐 key fallback resolver 与 session localization snapshot。
 - 以测试驱动构建 session 生成逻辑。
 
-当前已完成首条切片：`multiply_by_11` 可通过 online catalog 向未来 UI 暴露两位/三位与进位策略设置；仅属于生成器内部的设置不会成为 Parent 请求的公共字段。
+当前已完成首批单项切片：`multiply_by_11`、`same_tens_ones_sum_to_ten`、`square_ending_in_5` 与 `multiply_by_9_99_999` 可通过 online catalog 暴露各自设置；Parent UI 根据 schema 仅发送所选 plugin 公开的字段，生成器内部设置不会成为公共请求字段。
 
 ### Phase 2：FastAPI + SQLAlchemy/Alembic + SQLite 最小后端
 
@@ -1084,17 +1084,19 @@ Student completes session -> Parent sees score and time
 
 目标：第一次在浏览器中完成真实练习。
 
-- 已完成首版：Parent 创建 learner、选择 `Multiply by 11` 并配置题量/数字范围/反馈/计时。
+- 已完成首版：Parent 创建或选择 learner，从首批四个在线速算题型中选择一项，并配置该题型开放的选项、题量、反馈和计时。
 - 已完成首版：Student 以一题一屏完成整数速算 session。
 - 已完成首版：根据设置显示即时或延迟反馈、进度、可选计时与基础完成页。
 - 以默认英文跑通第一条流程，并使界面/请求模型可接受 locale 与展示英文 fallback 提示。
 - 已完成基础实现：使用独立 Parent/Student 视觉布局、mobile-first 响应式样式与 lazy feature routes；仍需在真实手机/平板上试用验证。
-- Parent 查看单次结果和近期历史。
+- 已完成首版：Parent 查看单次结果、错题复盘和 learner 的近期 session 历史。
 
 ### Phase 4：家庭体验增强
 
 候选功能：
 
+- 新增独立 `/manage/learners` 管理页面，以表格完成 learner 的查看、新建、重命名和停用；避免继续在 session composer 内承载档案管理。
+- 新增 `/manage/learners/:id` 详情页面，承载该 learner 的总体成绩与统计数据；统计指标、筛选区间与可视化方案后续讨论后确定。
 - 保存常用练习配置。
 - 技能维度的趋势展示。
 - 从错题一键生成巩固训练。
@@ -1136,12 +1138,12 @@ Student completes session -> Parent sees score and time
 
 | 主题 | 当前方向 |
 | --- | --- |
-| 首批开放 plugin | 选择一到两个现有整数速算题型作为第一条垂直切片。 |
+| 后续开放 plugin | 首批四个在线题型上线后，再依据孩子练习节奏选择 `multiply_by_5_25_125`、接近整十/整百或平方差等题型。 |
 | settings schema | 明确每种题型可开放的参数、限制和 UI 控件；例如乘以 `11` 可支持至最多 5 位被乘数。 |
 | CLI 配置增强 | 后续让命令行也读取同一 plugin schema，以便调整题型、题量、数位、负数或小数等选项。 |
 | 混合练习 | 单题型 session 稳定后允许组合多个插件并设置各题量。 |
 | 挑战模式 | 后续增加无限接题、答错终止、最大连续正确数与用时记录。 |
-| 统计报告 | 积累 session 后增加技能成绩趋势和时间表现分析。 |
+| Learner 管理与统计页面 | 下一阶段增加独立 learner CRUD 表格页和 learner detail 页面；总体成绩、题型维度统计与时间表现指标后续确认。 |
 | 大模型辅助 | 后续单独设计家长可控的错题解释功能，判分仍由确定性 evaluator 负责。 |
 | 额外 locale 上线顺序 | MVP 可只发布英文内容；在开放 `zh-CN` 等 UI locale 前确认核心 shell 翻译质量和常用 plugin fallback 体验。 |
 
