@@ -42,3 +42,19 @@
 - 输出渲染器的专属设置（如 PDF 纸张大小）不进入题型或生成出的数学内容模型。
 - 首版允许使用固定的命名格式，未来再扩展为安全的可配置模板语言。
 - 首版优先使用 Python 标准库实现，减少运行和安装门槛；需要引入依赖时再明确记录原因。
+
+## 网页后端持久化约定
+
+- 网页原型的数据库访问采用 `SQLAlchemy 2.0 ORM`；所有 CRUD 通过 ORM entity、relationship、session 与 repository 完成。
+- 数据库 schema 创建与升级采用 `Alembic`；不使用应用启动时隐式建表或手工修改数据库作为正式迁移方式。
+- 除存在绝对充分理由、已经单独讨论并记录架构决策的例外外，application code、repository 与 migration 中均不得书写 raw SQL 或数据库专属 DDL。
+- ORM entity、domain model 与 FastAPI/Pydantic API schema 保持分层，尤其不能将服务端标准答案随 Student API schema 暴露。
+- 持久化测试应覆盖 repository CRUD、Alembic 从空库升级以及后续 revision 升级；转向托管数据库前补充 PostgreSQL migration 与 API 集成验证。
+
+## 多语言与插件文案约定
+
+- 默认 locale 为 `en-CA`；可见文案与数学生成规则分离，不能通过在 generator 或 renderer 中散布英文字符串实现教学内容。
+- 应用 shell、练习模板和题型 plugin 分别拥有自己的翻译资源；plugin 可以声明并提供不完整的 locale 覆盖，不要求每个插件支持全部系统语言。
+- plugin 文案解析按单个 key 回退：优先请求 locale，缺失时使用默认 `en-CA`。若默认英文资源仍缺少必需 key，则应在加载或验证阶段报错，而不是运行时静默丢失教学内容。
+- session/PDF 快照应保存实际向学生展示的解析后文案及其 locale/fallback 元数据，确保历史结果可复查和可重复呈现。
+- 新增多语言能力时应先写测试覆盖默认英文、请求语言命中、局部缺失后英文回退、缺失默认必需 key 报错，以及 session 快照不因后续翻译修改而变化。

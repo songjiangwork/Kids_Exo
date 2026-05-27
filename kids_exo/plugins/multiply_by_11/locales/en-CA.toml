@@ -1,0 +1,18 @@
+[warmup.two_digit]
+heading = "A. Warm-up"
+instruction_1 = "Add the two digits. Put the ones digit in the middle and carry the tens digit to the left."
+instruction_2 = "Example: 68 x 11: 6 + 8 = 14, so (6 + 1) | 4 | 8 = 748"
+
+[practice.two_digit]
+heading = "B. Practice"
+instruction_1 = "Multiply each number by 11."
+
+[warmup.three_digit]
+heading = "A. Warm-up"
+instruction_1 = "Add each pair of neighbouring digits. Keep the first and last digits."
+instruction_2 = "Work from right to left and carry when a sum is 10 or more."
+instruction_3 = "Example: 386 x 11: 8 + 6 = 14, write 4 carry 1; 3 + 8 + 1 = 12; answer 4246."
+
+[practice.three_digit]
+heading = "B. Practice"
+instruction_1 = "Multiply each three-digit number by 11."

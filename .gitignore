@@ -1,3 +1,7 @@
 __pycache__/
 *.py[cod]
 output/
+.venv/
+*.egg-info/
+.pytest_cache/
+*.db

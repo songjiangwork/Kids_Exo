@@ -1,0 +1,43 @@
+.topbar {
+  background: rgba(255, 251, 243, 0.88);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(16px);
+  color: var(--ink);
+  height: 70px;
+  padding: 0 clamp(18px, 5vw, 48px);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.brand {
+  align-items: center;
+  color: inherit;
+  display: inline-flex;
+  font-family: var(--display-font);
+  font-size: 1.28rem;
+  font-weight: 700;
+  gap: 12px;
+  letter-spacing: -0.035em;
+  text-decoration: none;
+}
+
+.brand-mark {
+  align-items: center;
+  background: var(--ink);
+  border-radius: 12px;
+  color: #fff5d9;
+  display: inline-flex;
+  font-size: 1.22rem;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.app-stage {
+  min-height: calc(100vh - 70px);
+}

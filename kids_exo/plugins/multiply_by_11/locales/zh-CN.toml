@@ -1,0 +1,3 @@
+[warmup.two_digit]
+heading = "A. 热身"
+instruction_1 = "将两位数字相加，把个位写在中间；若有十位则向左进位。"

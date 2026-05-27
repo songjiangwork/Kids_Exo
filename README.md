@@ -197,10 +197,52 @@ python -m kids_exo generate --preset-id math.mental_multiplication.mixed_practic
 
 题型区域还可以通过 `strategy_weights` 调整生成策略的题目比例。例如当前 Practice 区的 `0.6/0.4` 会在 `30` 道题中生成 `18` 道按数位加法拆分题和 `12` 道近整十/整百减法拆分题。
 
+## 网页后端原型
+
+网页应用已经开始第一条后端切片。当前 FastAPI 服务提供在线题型 catalog、练习预览以及保存后可供孩子答题的 session，用于支撑下一步 Parent/Student 浏览器界面：
+
+- `GET /api/practice-plugins` 返回在线题型、题量/反馈选项及 UI 可配置 schema。
+- `POST /api/practice-sessions/preview` 根据配置生成仅供预览的题面快照，并返回 locale fallback 提示；响应不会包含标准答案。
+- `POST /api/learners` 创建原型阶段的 learner nickname 档案。
+- `POST /api/learners/{id}/sessions` 保存一份练习并返回短期 student token 与安全题面。
+- `GET /api/student/sessions/{token}` 与 `POST .../questions/{id}/attempts` 支持孩子打开练习并提交一次正式答案；延迟反馈模式不会在提交时透露正误。
+
+安装可选网页开发依赖并启动 API：
+
+```bash
+python -m venv .venv
+.venv/bin/python -m pip install -e '.[web,test]'
+.venv/bin/python -m alembic upgrade head
+.venv/bin/python -m uvicorn kids_exo.web.app:app --reload
+```
+
+数据库结构由 `Alembic` 建立和升级，应用启动不会隐式建表；CRUD 通过 `SQLAlchemy 2.0 ORM` repository 完成。原型当前还没有 Parent 认证与结果报告页面，这两项会在可见前端流程之后继续补齐。
+
+## 可视网页原型
+
+Angular Material 前端位于 `web-client/`，现已提供两条可操作界面：
+
+- Parent Studio：填写 learner nickname，配置乘以 `11` 的题量、两位/三位数、进位题选择、反馈和计时器，然后创建练习。
+- Student Practice：点击生成的 learner 按钮后，以一题一屏的方式填写答案；即时反馈模式会显示正误，延迟反馈模式只确认答案已保存。
+
+启动后端后，在另一个终端启动前端：
+
+```bash
+cd web-client
+npm install
+npm start
+```
+
+打开 `http://localhost:4200/manage` 即可试用 Parent 流程。前端开发服务器已经配置 `/api` proxy，自动转发到 `http://127.0.0.1:8000` 的 FastAPI 服务。
+
+当前可视原型刻意保持小范围：只开放 `Multiply by 11`，暂不包含 Parent 登录、历史报告或 deferred feedback 的结果复盘页面。
+
 ## 运行测试
 
 ```bash
-python -m unittest discover -s tests -v
+.venv/bin/python -m unittest discover -s tests -v
+cd web-client && npm test -- --watch=false
+cd web-client && npm run build
 ```
 
-设计讨论见 [docs/product-design.md](docs/product-design.md)，测试驱动开发约定见 [docs/development-conventions.md](docs/development-conventions.md)。
+设计讨论见 [docs/product-design.md](docs/product-design.md)，网页应用原型规划见 [docs/web-app-design.md](docs/web-app-design.md)，测试驱动开发约定见 [docs/development-conventions.md](docs/development-conventions.md)。

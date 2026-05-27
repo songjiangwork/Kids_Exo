@@ -1,0 +1,64 @@
+<section class="learn-shell">
+  @if (loading()) {
+    <div class="loading"><mat-spinner diameter="38" /> Opening your practice...</div>
+  } @else if (error()) {
+    <mat-card class="message-card"><p>{{ error() }}</p></mat-card>
+  } @else if (complete()) {
+    <mat-card class="finish-card">
+      <div class="burst">+</div>
+      <p class="eyebrow">Practice complete</p>
+      <h1>Strong work!</h1>
+      @if (session()?.feedback_mode === 'immediate') {
+        <p class="score">{{ correctCount() }} / {{ session()?.questions?.length }} correct</p>
+      } @else {
+        <p class="score">All answers saved for review.</p>
+      }
+      @if (session()?.show_timer) {
+        <p class="time">Time: {{ timerText() }}</p>
+      }
+      <a mat-flat-button href="/manage">Back to Parent Studio</a>
+    </mat-card>
+  } @else if (question(); as activeQuestion) {
+    <div class="practice-header">
+      <div>
+        <p class="eyebrow">Mental multiplication</p>
+        <p class="counter">Question {{ activeQuestion.position }} of {{ activeQuestion.total_questions }}</p>
+      </div>
+      @if (session()?.show_timer) {
+        <div class="timer">{{ timerText() }}</div>
+      }
+    </div>
+
+    <mat-progress-bar mode="determinate" [value]="progress()" />
+
+    <mat-card class="question-card">
+      <p class="prompt">{{ activeQuestion.prompt }}</p>
+      <mat-form-field class="answer-field" appearance="outline">
+        <mat-label>Your answer</mat-label>
+        <input
+          matInput
+          type="number"
+          inputmode="numeric"
+          [(ngModel)]="answer"
+          [disabled]="feedback() !== null"
+          (keyup.enter)="checkAnswer()"
+        />
+      </mat-form-field>
+
+      @if (feedback() === null) {
+        <button mat-flat-button class="check-button" (click)="checkAnswer()" [disabled]="submitting()">
+          @if (submitting()) { Checking... } @else { Check answer }
+        </button>
+      } @else {
+        <div class="feedback" [class.good]="feedback() === 'correct'" [class.calm]="feedback() === 'saved'">
+          @if (feedback() === 'correct') { Nice work. That is correct. }
+          @if (feedback() === 'incorrect') { Not correct. Keep going. }
+          @if (feedback() === 'saved') { Answer saved. Keep going. }
+        </div>
+        <button mat-flat-button class="next-button" (click)="nextQuestion()">
+          @if (activeQuestion.position === activeQuestion.total_questions) { Finish practice } @else { Next question }
+        </button>
+      }
+    </mat-card>
+  }
+</section>

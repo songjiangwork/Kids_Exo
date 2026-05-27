@@ -1,0 +1,93 @@
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import unittest
+
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import inspect
+
+from kids_exo.online.session import OnlineSessionRequest, create_practice_session
+from kids_exo.persistence.database import build_engine, build_session_factory
+from kids_exo.persistence.models import Base
+from kids_exo.persistence.repository import PracticeRepository
+
+
+class PracticeRepositoryTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.engine = build_engine("sqlite+pysqlite:///:memory:")
+        Base.metadata.create_all(self.engine)
+        self.repository = PracticeRepository(build_session_factory(self.engine))
+
+    def _snapshot(self):
+        return create_practice_session(
+            OnlineSessionRequest(
+                plugin="multiply_by_11",
+                plugin_settings={
+                    "multiplicand_digits": [2],
+                    "strategies": ["no_carrying", "with_carrying"],
+                },
+                question_count=10,
+                requested_locale="zh-CN",
+                feedback_mode="immediate",
+                show_timer=True,
+                seed=1122,
+            )
+        )
+
+    def test_saves_learner_session_and_private_question_answers(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        saved = self.repository.create_practice_session(
+            learner.id,
+            self._snapshot(),
+            student_token="student-token",
+        )
+
+        retrieved = self.repository.get_session_by_student_token("student-token")
+
+        self.assertEqual(saved.learner_id, learner.id)
+        self.assertEqual(retrieved.requested_locale, "zh-CN")
+        self.assertEqual(retrieved.localization_fallback_keys, ["heading", "instruction_1"])
+        self.assertEqual(len(retrieved.questions), 10)
+        self.assertIsInstance(retrieved.questions[0].expected_answer, int)
+
+    def test_records_an_answer_attempt_against_saved_question(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        self.repository.create_practice_session(
+            learner.id,
+            self._snapshot(),
+            student_token="student-token",
+        )
+        session = self.repository.get_session_by_student_token("student-token")
+        question = session.questions[0]
+
+        attempt = self.repository.submit_answer(
+            "student-token",
+            question.public_identifier,
+            str(question.expected_answer),
+        )
+
+        self.assertTrue(attempt.is_correct)
+        self.assertEqual(attempt.normalized_answer, question.expected_answer)
+
+
+class AlembicMigrationTests(unittest.TestCase):
+    def test_initial_migration_creates_online_practice_tables(self) -> None:
+        with TemporaryDirectory() as directory:
+            database_path = Path(directory) / "kids-exo.db"
+            config = Config("alembic.ini")
+            config.set_main_option(
+                "sqlalchemy.url",
+                f"sqlite+pysqlite:///{database_path}",
+            )
+
+            command.upgrade(config, "head")
+
+            tables = set(inspect(build_engine(f"sqlite+pysqlite:///{database_path}")).get_table_names())
+            self.assertTrue(
+                {"learners", "practice_sessions", "question_instances", "response_attempts"}
+                <= tables
+            )
+
+
+if __name__ == "__main__":
+    unittest.main()

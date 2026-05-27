@@ -21,6 +21,10 @@
 - 应用架构需要为未来多语言支持留出空间。
 - 标题、区域说明、学生信息栏标签等用户可见文本，不能硬编码在数学题目生成器中。
 - 未来可使用 `en-CA`、`en-US`、`zh-CN` 等 locale；初始默认值为 `en-CA`。
+- 多语言内容分为应用界面文字、练习卷/template 文字、题型 plugin 的教学文案，以及不依赖语言的数学题目数据；它们可以有不同的翻译覆盖范围。
+- 每个 plugin 可以提供自己的 locale 映射资源，并允许只覆盖部分语言或部分文案，例如只为 warm-up 教学例题提供英文版本。
+- 当所选语言缺少某条 plugin 文案时，系统按文案 key 回退到默认英文 `en-CA`，而不是阻止练习生成或要求整份练习切回英文。因此一份中文界面或中文练习可以合理包含英文 warm-up。
+- 生成的 PDF 或在线 session 需要保存实际解析后的展示文案与采用的 locale/fallback 信息，避免日后新增翻译后改变历史练习内容。
 
 ### 第一版范围
 
@@ -307,6 +311,8 @@ python -m kids_exo generate --preset-id math.mental_multiplication.difference_of
 
 其中不带参数的 `python -m kids_exo` 默认进入交互式选择，作为家庭日常使用的最短入口。由程序自动决定的 PDF 文件名需要可区分且不覆盖旧练习卷：提供 seed 时加入 `seed-<value>`，未提供 seed 时加入生成时间；若候选路径已存在则追加序号。显式 `--output` 继续代表用户指定的准确覆盖路径，`--preset` 则继续服务于开发调试和用户自定义 TOML。未来新增英语等科目时，catalog 已可以自然扩充到多层级菜单。
 
+网页应用阶段，preset/template 不应成为固定不可修改的菜单项。Parent 应能够选择题型并调整该插件允许的设置，例如题量、operand 位数范围、未来是否允许负数或小数。系统内置模板只作为便捷起点，session 保存最终确认后的配置快照。未来 CLI 也可以在现有 catalog 之上加入相同的配置编辑能力，并复用 plugin schema 与校验逻辑。
+
 ## 下一阶段路线
 
 当前优先级确定如下：
@@ -314,7 +320,7 @@ python -m kids_exo generate --preset-id math.mental_multiplication.difference_of
 1. 已实现：preset catalog 与交互式 CLI，减少日常生成 PDF 的操作成本。
 2. 已实现：加入不含 warm-up 的混合题型 preset，并支持多个 plugin 来源合并、混排到同一显示区域。
 3. 已实现：PDF renderer 支持自动分页、续页标题和页码，并加入 100 题跨页混合专题。
-4. 下一步：在上述数据与输出流程稳定后开始网页应用原型，让网页复用相同的 catalog、preset 与题目生成核心。
+4. 已开始实施：网页应用原型采用 `FastAPI + Angular + Angular Material (Material 3) + SQLAlchemy 2.0 ORM + Alembic + SQLite`，产品模型预留 `Parent`、`Teacher`、`Student`、`Admin` 四种角色，首个可运行版本实现 Parent 与 Student；Student 使用面向四、五年级孩子的专属主题与练习体验；Parent 与 Student 核心流程均采用 mobile-first 响应式设计；所有 CRUD 与 schema migration 必须通过 ORM/migration 层而不手写 SQL。当前已完成 `multiply_by_11` 的在线 session/domain、服务端判分、locale fallback、公开 settings schema/catalog，以及保存 session 和一次答题提交所需的 ORM/migration/FastAPI 链路。详细设计见 `docs/web-app-design.md`。
 
 ## 混合专项练习卷
 
@@ -608,7 +614,7 @@ Example: 123 x 127: 12 x 13 = 156 and 3 x 7 = 21, so the answer is 15621.
 
 `presets/three_digit_same_prefix_ones_sum_to_ten_beginner.toml` 默认包含 4 道热身题和 30 道专项题，使用 `strategy_weights` 平均覆盖尾积补零和两位尾积场景。三位数候选足够多，因此保持 `allow_duplicates = false`。
 
-## 后续需要继续讨论的问题
+## 初期遗留讨论问题（历史记录）
 
 - 第一版是否立即包含 `103 x 7` 一类三位数左侧数字，还是严格从两位数开始？
 - 减法拆分第一版是否只生成略小于整十/整百的数字；而 `52 x 6 = (50 + 2) x 6` 仍归入普通加法策略？
@@ -616,9 +622,11 @@ Example: 123 x 127: 12 x 13 = 156 and 3 x 7 = 21, so the answer is 15621.
 - 是否保存每份练习卷的随机种子或实际题目数据，以便以后重新生成相同练习卷？
 - 产品规则确定后，应选择哪一种 PDF 生成技术？
 
-## 当前建议的下一步
+## 初期实施起点（历史记录）
 
 先确定第一版固定使用的题目书写格式和数字生成规则，再围绕确认后的规则搭建最小生成器与 A4 英文 PDF 渲染器。从第一次实现起，数据模型就应携带 locale、题型插件设置和命名格式选择，即使初期只真正实现一个语言和少量固定格式。
+
+这一实施起点已经完成；当前网页应用阶段路线以本文件上方“下一阶段路线”和 `docs/web-app-design.md` 为准。
 
 ## 开发约定
 

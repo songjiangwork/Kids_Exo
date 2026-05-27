@@ -1,0 +1,119 @@
+<section class="manage-shell">
+  <header class="hero">
+    <p class="eyebrow">Parent Studio</p>
+    <h1>Create a practice session</h1>
+    <p class="lede">
+      Set up a focused mental-math sprint, then hand the learner link to your child.
+      The first online skill is multiplying by 11.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <div class="loading"><mat-spinner diameter="32" /> Loading practice choices...</div>
+  } @else {
+    <div class="workspace">
+      <mat-card class="composer" appearance="outlined">
+        <mat-card-header>
+          <mat-card-title>Session setup</mat-card-title>
+          <mat-card-subtitle>Math / Mental Multiplication</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="form-grid">
+            <mat-form-field appearance="outline" class="wide">
+              <mat-label>Learner nickname</mat-label>
+              <input matInput [(ngModel)]="nickname" />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Skill</mat-label>
+              <mat-select [(ngModel)]="pluginId">
+                @for (plugin of catalog()?.plugins; track plugin.plugin) {
+                  <mat-option [value]="plugin.plugin">{{ plugin.title }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Questions</mat-label>
+              <mat-select [(ngModel)]="questionCount">
+                @for (count of catalog()?.question_counts; track count) {
+                  <mat-option [value]="count">{{ count }} questions</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Number size</mat-label>
+              <mat-select [(ngModel)]="digits">
+                @for (option of setting('multiplicand_digits')?.options; track option.value) {
+                  <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Feedback</mat-label>
+              <mat-select [(ngModel)]="feedbackMode">
+                <mat-option value="immediate">Tell after each answer</mat-option>
+                <mat-option value="deferred">Review after completion</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="choice-row">
+            <span class="choice-label">Include</span>
+            @for (option of setting('strategies')?.options; track option.value) {
+              <mat-checkbox
+                [checked]="isSelectedStrategy(option.value.toString())"
+                (change)="toggleStrategy(option.value.toString(), $event.checked)"
+              >
+                {{ option.label }}
+              </mat-checkbox>
+            }
+          </div>
+
+          <div class="switch-row">
+            <mat-slide-toggle [(ngModel)]="showTimer">Show timer to learner</mat-slide-toggle>
+          </div>
+        </mat-card-content>
+        <mat-card-actions align="end">
+          <button mat-flat-button class="start-button" (click)="startPractice()" [disabled]="saving()">
+            @if (saving()) { Creating... } @else { Start practice }
+          </button>
+        </mat-card-actions>
+      </mat-card>
+
+      <aside class="preview">
+        <p class="eyebrow">Today&apos;s focus</p>
+        <h2>{{ selectedPlugin()?.title || 'Multiply by 11' }}</h2>
+        <p>{{ selectedPlugin()?.description }}</p>
+        <div class="example">
+          <span>68 x 11</span>
+          <span class="equals">=</span>
+          <span>748</span>
+        </div>
+        <p class="tip">Keep the outside digits. Add neighbouring digits in the middle.</p>
+      </aside>
+    </div>
+  }
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (createdSession(); as session) {
+    <mat-card class="handoff">
+      <mat-card-content>
+        <p class="eyebrow">Ready for your learner</p>
+        <h2>{{ nickname }}&apos;s practice is ready</h2>
+        <p>{{ session.questions.length }} questions. Open the learner view on this device or share its link.</p>
+        @if (session.localization_fallback_keys.length > 0) {
+          <p class="language-note">Some teaching content is displayed in English for this skill.</p>
+        }
+        <a mat-flat-button class="open-button" [routerLink]="['/learn/session', session.student_token]">
+          Open learner practice
+        </a>
+      </mat-card-content>
+    </mat-card>
+  }
+</section>

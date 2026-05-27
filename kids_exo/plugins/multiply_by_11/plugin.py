@@ -1,6 +1,8 @@
 import random
+from pathlib import Path
 
 from kids_exo.config import SectionSettings
+from kids_exo.localization import LocalizedPresentation, resolve_presentation
 from kids_exo.models import Question
 from kids_exo.plugins.base import allocate_strategies
 from kids_exo.plugins.multiply_by_11.settings import MultiplyBy11Settings
@@ -33,28 +35,19 @@ class MultiplyBy11Plugin:
         )
 
     def presentation(self, section_name: str, locale: str) -> tuple[str, tuple[str, ...]]:
-        if locale != "en-CA":
-            raise ValueError(f"Unsupported plugin locale: {locale}")
-        if self.settings.multiplicand_digits == (3,):
-            if section_name == "warmup":
-                return (
-                    "A. Warm-up",
-                    (
-                        "Add each pair of neighbouring digits. Keep the first and last digits.",
-                        "Work from right to left and carry when a sum is 10 or more.",
-                        "Example: 386 x 11: 8 + 6 = 14, write 4 carry 1; 3 + 8 + 1 = 12; answer 4246.",
-                    ),
-                )
-            return ("B. Practice", ("Multiply each three-digit number by 11.",))
-        if section_name == "warmup":
-            return (
-                "A. Warm-up",
-                (
-                    "Add the two digits. Put the ones digit in the middle and carry the tens digit to the left.",
-                    "Example: 68 x 11: 6 + 8 = 14, so (6 + 1) | 4 | 8 = 748",
-                ),
-            )
-        return ("B. Practice", ("Multiply each number by 11.",))
+        return self.localized_presentation(section_name, locale).plain_text()
+
+    def localized_presentation(
+        self, section_name: str, locale: str
+    ) -> LocalizedPresentation:
+        variant = (
+            "three_digit" if self.settings.multiplicand_digits == (3,) else "two_digit"
+        )
+        return resolve_presentation(
+            Path(__file__).parent / "locales",
+            f"{section_name}.{variant}",
+            locale,
+        )
 
     def _unique_question(
         self,
