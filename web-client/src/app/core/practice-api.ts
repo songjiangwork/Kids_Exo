@@ -158,10 +158,15 @@ export class PracticeApi {
   downloadPrintablePdf(
     presetId: string,
     seed: number | null,
+    includeWarmup: boolean,
+    pageCount: number | null,
+    questionCount: number | null,
   ): Observable<HttpResponse<Blob>> {
     return this.http.post('/api/printable-worksheets/pdf', {
       preset_id: presetId,
       ...(seed === null ? {} : { seed }),
+      include_warmup: includeWarmup,
+      ...(questionCount === null ? { page_count: pageCount ?? 1 } : { question_count: questionCount }),
     }, {
       observe: 'response',
       responseType: 'blob',

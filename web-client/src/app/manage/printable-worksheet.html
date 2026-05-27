@@ -28,6 +28,31 @@
             <mat-hint>Use the same seed to generate the same questions again.</mat-hint>
           </mat-form-field>
 
+          <div class="length-grid">
+            <mat-form-field appearance="outline" class="control">
+              <mat-label>Length</mat-label>
+              <mat-select [(ngModel)]="lengthMode">
+                <mat-option value="1">1 page</mat-option>
+                <mat-option value="2">2 pages</mat-option>
+                <mat-option value="3">3 pages</mat-option>
+                <mat-option value="custom">Custom question count</mat-option>
+              </mat-select>
+              <mat-hint>{{ lengthHint() }}</mat-hint>
+            </mat-form-field>
+
+            @if (lengthMode === 'custom') {
+              <mat-form-field appearance="outline" class="control">
+                <mat-label>Practice questions</mat-label>
+                <input matInput type="number" min="1" max="500" [(ngModel)]="customQuestionCount" />
+                <mat-hint>Warm-up questions are separate.</mat-hint>
+              </mat-form-field>
+            }
+          </div>
+
+          <mat-checkbox class="warmup-option" [(ngModel)]="includeWarmup">
+            Include warm-up section
+          </mat-checkbox>
+
           <div class="print-settings">
             <span>A4 portrait</span>
             <span>English</span>
@@ -45,7 +70,7 @@
         <h2>{{ selectedChoice()?.title }}</h2>
         <p>{{ selectedChoice()?.category }}</p>
         <p class="note">
-          Current worksheets keep their curated warm-up and practice layout. Flexible section editing is coming later.
+          Keep the teaching warm-up when a method is new, or turn it off for independent practice.
         </p>
       </aside>
     </div>

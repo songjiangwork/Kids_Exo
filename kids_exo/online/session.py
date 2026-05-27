@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import random
 from typing import Any
 
@@ -30,6 +30,8 @@ def create_practice_session(request: OnlineSessionRequest) -> PracticeSessionSna
     _validate_request(request)
     definition = get_plugin_definition(request.plugin)
     settings = load_online_plugin_settings(request.plugin, request.plugin_settings)
+    if request.question_count > 30 and hasattr(settings, "allow_duplicates"):
+        settings = replace(settings, allow_duplicates=True)
     definition.validate_format("expression_with_answer_blank", "practice")
     section = SectionSettings(
         name="practice",
@@ -73,9 +75,17 @@ def _validate_request(request: OnlineSessionRequest) -> None:
     catalog = get_online_catalog()
     get_online_plugin(request.plugin)
     if request.question_count not in catalog.question_counts:
-        raise ValueError("Online MVP question_count must be 10, 20, or 30")
+        raise ValueError(
+            f"Online MVP question_count must be {_format_allowed_counts(catalog.question_counts)}"
+        )
     if request.feedback_mode not in catalog.feedback_modes:
         raise ValueError("feedback_mode must be immediate or deferred")
+
+
+def _format_allowed_counts(counts: tuple[int, ...]) -> str:
+    if len(counts) == 1:
+        return str(counts[0])
+    return f"{', '.join(str(count) for count in counts[:-1])}, or {counts[-1]}"
 
 
 def _localized_practice_presentation(plugin, requested_locale: str) -> LocalizedPresentation:

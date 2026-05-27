@@ -155,7 +155,7 @@ _MULTIPLY_BY_NINES = OnlinePluginDescriptor(
 
 _ONLINE_CATALOG = OnlineCatalog(
     default_locale="en-CA",
-    question_counts=(10, 20, 30),
+    question_counts=(10, 20, 30, 40, 50, 100),
     feedback_modes=("immediate", "deferred"),
     show_timer_configurable=True,
     plugins=(

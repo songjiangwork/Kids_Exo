@@ -61,6 +61,18 @@ h1 {
   margin: 16px 0 28px;
 }
 
+.warmup-option {
+  display: block;
+  margin: 12px 0 8px;
+}
+
+.length-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  margin-top: 8px;
+}
+
 .print-settings span {
   background: #f2ebda;
   border-radius: 999px;

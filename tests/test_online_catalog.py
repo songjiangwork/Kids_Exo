@@ -9,7 +9,7 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         catalog = get_online_catalog()
 
         self.assertEqual(catalog.default_locale, "en-CA")
-        self.assertEqual(catalog.question_counts, (10, 20, 30))
+        self.assertEqual(catalog.question_counts, (10, 20, 30, 40, 50, 100))
         self.assertEqual(catalog.feedback_modes, ("immediate", "deferred"))
         self.assertTrue(catalog.show_timer_configurable)
         self.assertEqual(

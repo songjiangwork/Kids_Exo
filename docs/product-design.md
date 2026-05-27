@@ -324,7 +324,7 @@ python -m kids_exo generate --preset-id math.mental_multiplication.difference_of
 
 ## 混合专项练习卷
 
-当孩子已经分别学习过多个速算方法，混合训练的目标就不再是跟随提示步骤，而是识别一道题适合采用什么方法。因此 `presets/mental_multiplication_mixed_practice.toml` 不设置 warm-up 区域，只生成一个显示为 `A. Mixed Practice` 的专项区。
+当孩子已经分别学习过多个速算方法，混合训练的目标就不再是跟随提示步骤，而是识别一道题适合采用什么方法。因此 `presets/mental_multiplication_mixed_practice.toml` 不设置 warm-up 区域，只生成一个 Mixed Practice 专项区；PDF 渲染时会去掉旧式 `A. / B.` 前缀，避免用户隐藏某个 section 后标题编号残留。
 
 这份初始混合卷由 6 种题目来源构成，每种各 5 道，共 30 道：
 
@@ -348,7 +348,7 @@ shuffle = true
 
 多个生成来源保留各自的 plugin 设置和题数，但最终合并到一个显示区域并随机混排。配置加载时要求 source section 名称唯一，并校验同一个合并区域的排版与展示设置一致，防止悄悄丢失题目或生成冲突页面。
 
-`presets/mental_multiplication_mixed_100.toml` 使用同一个混合区域思路，将六种来源配置为合计 100 道题。由于它已经是综合巩固练习，同样不包含 warm-up；PDF 渲染器根据 A4 页面剩余空间自动续页，在续页显示 `A. Mixed Practice (continued)` 并保持题号连续。当前默认版面生成 3 页。
+`presets/mental_multiplication_mixed_100.toml` 使用同一个混合区域思路，将六种来源配置为合计 100 道题。由于它已经是综合巩固练习，同样不包含 warm-up；PDF 渲染器根据 A4 页面剩余空间自动续页，在续页显示 `Mixed Practice (continued)` 并保持题号连续。当前默认版面生成 3 页。
 
 ## 后续题型想法
 

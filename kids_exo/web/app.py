@@ -49,7 +49,13 @@ def create_app(repository: PracticeRepository | None = None) -> FastAPI:
     @app.post("/api/printable-worksheets/pdf")
     def download_printable_pdf(request: PrintablePdfRequest) -> Response:
         try:
-            pdf = generate_printable_pdf(request.preset_id, seed=request.seed)
+            pdf = generate_printable_pdf(
+                request.preset_id,
+                seed=request.seed,
+                include_warmup=request.include_warmup,
+                page_count=request.page_count,
+                question_count=request.question_count,
+            )
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         return Response(

@@ -67,8 +67,15 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         )
 
     def test_mvp_accepts_only_configured_fixed_question_counts(self) -> None:
-        with self.assertRaisesRegex(ValueError, "10, 20, or 30"):
+        with self.assertRaisesRegex(ValueError, "10, 20, 30, 40, 50, or 100"):
             create_practice_session(self._request(question_count=12))
+
+    def test_session_accepts_a_hundred_question_practice(self) -> None:
+        session = create_practice_session(self._request(question_count=100))
+
+        self.assertEqual(len(session.questions), 100)
+        self.assertTrue(session.plugin_settings.allow_duplicates)
+        self.assertEqual(session.student_questions()[-1].total_questions, 100)
 
     def test_each_added_online_plugin_generates_integer_answer_questions(self) -> None:
         requests = (

@@ -20,7 +20,7 @@ describe('ParentStudio', () => {
     const http = TestBed.inject(HttpTestingController);
     http.expectOne('/api/practice-plugins').flush({
       default_locale: 'en-CA',
-      question_counts: [10, 20, 30],
+      question_counts: [10, 20, 30, 40, 50, 100],
       feedback_modes: ['immediate', 'deferred'],
       show_timer_configurable: true,
       plugins: [
@@ -83,6 +83,14 @@ describe('ParentStudio', () => {
     expect(fixture.nativeElement.textContent).toContain('Create a practice session');
     expect(fixture.nativeElement.textContent).toContain('Multiply by 11');
     expect(fixture.nativeElement.textContent).toContain('Start practice');
+    expect((fixture.componentInstance as any).catalog().question_counts).toEqual([
+      10,
+      20,
+      30,
+      40,
+      50,
+      100,
+    ]);
   });
 
   it('shows recent sessions for the selected learner', async () => {

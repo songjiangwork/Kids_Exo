@@ -203,7 +203,7 @@ python -m kids_exo generate --preset-id math.mental_multiplication.mixed_practic
 
 - `GET /api/practice-plugins` 返回在线题型、题量/反馈选项及 UI 可配置 schema。
 - `GET /api/printable-worksheets` 返回可供网页下载的全部现有 PDF 练习卷目录。
-- `POST /api/printable-worksheets/pdf` 根据所选 preset 与可选 seed 直接返回 PDF 下载内容，不在服务器保存生成文件。
+- `POST /api/printable-worksheets/pdf` 根据所选 preset、warm-up 开关、页数或自定义 practice 题数与可选 seed 直接返回 PDF 下载内容，不在服务器保存生成文件。
 - `POST /api/practice-sessions/preview` 根据配置生成仅供预览的题面快照，并返回 locale fallback 提示；响应不会包含标准答案。
 - `POST /api/learners` 创建原型阶段的 learner nickname 档案。
 - `POST /api/learners/{id}/sessions` 保存一份练习并返回短期 student token 与安全题面。
@@ -225,7 +225,7 @@ python -m venv .venv
 Angular Material 前端位于 `web-client/`，现已提供三条可操作界面：
 
 - Parent Studio：选择或创建 learner，从首批在线速算题型中选择专项，配置该 plugin 公开的选项、题量、反馈和计时器，然后创建练习。
-- Printable worksheet：从全部现有可打印 preset 中选择练习卷，设置可选 seed，并直接下载 A4 英文 PDF，从网页替代日常 CLI 打印流程。
+- Printable worksheet：从全部现有可打印 preset 中选择练习卷，按次选择是否保留 warm-up，使用页数模式或自定义 practice 题数，设置可选 seed，并直接下载 A4 英文 PDF，从网页替代日常 CLI 打印流程。
 - Student Practice：点击生成的 learner 按钮后，以一题一屏的方式填写答案；即时反馈模式会显示正误，延迟反馈模式只确认答案已保存。
 
 启动后端后，在另一个终端启动前端：

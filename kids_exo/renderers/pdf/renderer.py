@@ -54,7 +54,8 @@ def render_pdf(worksheet: Worksheet, options: PdfOutputOptions) -> bytes:
         question_index = 0
         continued = False
         while question_index < len(questions):
-            section_heading = f"{heading} (continued)" if continued else heading
+            display_heading = _strip_section_marker(heading)
+            section_heading = f"{display_heading} (continued)" if continued else display_heading
             instructions = () if continued else worksheet.section_intros.get(section_name, ())
             required_header_space = 20 + (len(instructions) * 17) + 14
             if y - required_header_space < 82:
@@ -135,6 +136,12 @@ def _add_text(
 
 def _escape_text(value: str) -> str:
     return value.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+
+
+def _strip_section_marker(value: str) -> str:
+    if len(value) > 3 and value[0].isalpha() and value[1:3] == ". ":
+        return value[3:]
+    return value
 
 
 def _pdf_document(streams: list[bytes]) -> bytes:

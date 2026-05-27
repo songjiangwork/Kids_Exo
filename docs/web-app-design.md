@@ -110,7 +110,7 @@ flowchart LR
 | 家长登录 | 自用 MVP 采用最简单的本地认证方案，认证边界预留未来接入外部 SSO/OIDC。 |
 | Learner 管理 | 新建、查看、重命名、停用昵称档案。 |
 | 练习创建 | Parent 选择一个在线支持的单项题型，可从内置模板开始并调整该 plugin 开放的设置。 |
-| 题型参数 | 首批支持题量 `10 / 20 / 30`、是否即时反馈、是否显示计时器、可选 seed，以及题型允许的数字范围配置，例如乘以 `11` 的被乘数位数范围。 |
+| 题型参数 | 首批支持题量 `10 / 20 / 30 / 40 / 50 / 100`、是否即时反馈、是否显示计时器、可选 seed，以及题型允许的数字范围配置，例如乘以 `11` 的被乘数位数范围。 |
 | 在线练习 | 一题或一屏若干题，输入整数最终答案；若启用即时反馈则提交后立即显示正误，否则完成后统一显示结果。 |
 | 练习记录 | 保存每次 session 的题目快照、提交、正误、用时和完成状态。 |
 | 家长结果页 | 查看一次练习总结及 learner 的近期 session 列表。 |
@@ -1046,7 +1046,7 @@ Student completes session -> Parent sees score and time
 目标：在增加依赖或搭建前端前，确认关键产品决定。
 
 - 已确认：Parent 能选择题型并修改插件开放的参数，模板仅作为可修改的起点。
-- 已确认：首批在线 session 为单题型，题量提供 `10`、`20`、`30`。
+- 已确认：首批在线 session 为单题型，题量提供 `10`、`20`、`30`、`40`、`50`、`100`。
 - 已确认：Parent 可设置即时或延迟反馈，并可选择显示或隐藏计时器。
 - 已确认：MVP 不加入重试配置；混合题型、挑战模式和大模型讲解后续再做。
 - 已确认：Student 通过家长创建的短期 session link 进入。
@@ -1091,7 +1091,7 @@ Student completes session -> Parent sees score and time
 - 以默认英文跑通第一条流程，并使界面/请求模型可接受 locale 与展示英文 fallback 提示。
 - 已完成基础实现：使用独立 Parent/Student 视觉布局、mobile-first 响应式样式与 lazy feature routes；仍需在真实手机/平板上试用验证。
 - 已完成首版：Parent 查看单次结果、错题复盘和 learner 的近期 session 历史。
-- 已完成首版：独立 Printable worksheet 页面列出全部已有 PDF preset，支持可选 seed 并通过 FastAPI 直接下载 PDF；当前复用 curated preset，不在服务器保存 PDF 记录。
+- 已完成首版：独立 Printable worksheet 页面列出全部已有 PDF preset，支持按次选择是否包含 warm-up、页数模式或自定义 practice 题数、可选 seed，并通过 FastAPI 直接下载 PDF；当前复用 curated preset，不在服务器保存 PDF 记录。
 
 ### Phase 4：家庭体验增强
 
@@ -1105,7 +1105,7 @@ Student completes session -> Parent sees score and time
 - 组合多个 plugin 的混合在线练习。
 - `streak_challenge` 连续正确挑战模式和个人记录。
 - 在线 session 与 PDF export 更紧密互通。
-- 将 printable preset 逐步提升为可编辑 worksheet composer，允许选择 warm-up/practice sections、题量和 plugin settings，而不丢失现有快捷模板。
+- 在已有 warm-up 下载开关与页数/题数控制的基础上，将 printable preset 逐步提升为可编辑 worksheet composer，允许组合 sections、题型参数和更细的 layout density，而不丢失现有快捷模板。
 - 为 Student 在线练习加入可选 warm-up 教学 section；探索使用清晰动画演示计算步骤，并在适当时由 AI 辅助生成讲解内容，始终保持家长可控且判分由确定性规则负责。
 - 增加中文等完整 UI translation，并逐步补充 plugin 教学内容的 locale resources。
 - 在安全与家长控制设计完成后探索大模型错题讲解。
@@ -1128,7 +1128,7 @@ Student completes session -> Parent sees score and time
 | --- | --- |
 | 在线配置 | Parent 选择题型并修改 plugin 允许的设置；系统和用户模板均为可修改起点。 |
 | 首批练习组成 | 先实现单题型 session，混合题目后续加入。 |
-| 题量选项 | 首批提供 `10`、`20`、`30`。 |
+| 题量选项 | 首批提供 `10`、`20`、`30`、`40`、`50`、`100`；大题量在线练习允许内部重复以保证生成稳定。 |
 | 即时反馈 | 作为 session flag，由 Parent 选择即时或延迟反馈。 |
 | 重试策略 | MVP 暂不加入，后续独立设计。 |
 | 计时器 | Parent 创建 session 时选择 Student 是否显示计时器。 |

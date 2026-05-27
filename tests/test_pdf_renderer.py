@@ -163,7 +163,8 @@ class PdfRendererTests(unittest.TestCase):
             data = output_path.read_bytes()
 
         self.assertIn(b"Mental Multiplication Mixed Practice", data)
-        self.assertIn(b"A. Mixed Practice", data)
+        self.assertIn(b"Mixed Practice", data)
+        self.assertNotIn(b"A. Mixed Practice", data)
         self.assertNotIn(b"Warm-up", data)
 
     def test_paginates_a_hundred_question_mixed_practice_pdf(self) -> None:
@@ -178,7 +179,7 @@ class PdfRendererTests(unittest.TestCase):
         self.assertIn(b"/Count 3", data)
         self.assertIn(b"Page 1 of 3", data)
         self.assertIn(b"Page 3 of 3", data)
-        self.assertIn(b"A. Mixed Practice \\(continued\\)", data)
+        self.assertIn(b"Mixed Practice \\(continued\\)", data)
         self.assertIn(b"100.", data)
 
     def test_renders_the_square_ending_in_5_rule_and_example(self) -> None:

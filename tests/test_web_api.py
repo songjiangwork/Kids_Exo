@@ -26,7 +26,7 @@ class PracticeWebApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         catalog = response.json()
-        self.assertEqual(catalog["question_counts"], [10, 20, 30])
+        self.assertEqual(catalog["question_counts"], [10, 20, 30, 40, 50, 100])
         self.assertEqual(catalog["feedback_modes"], ["immediate", "deferred"])
         self.assertEqual(
             [plugin["plugin"] for plugin in catalog["plugins"]],
@@ -65,6 +65,7 @@ class PracticeWebApiTests(unittest.TestCase):
             json={
                 "preset_id": "math.mental_multiplication.square_ending_in_5.beginner",
                 "seed": 525,
+                "include_warmup": True,
             },
         )
 
@@ -75,6 +76,67 @@ class PracticeWebApiTests(unittest.TestCase):
             response.headers["content-disposition"],
         )
         self.assertTrue(response.content.startswith(b"%PDF-1.4"))
+
+    def test_parent_can_download_a_pdf_without_the_warmup_section(self) -> None:
+        response = self.client.post(
+            "/api/printable-worksheets/pdf",
+            json={
+                "preset_id": "math.mental_multiplication.square_ending_in_5.beginner",
+                "seed": 525,
+                "include_warmup": False,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(b"A. Warm-up", response.content)
+        self.assertNotIn(b"B. Practice", response.content)
+        self.assertIn(b"Practice", response.content)
+        self.assertIn(b"44.", response.content)
+
+    def test_parent_can_choose_two_page_printable_length_with_warmup(self) -> None:
+        response = self.client.post(
+            "/api/printable-worksheets/pdf",
+            json={
+                "preset_id": "math.mental_multiplication.square_ending_in_5.beginner",
+                "seed": 525,
+                "include_warmup": True,
+                "page_count": 2,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"/Count 2", response.content)
+        self.assertIn(b"76.", response.content)
+
+    def test_parent_can_choose_two_page_printable_length_without_warmup(self) -> None:
+        response = self.client.post(
+            "/api/printable-worksheets/pdf",
+            json={
+                "preset_id": "math.mental_multiplication.square_ending_in_5.beginner",
+                "seed": 525,
+                "include_warmup": False,
+                "page_count": 2,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"/Count 2", response.content)
+        self.assertIn(b"90.", response.content)
+
+    def test_parent_can_choose_a_custom_printable_question_count(self) -> None:
+        response = self.client.post(
+            "/api/printable-worksheets/pdf",
+            json={
+                "preset_id": "math.mental_multiplication.square_ending_in_5.beginner",
+                "seed": 525,
+                "include_warmup": False,
+                "question_count": 12,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b"12.", response.content)
+        self.assertNotIn(b"13.", response.content)
 
     def test_pdf_download_rejects_an_unknown_preset(self) -> None:
         response = self.client.post(

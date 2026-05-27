@@ -4,11 +4,14 @@ import { RouterLink } from '@angular/router';
 import { HttpResponse } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { PrintableWorksheetChoice, PracticeApi } from '../core/practice-api';
+
+type LengthMode = '1' | '2' | '3' | 'custom';
 
 @Component({
   selector: 'app-printable-worksheet',
@@ -16,6 +19,7 @@ import { PrintableWorksheetChoice, PracticeApi } from '../core/practice-api';
     FormsModule,
     MatButtonModule,
     MatCardModule,
+    MatCheckboxModule,
     MatFormFieldModule,
     MatInputModule,
     MatProgressSpinnerModule,
@@ -32,6 +36,9 @@ export class PrintableWorksheet implements OnInit {
   protected readonly error = signal('');
   protected selectedPresetId = '';
   protected seed: number | null = null;
+  protected includeWarmup = true;
+  protected lengthMode: LengthMode = '1';
+  protected customQuestionCount: number | null = 64;
 
   protected readonly selectedChoice = computed(() =>
     this.choices().find((choice) => choice.identifier === this.selectedPresetId),
@@ -59,7 +66,13 @@ export class PrintableWorksheet implements OnInit {
     }
     this.error.set('');
     this.generating.set(true);
-    this.api.downloadPrintablePdf(this.selectedPresetId, this.seed).subscribe({
+    this.api.downloadPrintablePdf(
+      this.selectedPresetId,
+      this.seed,
+      this.includeWarmup,
+      this.selectedPageCount(),
+      this.selectedQuestionCount(),
+    ).subscribe({
       next: (response) => {
         this.download(response);
         this.generating.set(false);
@@ -69,6 +82,31 @@ export class PrintableWorksheet implements OnInit {
         this.generating.set(false);
       },
     });
+  }
+
+  protected lengthHint(): string {
+    if (this.lengthMode === 'custom') {
+      return 'Use a precise practice question count.';
+    }
+    const pages = Number(this.lengthMode);
+    const count = this.questionCountForPages(pages);
+    return `${pages} page${pages === 1 ? '' : 's'}: ${count} practice questions.`;
+  }
+
+  private selectedPageCount(): number | null {
+    return this.lengthMode === 'custom' ? null : Number(this.lengthMode);
+  }
+
+  private selectedQuestionCount(): number | null {
+    if (this.lengthMode !== 'custom') {
+      return null;
+    }
+    return this.customQuestionCount ?? this.questionCountForPages(1);
+  }
+
+  private questionCountForPages(pages: number): number {
+    const firstPageCapacity = this.includeWarmup ? 30 : 44;
+    return firstPageCapacity + ((pages - 1) * 46);
   }
 
   private download(response: HttpResponse<Blob>): void {
