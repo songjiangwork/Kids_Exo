@@ -127,6 +127,21 @@ export class PracticeApi {
     return this.http.post<Learner>('/api/learners', { nickname });
   }
 
+  updateLearner(learner: Learner): Observable<Learner> {
+    return this.http.patch<Learner>(`/api/learners/${learner.id}`, {
+      nickname: learner.nickname,
+      active: learner.active,
+    });
+  }
+
+  learner(learnerId: number): Observable<Learner> {
+    return this.http.get<Learner>(`/api/learners/${learnerId}`);
+  }
+
+  deleteLearner(learnerId: number): Observable<void> {
+    return this.http.delete<void>(`/api/learners/${learnerId}`);
+  }
+
   learners(): Observable<Learner[]> {
     return this.http.get<Learner[]>('/api/learners');
   }

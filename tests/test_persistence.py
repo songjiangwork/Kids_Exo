@@ -96,6 +96,34 @@ class PracticeRepositoryTests(unittest.TestCase):
         self.assertIsNotNone(history[0].completed_at)
         self.assertEqual(completed.id, history[0].id)
 
+    def test_updates_learner_profile_and_active_status(self) -> None:
+        learner = self.repository.create_learner("Alex")
+
+        updated = self.repository.update_learner(
+            learner.id,
+            nickname="Herbert",
+            active=False,
+        )
+
+        self.assertEqual(updated.nickname, "Herbert")
+        self.assertFalse(updated.active)
+        self.assertEqual(self.repository.list_learners()[0].nickname, "Herbert")
+
+    def test_update_learner_rejects_empty_nickname(self) -> None:
+        learner = self.repository.create_learner("Alex")
+
+        with self.assertRaisesRegex(ValueError, "Learner nickname is required"):
+            self.repository.update_learner(learner.id, nickname="   ", active=True)
+
+    def test_deletes_a_learner_profile(self) -> None:
+        learner = self.repository.create_learner("Alex")
+
+        self.repository.delete_learner(learner.id)
+
+        self.assertEqual(self.repository.list_learners(), [])
+        with self.assertRaisesRegex(ValueError, "Unknown learner"):
+            self.repository.delete_learner(learner.id)
+
     def test_completed_results_remain_available_for_sessions_answered_before_timing_upgrade(self) -> None:
         learner = self.repository.create_learner("Alex")
         self.repository.create_practice_session(

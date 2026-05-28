@@ -206,6 +206,7 @@ python -m kids_exo generate --preset-id math.mental_multiplication.mixed_practic
 - `POST /api/printable-worksheets/pdf` 根据所选 preset、warm-up 开关、页数或自定义 practice 题数与可选 seed 直接返回 PDF 下载内容，不在服务器保存生成文件。
 - `POST /api/practice-sessions/preview` 根据配置生成仅供预览的题面快照，并返回 locale fallback 提示；响应不会包含标准答案。
 - `POST /api/learners` 创建原型阶段的 learner nickname 档案。
+- `GET /api/learners/{id}`、`PATCH /api/learners/{id}` 与 `DELETE /api/learners/{id}` 支持 learner 详情、编辑和删除。
 - `POST /api/learners/{id}/sessions` 保存一份练习并返回短期 student token 与安全题面。
 - `GET /api/student/sessions/{token}` 与 `POST .../questions/{id}/attempts` 支持孩子打开练习并提交一次正式答案；延迟反馈模式不会在提交时透露正误。
 
@@ -217,13 +218,14 @@ python -m venv .venv
 .venv/bin/python -m alembic upgrade head
 ```
 
-数据库结构由 `Alembic` 建立和升级，应用启动不会隐式建表；CRUD 通过 `SQLAlchemy 2.0 ORM` repository 完成。原型当前已有 session 结果与近期历史查看，Parent 认证、独立 learner 管理页及 learner 统计详情页仍待后续加入。
+数据库结构由 `Alembic` 建立和升级，应用启动不会隐式建表；CRUD 通过 `SQLAlchemy 2.0 ORM` repository 完成。原型当前已有 session 结果、近期历史查看和独立 learner 管理页；Parent 认证及 learner 统计详情页仍待后续加入。
 
 ## 可视网页原型
 
 Angular Material 前端位于 `web-client/`，现已提供三条可操作界面：
 
 - Parent Studio：选择或创建 learner，从首批在线速算题型中选择专项，配置该 plugin 公开的选项、题量、反馈和计时器，然后创建练习。
+- Learner Management：用表格查看 learner profiles，经由共享 form 新建/编辑，进入 learner detail 页面查看历史摘要，并通过确认框删除 learner。
 - Printable worksheet：从全部现有可打印 preset 中选择练习卷，按次选择是否保留 warm-up，使用页数模式或自定义 practice 题数，设置可选 seed，并直接下载 A4 英文 PDF，从网页替代日常 CLI 打印流程。
 - Student Practice：点击生成的 learner 按钮后，以一题一屏的方式填写答案；即时反馈模式会显示正误，延迟反馈模式只确认答案已保存。
 
@@ -247,7 +249,7 @@ scripts/dev-services.sh stop
 
 打开 `http://localhost:4200/manage` 即可试用 Parent 流程，或进入 `http://localhost:4200/manage/worksheets` 下载打印练习卷。前端开发服务器已经配置 `/api` proxy，自动转发到 `http://127.0.0.1:8000` 的 FastAPI 服务。
 
-当前在线答题开放 `Multiply by 11`、`Same Tens, Ones Sum to 10`、`Squares Ending in 5` 与 `Multiply by 9, 99, and 999`；打印页开放 catalog 中全部现有 PDF 练习卷。原型支持完成成绩、错题复盘、近期 session 历史与 deferred feedback 的完成后回顾。Parent 登录、独立 learner CRUD 页面和总体统计详情页仍待后续设计与实现。
+当前在线答题开放 `Multiply by 11`、`Same Tens, Ones Sum to 10`、`Squares Ending in 5` 与 `Multiply by 9, 99, and 999`；打印页开放 catalog 中全部现有 PDF 练习卷。原型支持 learner CRUD、learner detail 历史摘要、完成成绩、错题复盘、近期 session 历史与 deferred feedback 的完成后回顾。Parent 登录和更完整的统计详情页仍待后续设计与实现。
 
 ## 运行测试
 

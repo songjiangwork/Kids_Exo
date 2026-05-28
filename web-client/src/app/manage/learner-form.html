@@ -1,0 +1,35 @@
+<section class="form-shell">
+  <header class="hero">
+    <p class="eyebrow">Learner Form</p>
+    <h1>@if (learnerId === null) { Add learner } @else { Edit learner }</h1>
+    <p class="lede">Use one focused form for creating and editing learner profiles.</p>
+  </header>
+
+  @if (loading()) {
+    <div class="loading"><mat-spinner diameter="32" /> Loading learner...</div>
+  } @else {
+    <mat-card class="form-card" appearance="outlined">
+      <mat-card-content>
+        <mat-form-field appearance="outline" class="field">
+          <mat-label>Nickname</mat-label>
+          <input matInput [(ngModel)]="nickname" (keyup.enter)="save()" />
+        </mat-form-field>
+
+        @if (learnerId !== null) {
+          <mat-checkbox [(ngModel)]="active">Active learner</mat-checkbox>
+        }
+
+        <div class="actions">
+          <a mat-button routerLink="/manage/learners">Cancel</a>
+          <button mat-flat-button class="primary-action" (click)="save()" [disabled]="saving()">
+            @if (saving()) { Saving... } @else { Save learner }
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+</section>

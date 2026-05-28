@@ -15,6 +15,7 @@ from kids_exo.web.schemas import (
     AnswerSubmissionResponse,
     LearnerCreateRequest,
     LearnerResponse,
+    LearnerUpdateRequest,
     OnlineCatalogResponse,
     IncorrectQuestionResponse,
     PracticeResultsResponse,
@@ -108,6 +109,40 @@ def create_app(repository: PracticeRepository | None = None) -> FastAPI:
             LearnerResponse.model_validate(learner)
             for learner in storage.list_learners()
         ]
+
+    @app.get("/api/learners/{learner_id}", response_model=LearnerResponse)
+    def get_learner(learner_id: int) -> LearnerResponse:
+        storage = _require_repository(repository)
+        try:
+            return LearnerResponse.model_validate(storage.get_learner(learner_id))
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.patch("/api/learners/{learner_id}", response_model=LearnerResponse)
+    def update_learner(
+        learner_id: int,
+        request: LearnerUpdateRequest,
+    ) -> LearnerResponse:
+        storage = _require_repository(repository)
+        try:
+            return LearnerResponse.model_validate(
+                storage.update_learner(
+                    learner_id,
+                    nickname=request.nickname,
+                    active=request.active,
+                )
+            )
+        except ValueError as exc:
+            status_code = 404 if str(exc).startswith("Unknown learner") else 422
+            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
+
+    @app.delete("/api/learners/{learner_id}", status_code=204)
+    def delete_learner(learner_id: int) -> None:
+        storage = _require_repository(repository)
+        try:
+            storage.delete_learner(learner_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     @app.post(
         "/api/learners/{learner_id}/sessions",

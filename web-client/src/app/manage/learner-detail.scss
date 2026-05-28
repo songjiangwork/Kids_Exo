@@ -1,0 +1,93 @@
+.detail-shell {
+  margin: 0 auto;
+  max-width: 1080px;
+  padding: clamp(38px, 7vw, 76px) clamp(18px, 5vw, 44px) 70px;
+}
+
+.hero {
+  margin-bottom: 34px;
+  max-width: 760px;
+}
+
+.eyebrow {
+  color: var(--coral);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+}
+
+h1 {
+  color: var(--ink);
+  font-family: var(--display-font);
+  font-size: clamp(2.55rem, 6vw, 4.1rem);
+  letter-spacing: -0.065em;
+  line-height: 0.98;
+  margin: 0 0 18px;
+}
+
+h2 {
+  color: var(--ink);
+  font-family: var(--display-font);
+  font-size: 1.8rem;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+
+.lede {
+  color: var(--muted);
+  font-size: 1.06rem;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.primary-action {
+  background: var(--ink);
+  color: #fff8eb;
+  font-weight: 700;
+}
+
+.summary-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 34px;
+}
+
+.summary-grid mat-card,
+.history-card {
+  background: rgba(255, 253, 248, 0.94);
+  border-color: var(--line);
+  border-radius: 22px;
+}
+
+.history-card {
+  margin-bottom: 12px;
+}
+
+.history-card mat-card-content {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+}
+
+.loading {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  gap: 14px;
+}
+
+.error {
+  background: #ffe5db;
+  border-radius: 14px;
+  color: #9a3828;
+  padding: 14px 18px;
+}

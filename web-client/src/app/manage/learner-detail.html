@@ -1,0 +1,69 @@
+<section class="detail-shell">
+  @if (loading()) {
+    <div class="loading"><mat-spinner diameter="32" /> Loading learner details...</div>
+  } @else if (learner(); as profile) {
+    <header class="hero">
+      <p class="eyebrow">Learner Detail</p>
+      <h1>{{ profile.nickname }}</h1>
+      <p class="lede">
+        Status: @if (profile.active) { active } @else { inactive }
+      </p>
+      <div class="hero-actions">
+        <a mat-stroked-button [routerLink]="['/manage/learners', profile.id, 'edit']">Edit learner</a>
+        <a mat-flat-button class="primary-action" routerLink="/manage">Start practice</a>
+      </div>
+    </header>
+
+    <section class="summary-grid">
+      <mat-card appearance="outlined">
+        <mat-card-content>
+          <p class="eyebrow">Completed</p>
+          <h2>{{ completedSessions().length }}</h2>
+        </mat-card-content>
+      </mat-card>
+      <mat-card appearance="outlined">
+        <mat-card-content>
+          <p class="eyebrow">Accuracy</p>
+          <h2>
+            @if (totalQuestions() > 0) {
+              {{ correctAnswers() }} / {{ totalQuestions() }}
+            } @else {
+              No data
+            }
+          </h2>
+        </mat-card-content>
+      </mat-card>
+      <mat-card appearance="outlined">
+        <mat-card-content>
+          <p class="eyebrow">Mistake notebook</p>
+          <h2>Coming next</h2>
+          <p>We will collect repeated misses and weak skills here.</p>
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+    <section class="history">
+      <p class="eyebrow">Practice history</p>
+      @for (session of sessions(); track session.id) {
+        <mat-card class="history-card" appearance="outlined">
+          <mat-card-content>
+            <strong>{{ session.plugin }}</strong>
+            <span>{{ session.status }}</span>
+            <span>{{ session.correct_answers }} / {{ session.total_questions }} correct</span>
+            @if (session.elapsed_seconds !== null) {
+              <span>Time {{ formatTime(session.elapsed_seconds) }}</span>
+            }
+          </mat-card-content>
+        </mat-card>
+      } @empty {
+        <p>No practice sessions yet.</p>
+      }
+    </section>
+  }
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  <a mat-button routerLink="/manage/learners">Back to learners</a>
+</section>

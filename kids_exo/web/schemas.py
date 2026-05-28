@@ -91,6 +91,11 @@ class LearnerCreateRequest(BaseModel):
     nickname: str
 
 
+class LearnerUpdateRequest(BaseModel):
+    nickname: str
+    active: bool
+
+
 class LearnerResponse(FromDomainModel):
     id: int
     nickname: str

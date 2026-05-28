@@ -249,6 +249,39 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(history.json()[0]["total_questions"], 10)
         self.assertEqual(history.json()[0]["answered_questions"], 0)
 
+    def test_parent_can_update_learner_profile(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+
+        fetched = self.client.get(f"/api/learners/{learner['id']}")
+        response = self.client.patch(
+            f"/api/learners/{learner['id']}",
+            json={"nickname": "Herbert", "active": False},
+        )
+
+        self.assertEqual(fetched.status_code, 200)
+        self.assertEqual(fetched.json()["nickname"], "Alex")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["nickname"], "Herbert")
+        self.assertFalse(response.json()["active"])
+        learners = self.client.get("/api/learners").json()
+        self.assertEqual(learners[0]["nickname"], "Herbert")
+
+    def test_update_learner_rejects_unknown_learner(self) -> None:
+        response = self.client.patch(
+            "/api/learners/999",
+            json={"nickname": "Nobody", "active": True},
+        )
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_parent_can_delete_learner_profile(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+
+        response = self.client.delete(f"/api/learners/{learner['id']}")
+
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(self.client.get("/api/learners").json(), [])
+
     def test_student_can_submit_a_saved_question_answer(self) -> None:
         learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
         created = self.client.post(

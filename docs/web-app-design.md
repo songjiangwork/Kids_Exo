@@ -14,7 +14,7 @@
 | 已有基础 | Python 题型插件、preset 组卷、混合练习、PDF 生成与分页 |
 | Phase 1 当前进展 | 在线单题型已扩展至 `multiply_by_11`、`same_tens_ones_sum_to_ten`、`square_ending_in_5` 与 `multiply_by_9_99_999`：session 快照、服务端整数判分、安全 Student view、locale fallback 与公开 settings schema/catalog 已建立 |
 | Phase 2 当前进展 | FastAPI 已提供 catalog、保存/答题、learner session history 与 results API；SQLAlchemy repository 与 Alembic migrations 已覆盖 learner、session lifecycle、question 和 attempt |
-| Phase 3 当前进展 | Angular Material 原型已提供 Parent Studio 与 Student Practice 页面、完成成绩和错题复盘、近期 session 列表，并使用 lazy feature routes 与 mobile-first 布局 |
+| Phase 3 当前进展 | Angular Material 原型已提供 Parent Studio、Learner Management 与 Student Practice 页面、完成成绩和错题复盘、近期 session 列表，并使用 lazy feature routes 与 mobile-first 布局 |
 
 本文档描述从当前 PDF 生成器演进到在线练习应用的产品边界、数据模型、技术结构和分阶段路线。它不是立即实施清单；在动手编码前，我们应先用它确认第一条用户流程和需要扩展的插件契约。
 
@@ -388,8 +388,9 @@ MVP 报告可从 session 与 attempts 聚合得到：
 | 路由概念 | 页面目标 |
 | --- | --- |
 | `/manage/login` | 家长登录 |
-| `/manage/learners` | 查看和创建 learner profiles |
-| `/manage/learners/:id` | 查看某个孩子近期练习与薄弱技能 |
+| `/manage/learners` | 表格查看 learner profiles，并进入 detail/edit/delete 操作 |
+| `/manage/learners/new` 与 `/manage/learners/:id/edit` | 复用同一个 learner form 创建或编辑档案 |
+| `/manage/learners/:id` | 查看某个孩子近期练习、统计摘要与错题本入口 |
 | `/manage/assign` | 选择题型，设置题量、数字范围、反馈与计时方式，创建练习 |
 | `/manage/worksheets` | 从现有打印练习卷目录选择 preset 并下载 PDF |
 | `/manage/sessions/:id` | 查看一次练习结果、打印或再次生成类似练习 |
@@ -407,7 +408,7 @@ Parent 可能在手机上快速布置练习，也可能在桌面查看统计。M
 
 | 页面 | 手机 | 平板/桌面 |
 | --- | --- | --- |
-| Learner list | 卡片列表与醒目的 `Start a practice` 操作 | 卡片或列表并排显示近期表现 |
+| Learner list | 表格列出 nickname、status、detail、edit、delete | 小屏可横向滚动，后续可增加近期表现列 |
 | Session creation | 单列分步骤设置：learner、题型、参数、反馈/计时、确认 | 参数面板与预览/摘要可并排 |
 | Session report | 摘要优先，技能明细折叠或向下滚动 | 摘要、题目详情与技能拆分可分栏 |
 
@@ -666,7 +667,8 @@ Kids_Exo/
 | `GET` | `/api/learners` | 获取家长可管理的 learner |
 | `POST` | `/api/learners` | 创建 learner nickname profile |
 | `GET` | `/api/learners/{id}` | 查看 learner 概况 |
-| `PATCH` | `/api/learners/{id}` | 重命名或停用档案 |
+| `PATCH` | `/api/learners/{id}` | 已实现首版：重命名或停用档案 |
+| `DELETE` | `/api/learners/{id}` | 已实现首版：删除 learner 及其练习历史；前端需确认 |
 
 ### Catalog 与练习创建
 
@@ -1097,8 +1099,8 @@ Student completes session -> Parent sees score and time
 
 候选功能：
 
-- 新增独立 `/manage/learners` 管理页面，以表格完成 learner 的查看、新建、重命名和停用；避免继续在 session composer 内承载档案管理。
-- 新增 `/manage/learners/:id` 详情页面，承载该 learner 的总体成绩与统计数据；统计指标、筛选区间与可视化方案后续讨论后确定。
+- 已完成首版：新增独立 `/manage/learners` 管理页面，以表格展示 learner，并提供 detail、edit、delete 操作；避免继续在 session composer 内承载档案管理。
+- 已完成首版：新增共享 create/edit form，以及 `/manage/learners/:id` detail 页面，先展示历史摘要、基础统计和错题本入口；统计指标、筛选区间与可视化方案后续继续细化。
 - 保存常用练习配置。
 - 技能维度的趋势展示。
 - 从错题一键生成巩固训练。
@@ -1147,7 +1149,7 @@ Student completes session -> Parent sees score and time
 | CLI 配置增强 | 后续让命令行也读取同一 plugin schema，以便调整题型、题量、数位、负数或小数等选项。 |
 | 混合练习 | 单题型 session 稳定后允许组合多个插件并设置各题量。 |
 | 挑战模式 | 后续增加无限接题、答错终止、最大连续正确数与用时记录。 |
-| Learner 管理与统计页面 | 下一阶段增加独立 learner CRUD 表格页和 learner detail 页面；总体成绩、题型维度统计与时间表现指标后续确认。 |
+| Learner 统计详情页 | 下一阶段增加 learner detail 页面；总体成绩、题型维度统计与时间表现指标后续确认。 |
 | 大模型辅助 | 后续单独设计家长可控的错题解释功能，判分仍由确定性 evaluator 负责。 |
 | 额外 locale 上线顺序 | MVP 可只发布英文内容；在开放 `zh-CN` 等 UI locale 前确认核心 shell 翻译质量和常用 plugin fallback 体验。 |
 

@@ -35,6 +35,40 @@ class PracticeRepository:
                 )
             )
 
+    def get_learner(self, learner_id: int) -> LearnerEntity:
+        with self._session_factory() as database_session:
+            learner = database_session.get(LearnerEntity, learner_id)
+            if learner is None:
+                raise ValueError(f"Unknown learner: {learner_id}")
+            return learner
+
+    def update_learner(
+        self,
+        learner_id: int,
+        *,
+        nickname: str,
+        active: bool,
+    ) -> LearnerEntity:
+        nickname = nickname.strip()
+        if not nickname:
+            raise ValueError("Learner nickname is required")
+        with self._session_factory() as database_session:
+            learner = database_session.get(LearnerEntity, learner_id)
+            if learner is None:
+                raise ValueError(f"Unknown learner: {learner_id}")
+            learner.nickname = nickname
+            learner.active = active
+            database_session.commit()
+            return learner
+
+    def delete_learner(self, learner_id: int) -> None:
+        with self._session_factory() as database_session:
+            learner = database_session.get(LearnerEntity, learner_id)
+            if learner is None:
+                raise ValueError(f"Unknown learner: {learner_id}")
+            database_session.delete(learner)
+            database_session.commit()
+
     def create_practice_session(
         self,
         learner_id: int,
