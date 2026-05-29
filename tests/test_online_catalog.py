@@ -16,9 +16,15 @@ class OnlinePluginCatalogTests(unittest.TestCase):
             tuple(plugin.plugin for plugin in catalog.plugins),
             (
                 "multiply_by_11",
+                "integer_multiplication_distributive",
                 "same_tens_ones_sum_to_ten",
                 "square_ending_in_5",
                 "multiply_by_9_99_999",
+                "multiply_by_5_25_125",
+                "three_digit_same_prefix_ones_sum_to_ten",
+                "tens_sum_to_ten_same_ones",
+                "near_round_pair_multiplication",
+                "difference_of_squares",
             ),
         )
 
@@ -76,10 +82,18 @@ class OnlinePluginCatalogTests(unittest.TestCase):
             )
 
     def test_new_online_plugins_expose_only_their_meaningful_settings(self) -> None:
+        distributive = get_online_plugin("integer_multiplication_distributive")
         same_tens = get_online_plugin("same_tens_ones_sum_to_ten")
         squares = get_online_plugin("square_ending_in_5")
         nines = get_online_plugin("multiply_by_9_99_999")
+        five_family = get_online_plugin("multiply_by_5_25_125")
+        three_digit_prefix = get_online_plugin("three_digit_same_prefix_ones_sum_to_ten")
+        tens_same_ones = get_online_plugin("tens_sum_to_ten_same_ones")
+        near_round = get_online_plugin("near_round_pair_multiplication")
+        difference = get_online_plugin("difference_of_squares")
 
+        self.assertEqual(distributive.title, "Distributive Property Multiplication")
+        self.assertEqual(tuple(setting.name for setting in distributive.settings), ("strategies",))
         self.assertEqual(same_tens.title, "Same Tens, Ones Sum to 10")
         self.assertEqual(tuple(setting.name for setting in same_tens.settings), ("strategies",))
         self.assertEqual(squares.title, "Squares Ending in 5")
@@ -87,6 +101,26 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         self.assertEqual(
             tuple(setting.name for setting in nines.settings),
             ("multiplicand_digits", "strategies"),
+        )
+        self.assertEqual(
+            tuple(setting.name for setting in five_family.settings),
+            ("multiplicand_digits", "strategies"),
+        )
+        self.assertEqual(
+            tuple(setting.name for setting in three_digit_prefix.settings),
+            ("strategies",),
+        )
+        self.assertEqual(
+            tuple(setting.name for setting in tens_same_ones.settings),
+            ("strategies",),
+        )
+        self.assertEqual(
+            tuple(setting.name for setting in near_round.settings),
+            ("strategies",),
+        )
+        self.assertEqual(
+            tuple(setting.name for setting in difference.settings),
+            ("strategies",),
         )
 
 

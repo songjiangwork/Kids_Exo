@@ -67,6 +67,24 @@ describe('ParentStudio', () => {
             },
           ],
         },
+        {
+          plugin: 'difference_of_squares',
+          title: 'Difference of Squares',
+          description: 'Use symmetric factors around a round number.',
+          subject: 'Math',
+          category: 'Mental Multiplication',
+          default_locale: 'en-CA',
+          locale_coverage: [],
+          settings: [
+            {
+              name: 'strategies',
+              label: 'Question types',
+              control: 'multiple_choice',
+              default: ['symmetric_around_round'],
+              options: [{ value: 'symmetric_around_round', label: 'Symmetric factors around a round number' }],
+            },
+          ],
+        },
       ],
     });
     http.expectOne('/api/learners').flush([
@@ -82,7 +100,11 @@ describe('ParentStudio', () => {
 
     expect(fixture.nativeElement.textContent).toContain('Create a practice session');
     expect(fixture.nativeElement.textContent).toContain('Multiply by 11');
+    expect(fixture.nativeElement.textContent).toContain('full online mental-multiplication library');
     expect(fixture.nativeElement.textContent).toContain('Start practice');
+    expect((fixture.componentInstance as any).catalog().plugins.map((plugin: any) => plugin.plugin)).toContain(
+      'difference_of_squares',
+    );
     expect((fixture.componentInstance as any).catalog().question_counts).toEqual([
       10,
       20,

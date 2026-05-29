@@ -32,9 +32,15 @@ class PracticeWebApiTests(unittest.TestCase):
             [plugin["plugin"] for plugin in catalog["plugins"]],
             [
                 "multiply_by_11",
+                "integer_multiplication_distributive",
                 "same_tens_ones_sum_to_ten",
                 "square_ending_in_5",
                 "multiply_by_9_99_999",
+                "multiply_by_5_25_125",
+                "three_digit_same_prefix_ones_sum_to_ten",
+                "tens_sum_to_ten_same_ones",
+                "near_round_pair_multiplication",
+                "difference_of_squares",
             ],
         )
         plugin = catalog["plugins"][0]

@@ -12,7 +12,7 @@ BACKEND_LOG_FILE="$LOG_DIR/backend.log"
 FRONTEND_LOG_FILE="$LOG_DIR/frontend.log"
 
 BACKEND_URL="http://127.0.0.1:8000"
-FRONTEND_URL="http://127.0.0.1:4200"
+FRONTEND_URL="http://0.0.0.0:4200"
 BACKEND_PORT="8000"
 FRONTEND_PORT="4200"
 
@@ -182,7 +182,7 @@ start_frontend() {
     "$FRONTEND_LOG_FILE" \
     "$FRONTEND_PORT" \
     "$ROOT_DIR/web-client" \
-    npm start -- --host 127.0.0.1 --port 4200
+    npm start -- --host 0.0.0.0 --port 4200
 }
 
 stop_all() {
