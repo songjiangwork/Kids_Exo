@@ -90,7 +90,6 @@ describe('ParentStudio', () => {
     http.expectOne('/api/learners').flush([
       { id: 1, nickname: 'Alex', active: true },
     ]);
-    http.expectOne('/api/learners/1/sessions').flush([]);
     fixture.detectChanges();
     return { fixture, http };
   }
@@ -115,28 +114,6 @@ describe('ParentStudio', () => {
     ]);
   });
 
-  it('shows recent sessions for the selected learner', async () => {
-    const { fixture, http } = await createFixture();
-    (fixture.componentInstance as any).loadHistory();
-    http.expectOne('/api/learners/1/sessions').flush([
-      {
-        id: 8,
-        student_token: 'student-token',
-        plugin: 'multiply_by_11',
-        status: 'completed',
-        total_questions: 10,
-        answered_questions: 10,
-        correct_answers: 9,
-        elapsed_seconds: 82,
-      },
-    ]);
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.textContent).toContain('Recent practice');
-    expect(fixture.nativeElement.textContent).toContain('9 / 10 correct');
-    expect(fixture.nativeElement.textContent).toContain('Completed');
-  });
-
   it('submits only settings exposed by a newly selected plugin', async () => {
     const { fixture, http } = await createFixture();
     const component = fixture.componentInstance as any;
@@ -149,5 +126,34 @@ describe('ParentStudio', () => {
       strategies: ['ending_in_5_square'],
     });
     expect(request.request.body.plugin_settings.multiplicand_digits).toBeUndefined();
+  });
+
+  it('keeps learner history on the learner detail page instead of the setup page', async () => {
+    const { fixture } = await createFixture();
+
+    expect(fixture.nativeElement.textContent).not.toContain('Recent practice');
+    expect(fixture.nativeElement.textContent).not.toContain("Alex's sessions");
+  });
+
+  it('offers a learner detail link after creating a session', async () => {
+    const { fixture, http } = await createFixture();
+    const component = fixture.componentInstance as any;
+
+    component.startPractice();
+
+    const request = http.expectOne('/api/learners/1/sessions');
+    request.flush({
+      id: 8,
+      student_token: 'student-token',
+      plugin: 'multiply_by_11',
+      requested_locale: 'en-CA',
+      feedback_mode: 'immediate',
+      show_timer: false,
+      localization_fallback_keys: [],
+      questions: [{ identifier: 'q1', position: 1, total_questions: 10, prompt: '34 x 11 = ____' }],
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('View learner details');
   });
 });

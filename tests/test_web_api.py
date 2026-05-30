@@ -169,6 +169,48 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(response.json()["plugin"], "square_ending_in_5")
         self.assertIn(" x ", response.json()["questions"][0]["prompt"])
 
+    def test_parent_can_view_learner_analytics_and_mistake_notebook(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        session = self.client.post(
+            f"/api/learners/{learner['id']}/sessions",
+            json={
+                "plugin": "multiply_by_11",
+                "plugin_settings": {
+                    "multiplicand_digits": [2],
+                    "strategies": ["no_carrying"],
+                },
+                "question_count": 10,
+                "seed": 88,
+            },
+        ).json()
+
+        self.client.get(f"/api/student/sessions/{session['student_token']}")
+        first_question = session["questions"][0]
+        self.client.post(
+            f"/api/student/sessions/{session['student_token']}/questions/{first_question['identifier']}/attempts",
+            json={"answer": "0"},
+        )
+        for question in session["questions"][1:]:
+            left_operand, remainder = question["prompt"].split(" x ")
+            right_operand = remainder.split(" = ")[0]
+            self.client.post(
+                f"/api/student/sessions/{session['student_token']}/questions/{question['identifier']}/attempts",
+                json={"answer": str(int(left_operand) * int(right_operand))},
+            )
+
+        response = self.client.get(f"/api/learners/{learner['id']}/analytics")
+
+        self.assertEqual(response.status_code, 200)
+        analytics = response.json()
+        self.assertEqual(analytics["total_sessions"], 1)
+        self.assertEqual(analytics["completed_sessions"], 1)
+        self.assertEqual(analytics["total_questions"], 10)
+        self.assertEqual(analytics["correct_answers"], 9)
+        self.assertAlmostEqual(analytics["accuracy"], 0.9)
+        self.assertEqual(analytics["skill_breakdown"][0]["plugin"], "multiply_by_11")
+        self.assertEqual(analytics["skill_breakdown"][0]["title"], "Multiply by 11")
+        self.assertEqual(analytics["mistake_notebook"][0]["times_missed"], 1)
+
     def test_preview_endpoint_returns_student_safe_questions_and_fallback_warning(self) -> None:
         response = self.client.post(
             "/api/practice-sessions/preview",

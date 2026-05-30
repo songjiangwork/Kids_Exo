@@ -128,60 +128,10 @@
         <a mat-flat-button class="open-button" [routerLink]="['/learn/session', session.student_token]">
           Open learner practice
         </a>
-      </mat-card-content>
-    </mat-card>
-  }
-
-  @if (sessions().length > 0) {
-    <section class="history">
-      <div class="history-heading">
-        <p class="eyebrow">Recent practice</p>
-        <h2>{{ nickname }}&apos;s sessions</h2>
-      </div>
-      <div class="history-grid">
-        @for (session of sessions(); track session.id) {
-          <mat-card class="history-card" appearance="outlined">
-            <mat-card-content>
-              <p class="session-state">
-                @if (session.status === 'completed') { Completed }
-                @else if (session.status === 'in_progress') { In progress }
-                @else { Ready to start }
-              </p>
-              @if (session.status === 'completed') {
-                <p class="history-score">{{ session.correct_answers }} / {{ session.total_questions }} correct</p>
-                @if (session.elapsed_seconds !== null) {
-                  <p class="history-time">Time: {{ formatTime(session.elapsed_seconds) }}</p>
-                }
-                <button mat-button (click)="reviewResults(session)">Review mistakes</button>
-              } @else {
-                <p class="history-score">{{ session.answered_questions }} / {{ session.total_questions }} answered</p>
-                @if (session.answered_questions === 0) {
-                  <a mat-button [routerLink]="['/learn/session', session.student_token]">Open practice</a>
-                } @else {
-                  <p class="history-time">Resume support will be added next.</p>
-                }
-              }
-            </mat-card-content>
-          </mat-card>
-        }
-      </div>
-    </section>
-  }
-
-  @if (selectedResults(); as results) {
-    <mat-card class="parent-results" appearance="outlined">
-      <mat-card-content>
-        <p class="eyebrow">Review</p>
-        <h2>{{ results.correct_answers }} / {{ results.total_questions }} correct</h2>
-        @if (results.incorrect_questions.length === 0) {
-          <p>No mistakes in this session.</p>
-        } @else {
-          @for (missed of results.incorrect_questions; track missed.prompt) {
-            <div class="review-row">
-              <strong>{{ missed.prompt }}</strong>
-              <span>Answered {{ missed.submitted_answer }}; correct answer {{ missed.expected_answer }}</span>
-            </div>
-          }
+        @if (learnerId !== null) {
+          <a mat-button class="detail-link" [routerLink]="['/manage/learners', learnerId]">
+            View learner details
+          </a>
         }
       </mat-card-content>
     </mat-card>

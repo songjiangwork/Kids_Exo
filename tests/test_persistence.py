@@ -149,6 +149,60 @@ class PracticeRepositoryTests(unittest.TestCase):
 
         self.assertEqual(results.id, session.id)
 
+    def test_aggregates_learner_analytics_and_mistake_notebook(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        self.repository.create_practice_session(
+            learner.id,
+            self._snapshot(),
+            student_token="student-token-1",
+        )
+        first_session = self.repository.get_session_by_student_token("student-token-1")
+        first_question = first_session.questions[0]
+        self.repository.submit_answer(
+            "student-token-1",
+            first_question.public_identifier,
+            "0",
+        )
+        for question in first_session.questions[1:]:
+            self.repository.submit_answer(
+                "student-token-1",
+                question.public_identifier,
+                str(question.expected_answer),
+            )
+
+        self.repository.create_practice_session(
+            learner.id,
+            self._snapshot(),
+            student_token="student-token-2",
+        )
+        second_session = self.repository.get_session_by_student_token("student-token-2")
+        self.repository.submit_answer(
+            "student-token-2",
+            second_session.questions[0].public_identifier,
+            "1",
+        )
+        for question in second_session.questions[1:]:
+            self.repository.submit_answer(
+                "student-token-2",
+                question.public_identifier,
+                str(question.expected_answer),
+            )
+
+        analytics = self.repository.get_learner_analytics(learner.id)
+
+        self.assertEqual(analytics.total_sessions, 2)
+        self.assertEqual(analytics.completed_sessions, 2)
+        self.assertEqual(analytics.total_questions, 20)
+        self.assertEqual(analytics.correct_answers, 18)
+        self.assertAlmostEqual(analytics.accuracy, 0.9)
+        self.assertEqual(len(analytics.skill_breakdown), 1)
+        self.assertEqual(analytics.skill_breakdown[0].plugin, "multiply_by_11")
+        self.assertEqual(analytics.skill_breakdown[0].correct_answers, 18)
+        self.assertEqual(analytics.skill_breakdown[0].total_questions, 20)
+        self.assertEqual(len(analytics.mistake_notebook), 1)
+        self.assertEqual(analytics.mistake_notebook[0].times_missed, 2)
+        self.assertEqual(analytics.mistake_notebook[0].expected_answer, first_question.expected_answer)
+
 
 class AlembicMigrationTests(unittest.TestCase):
     def test_initial_migration_creates_online_practice_tables(self) -> None:

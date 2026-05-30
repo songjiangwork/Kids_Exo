@@ -13,8 +13,11 @@ from kids_exo.printable import generate_printable_pdf
 from kids_exo.web.schemas import (
     AnswerSubmissionRequest,
     AnswerSubmissionResponse,
+    LearnerAnalyticsResponse,
     LearnerCreateRequest,
+    LearnerMistakeEntryResponse,
     LearnerResponse,
+    LearnerSkillBreakdownResponse,
     LearnerUpdateRequest,
     OnlineCatalogResponse,
     IncorrectQuestionResponse,
@@ -115,6 +118,14 @@ def create_app(repository: PracticeRepository | None = None) -> FastAPI:
         storage = _require_repository(repository)
         try:
             return LearnerResponse.model_validate(storage.get_learner(learner_id))
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/api/learners/{learner_id}/analytics", response_model=LearnerAnalyticsResponse)
+    def get_learner_analytics(learner_id: int) -> LearnerAnalyticsResponse:
+        storage = _require_repository(repository)
+        try:
+            return _learner_analytics_response(storage.get_learner_analytics(learner_id))
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -301,9 +312,7 @@ def _saved_session_response(saved_session) -> SavedPracticeSessionResponse:
 
 
 def _elapsed_seconds(saved_session) -> int | None:
-    if saved_session.started_at is None or saved_session.completed_at is None:
-        return None
-    return max(0, int((saved_session.completed_at - saved_session.started_at).total_seconds()))
+    return PracticeRepository._elapsed_seconds(saved_session)
 
 
 def _session_summary_response(saved_session) -> SessionSummaryResponse:
@@ -357,6 +366,47 @@ def _display_status(saved_session, attempts) -> str:
     if attempts:
         return "in_progress"
     return saved_session.status
+
+
+def _plugin_title(plugin_name: str) -> str:
+    for plugin in get_online_catalog().plugins:
+        if plugin.plugin == plugin_name:
+            return plugin.title
+    return plugin_name
+
+
+def _learner_analytics_response(analytics) -> LearnerAnalyticsResponse:
+    return LearnerAnalyticsResponse(
+        total_sessions=analytics.total_sessions,
+        completed_sessions=analytics.completed_sessions,
+        total_questions=analytics.total_questions,
+        correct_answers=analytics.correct_answers,
+        accuracy=analytics.accuracy,
+        average_elapsed_seconds=analytics.average_elapsed_seconds,
+        last_completed_at=analytics.last_completed_at,
+        skill_breakdown=tuple(
+            LearnerSkillBreakdownResponse(
+                plugin=item.plugin,
+                title=_plugin_title(item.plugin),
+                correct_answers=item.correct_answers,
+                total_questions=item.total_questions,
+                accuracy=item.accuracy,
+            )
+            for item in analytics.skill_breakdown
+        ),
+        mistake_notebook=tuple(
+            LearnerMistakeEntryResponse(
+                plugin=item.plugin,
+                title=_plugin_title(item.plugin),
+                prompt=item.prompt,
+                expected_answer=item.expected_answer,
+                last_submitted_answer=item.last_submitted_answer,
+                times_missed=item.times_missed,
+                last_seen_at=item.last_seen_at,
+            )
+            for item in analytics.mistake_notebook
+        ),
+    )
 
 
 def _default_repository() -> PracticeRepository:

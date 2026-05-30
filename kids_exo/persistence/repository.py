@@ -1,4 +1,4 @@
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -11,6 +11,37 @@ from kids_exo.persistence.models import (
     QuestionInstanceEntity,
     ResponseAttemptEntity,
 )
+
+
+@dataclass(frozen=True)
+class LearnerSkillBreakdown:
+    plugin: str
+    correct_answers: int
+    total_questions: int
+    accuracy: float
+
+
+@dataclass(frozen=True)
+class LearnerMistakeEntry:
+    plugin: str
+    prompt: str
+    expected_answer: int
+    last_submitted_answer: int
+    times_missed: int
+    last_seen_at: datetime
+
+
+@dataclass(frozen=True)
+class LearnerAnalytics:
+    total_sessions: int
+    completed_sessions: int
+    total_questions: int
+    correct_answers: int
+    accuracy: float
+    average_elapsed_seconds: int | None
+    last_completed_at: datetime | None
+    skill_breakdown: tuple[LearnerSkillBreakdown, ...]
+    mistake_notebook: tuple[LearnerMistakeEntry, ...]
 
 
 class PracticeRepository:
@@ -177,6 +208,108 @@ class PracticeRepository:
                 raise ValueError("Practice session is not completed")
             return result
 
+    def get_learner_analytics(self, learner_id: int) -> LearnerAnalytics:
+        sessions = self.list_sessions_for_learner(learner_id)
+        completed_sessions = [
+            saved_session
+            for saved_session in sessions
+            if self._is_complete(saved_session)
+        ]
+        total_questions = sum(len(saved_session.questions) for saved_session in completed_sessions)
+        correct_answers = sum(
+            sum(question.attempts[0].is_correct for question in saved_session.questions if question.attempts)
+            for saved_session in completed_sessions
+        )
+        elapsed_values = [
+            elapsed
+            for saved_session in completed_sessions
+            if (elapsed := self._elapsed_seconds(saved_session)) is not None
+        ]
+
+        skill_totals: dict[str, dict[str, int]] = {}
+        mistakes: dict[tuple[str, str, int], LearnerMistakeEntry] = {}
+        for saved_session in completed_sessions:
+            completed_at = saved_session.completed_at or saved_session.created_at
+            for question in saved_session.questions:
+                attempt = question.attempts[0]
+                totals = skill_totals.setdefault(
+                    saved_session.plugin,
+                    {"correct_answers": 0, "total_questions": 0},
+                )
+                totals["total_questions"] += 1
+                totals["correct_answers"] += int(attempt.is_correct)
+                if attempt.is_correct:
+                    continue
+                key = (saved_session.plugin, question.prompt, question.expected_answer)
+                previous = mistakes.get(key)
+                if previous is None:
+                    mistakes[key] = LearnerMistakeEntry(
+                        plugin=saved_session.plugin,
+                        prompt=question.prompt,
+                        expected_answer=question.expected_answer,
+                        last_submitted_answer=attempt.normalized_answer,
+                        times_missed=1,
+                        last_seen_at=completed_at,
+                    )
+                    continue
+                if completed_at >= previous.last_seen_at:
+                    last_submitted_answer = attempt.normalized_answer
+                    last_seen_at = completed_at
+                else:
+                    last_submitted_answer = previous.last_submitted_answer
+                    last_seen_at = previous.last_seen_at
+                mistakes[key] = LearnerMistakeEntry(
+                    plugin=previous.plugin,
+                    prompt=previous.prompt,
+                    expected_answer=previous.expected_answer,
+                    last_submitted_answer=last_submitted_answer,
+                    times_missed=previous.times_missed + 1,
+                    last_seen_at=last_seen_at,
+                )
+
+        skill_breakdown = tuple(
+            sorted(
+                (
+                    LearnerSkillBreakdown(
+                        plugin=plugin,
+                        correct_answers=totals["correct_answers"],
+                        total_questions=totals["total_questions"],
+                        accuracy=(
+                            totals["correct_answers"] / totals["total_questions"]
+                            if totals["total_questions"]
+                            else 0.0
+                        ),
+                    )
+                    for plugin, totals in skill_totals.items()
+                ),
+                key=lambda item: (item.accuracy, -item.total_questions, item.plugin),
+            )
+        )
+        mistake_notebook = tuple(
+            sorted(
+                mistakes.values(),
+                key=lambda item: (-item.times_missed, -item.last_seen_at.timestamp(), item.prompt),
+            )
+        )
+        return LearnerAnalytics(
+            total_sessions=len(sessions),
+            completed_sessions=len(completed_sessions),
+            total_questions=total_questions,
+            correct_answers=correct_answers,
+            accuracy=(correct_answers / total_questions if total_questions else 0.0),
+            average_elapsed_seconds=(
+                sum(elapsed_values) // len(elapsed_values)
+                if elapsed_values
+                else None
+            ),
+            last_completed_at=max(
+                (saved_session.completed_at for saved_session in completed_sessions),
+                default=None,
+            ),
+            skill_breakdown=skill_breakdown,
+            mistake_notebook=mistake_notebook,
+        )
+
     def get_completed_results_by_student_token(self, token: str) -> PracticeSessionEntity:
         result = self.get_session_by_student_token(token)
         if not self._is_complete(result):
@@ -241,4 +374,13 @@ class PracticeRepository:
     def _is_complete(practice_session: PracticeSessionEntity) -> bool:
         return bool(practice_session.questions) and all(
             question.attempts for question in practice_session.questions
+        )
+
+    @staticmethod
+    def _elapsed_seconds(practice_session: PracticeSessionEntity) -> int | None:
+        if practice_session.started_at is None or practice_session.completed_at is None:
+            return None
+        return max(
+            0,
+            int((practice_session.completed_at - practice_session.started_at).total_seconds()),
         )

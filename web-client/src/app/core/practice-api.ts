@@ -67,6 +67,36 @@ export interface Learner {
   active: boolean;
 }
 
+export interface LearnerSkillBreakdown {
+  plugin: string;
+  title: string;
+  correct_answers: number;
+  total_questions: number;
+  accuracy: number;
+}
+
+export interface LearnerMistakeEntry {
+  plugin: string;
+  title: string;
+  prompt: string;
+  expected_answer: number;
+  last_submitted_answer: number;
+  times_missed: number;
+  last_seen_at: string;
+}
+
+export interface LearnerAnalytics {
+  total_sessions: number;
+  completed_sessions: number;
+  total_questions: number;
+  correct_answers: number;
+  accuracy: number;
+  average_elapsed_seconds: number | null;
+  last_completed_at: string | null;
+  skill_breakdown: LearnerSkillBreakdown[];
+  mistake_notebook: LearnerMistakeEntry[];
+}
+
 export interface SessionSummary {
   id: number;
   student_token: string;
@@ -156,6 +186,10 @@ export class PracticeApi {
 
   learnerSessions(learnerId: number): Observable<SessionSummary[]> {
     return this.http.get<SessionSummary[]>(`/api/learners/${learnerId}/sessions`);
+  }
+
+  learnerAnalytics(learnerId: number): Observable<LearnerAnalytics> {
+    return this.http.get<LearnerAnalytics>(`/api/learners/${learnerId}/analytics`);
   }
 
   parentResults(learnerId: number, sessionId: number): Observable<PracticeResults> {

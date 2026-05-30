@@ -186,69 +186,8 @@ mat-card-content {
   font-size: 0.9rem;
 }
 
-.history {
-  margin-top: 40px;
-}
-
-.history-heading h2,
-.parent-results h2 {
-  color: var(--ink);
-  font-family: var(--display-font);
-  font-size: clamp(1.65rem, 3vw, 2.1rem);
-  letter-spacing: -0.04em;
-  margin: 4px 0 20px;
-}
-
-.history-grid {
-  display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-}
-
-.history-card {
-  background: #fffdf5;
-  border-color: #eee0ca;
-  border-radius: 20px;
-}
-
-.session-state {
-  color: var(--teal);
-  font-size: 0.78rem;
-  font-weight: 750;
-  letter-spacing: 0.08em;
-  margin: 0 0 9px;
-  text-transform: uppercase;
-}
-
-.history-score {
-  color: var(--ink);
-  font-size: 1.18rem;
-  font-weight: 700;
-  margin: 0 0 6px;
-}
-
-.history-time {
-  color: var(--muted);
-  margin: 0 0 10px;
-}
-
-.parent-results {
-  background: #fff8ea;
-  border-color: #ebdbc2;
-  border-radius: 24px;
-  margin-top: 24px;
-  max-width: 700px;
-}
-
-.review-row {
-  border-top: 1px solid #ecddc6;
-  display: grid;
-  gap: 5px;
-  padding: 13px 0;
-}
-
-.review-row span {
-  color: var(--muted);
+.detail-link {
+  margin-left: 12px;
 }
 
 .error {

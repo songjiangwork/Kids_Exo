@@ -19,9 +19,7 @@ import {
   PluginSetting,
   PracticeApi,
   PracticeRequest,
-  PracticeResults,
   SavedSession,
-  SessionSummary,
 } from '../core/practice-api';
 
 @Component({
@@ -50,8 +48,6 @@ export class ParentStudio implements OnInit {
   protected readonly error = signal('');
   protected readonly createdSession = signal<SavedSession | null>(null);
   protected readonly learners = signal<Learner[]>([]);
-  protected readonly sessions = signal<SessionSummary[]>([]);
-  protected readonly selectedResults = signal<PracticeResults | null>(null);
 
   protected nickname = 'Alex';
   protected learnerId: number | null = null;
@@ -78,7 +74,6 @@ export class ParentStudio implements OnInit {
               const latestLearner = learners[learners.length - 1];
               this.learnerId = latestLearner.id;
               this.nickname = latestLearner.nickname;
-              this.loadHistory();
             }
             this.loading.set(false);
           },
@@ -119,7 +114,6 @@ export class ParentStudio implements OnInit {
       next: (session) => {
         this.createdSession.set(session);
         this.saving.set(false);
-        this.loadHistory();
       },
       error: () => {
         this.error.set('Could not create this practice session.');
@@ -131,15 +125,12 @@ export class ParentStudio implements OnInit {
   protected selectLearner(learnerId: number | null): void {
     this.learnerId = learnerId;
     this.createdSession.set(null);
-    this.selectedResults.set(null);
     if (learnerId === null) {
       this.nickname = '';
-      this.sessions.set([]);
       return;
     }
     const learner = this.learners().find((entry) => entry.id === learnerId);
     this.nickname = learner?.nickname ?? '';
-    this.loadHistory();
   }
 
   protected selectPlugin(pluginId: string): void {
@@ -149,16 +140,6 @@ export class ParentStudio implements OnInit {
     this.selectedStrategies = new Set(
       (this.setting('strategies')?.default ?? []).map(String),
     );
-  }
-
-  protected reviewResults(session: SessionSummary): void {
-    if (this.learnerId === null || session.status !== 'completed') {
-      return;
-    }
-    this.api.parentResults(this.learnerId, session.id).subscribe({
-      next: (results) => this.selectedResults.set(results),
-      error: () => this.error.set('Could not load these results.'),
-    });
   }
 
   protected formatTime(seconds: number | null): string {
@@ -207,15 +188,5 @@ export class ParentStudio implements OnInit {
       feedback_mode: this.feedbackMode,
       show_timer: this.showTimer,
     };
-  }
-
-  private loadHistory(): void {
-    if (this.learnerId === null) {
-      return;
-    }
-    this.api.learnerSessions(this.learnerId).subscribe({
-      next: (sessions) => this.sessions.set(sessions),
-      error: () => this.error.set('Could not load recent practice.'),
-    });
   }
 }

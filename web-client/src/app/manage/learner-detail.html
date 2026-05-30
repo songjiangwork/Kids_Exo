@@ -15,32 +15,55 @@
     </header>
 
     <section class="summary-grid">
-      <mat-card appearance="outlined">
-        <mat-card-content>
-          <p class="eyebrow">Completed</p>
-          <h2>{{ completedSessions().length }}</h2>
-        </mat-card-content>
-      </mat-card>
-      <mat-card appearance="outlined">
-        <mat-card-content>
-          <p class="eyebrow">Accuracy</p>
-          <h2>
-            @if (totalQuestions() > 0) {
-              {{ correctAnswers() }} / {{ totalQuestions() }}
-            } @else {
-              No data
-            }
-          </h2>
-        </mat-card-content>
-      </mat-card>
-      <mat-card appearance="outlined">
-        <mat-card-content>
-          <p class="eyebrow">Mistake notebook</p>
-          <h2>Coming next</h2>
-          <p>We will collect repeated misses and weak skills here.</p>
-        </mat-card-content>
-      </mat-card>
+      @for (card of summaryCards(); track card.label) {
+        <mat-card appearance="outlined">
+          <mat-card-content>
+            <p class="eyebrow">{{ card.label }}</p>
+            <h2>{{ card.value }}</h2>
+            <p class="card-note">{{ card.note }}</p>
+          </mat-card-content>
+        </mat-card>
+      }
     </section>
+
+    @if (analytics(); as summary) {
+      <section class="insight-grid">
+        <mat-card class="skill-card" appearance="outlined">
+          <mat-card-content>
+            <p class="eyebrow">Skill breakdown</p>
+            @for (skill of summary.skill_breakdown; track skill.plugin) {
+              <div class="skill-row">
+                <div>
+                  <strong>{{ skill.title }}</strong>
+                  <p>{{ skill.correct_answers }} / {{ skill.total_questions }} correct</p>
+                </div>
+                <span class="status-pill">{{ formatPercent(skill.accuracy) }}</span>
+              </div>
+            } @empty {
+              <p>No completed sessions yet.</p>
+            }
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="mistake-card" appearance="outlined">
+          <mat-card-content>
+            <p class="eyebrow">Mistake notebook</p>
+            @for (mistake of summary.mistake_notebook; track mistake.plugin + mistake.prompt) {
+              <div class="mistake-row">
+                <strong>{{ mistake.prompt }}</strong>
+                <span>{{ mistake.title }}</span>
+                <span>Correct answer {{ mistake.expected_answer }}</span>
+                <span>Last answer {{ mistake.last_submitted_answer }}</span>
+                <span>Missed {{ mistake.times_missed }} times</span>
+                <span>Last seen {{ formatDate(mistake.last_seen_at) }}</span>
+              </div>
+            } @empty {
+              <p>No mistakes recorded yet.</p>
+            }
+          </mat-card-content>
+        </mat-card>
+      </section>
+    }
 
     <section class="history">
       <p class="eyebrow">Practice history</p>
