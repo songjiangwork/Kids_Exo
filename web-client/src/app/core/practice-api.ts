@@ -22,6 +22,7 @@ export interface OnlinePlugin {
   category: string;
   title: string;
   description: string;
+  default_locale: string;
   settings: PluginSetting[];
 }
 

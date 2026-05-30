@@ -113,6 +113,14 @@ h2 {
   margin: 0;
 }
 
+.mistake-actions,
+.handoff-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
 .status-pill {
   align-self: start;
   background: #e2f0dc;
@@ -124,7 +132,14 @@ h2 {
   letter-spacing: 0.08em;
   padding: 7px 11px;
   text-transform: uppercase;
- }
+}
+
+.handoff {
+  background: #ecf4df;
+  border-color: #d2dfb9;
+  border-radius: 22px;
+  margin-bottom: 28px;
+}
 
 .loading {
   align-items: center;

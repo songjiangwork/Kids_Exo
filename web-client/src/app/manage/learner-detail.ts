@@ -4,7 +4,15 @@ import { forkJoin } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Learner, LearnerAnalytics, PracticeApi, SessionSummary } from '../core/practice-api';
+import {
+  Learner,
+  LearnerAnalytics,
+  OnlineCatalog,
+  PracticeApi,
+  PracticeRequest,
+  SavedSession,
+  SessionSummary,
+} from '../core/practice-api';
 
 @Component({
   selector: 'app-learner-detail',
@@ -14,9 +22,12 @@ import { Learner, LearnerAnalytics, PracticeApi, SessionSummary } from '../core/
 })
 export class LearnerDetail implements OnInit {
   protected readonly learner = signal<Learner | null>(null);
+  protected readonly catalog = signal<OnlineCatalog | null>(null);
   protected readonly analytics = signal<LearnerAnalytics | null>(null);
   protected readonly sessions = signal<SessionSummary[]>([]);
+  protected readonly createdSession = signal<SavedSession | null>(null);
   protected readonly loading = signal(true);
+  protected readonly creatingPracticePlugin = signal<string | null>(null);
   protected readonly error = signal('');
   protected learnerId = 0;
   protected readonly summaryCards = computed(() => {
@@ -56,7 +67,7 @@ export class LearnerDetail implements OnInit {
     this.api.learner(this.learnerId).subscribe({
       next: (learner) => {
         this.learner.set(learner);
-        this.loadSessions();
+        this.loadLearnerData();
       },
       error: () => {
         this.error.set('Could not load this learner.');
@@ -88,7 +99,55 @@ export class LearnerDetail implements OnInit {
     }).format(new Date(value));
   }
 
+  protected createPracticeFromPlugin(pluginId: string): void {
+    const catalog = this.catalog();
+    if (catalog === null) {
+      this.error.set('Practice choices are still loading.');
+      return;
+    }
+    const plugin = catalog.plugins.find((entry) => entry.plugin === pluginId);
+    if (plugin === undefined) {
+      this.error.set('This practice type is not available online yet.');
+      return;
+    }
+    this.error.set('');
+    this.createdSession.set(null);
+    this.creatingPracticePlugin.set(pluginId);
+    this.api.createSession(this.learnerId, this.defaultPracticeRequest(pluginId)).subscribe({
+      next: (session) => {
+        this.createdSession.set(session);
+        this.creatingPracticePlugin.set(null);
+        this.refreshLearnerInsights();
+      },
+      error: () => {
+        this.error.set('Could not create a follow-up practice session.');
+        this.creatingPracticePlugin.set(null);
+      },
+    });
+  }
+
+  protected isCreatingPractice(pluginId: string): boolean {
+    return this.creatingPracticePlugin() === pluginId;
+  }
+
+  protected pluginTitle(pluginId: string): string {
+    return this.catalog()?.plugins.find((plugin) => plugin.plugin === pluginId)?.title ?? pluginId;
+  }
+
   private loadLearnerData(): void {
+    this.api.catalog().subscribe({
+      next: (catalog) => {
+        this.catalog.set(catalog);
+        this.refreshLearnerInsights();
+      },
+      error: () => {
+        this.error.set('Could not load practice choices.');
+        this.loading.set(false);
+      },
+    });
+  }
+
+  private refreshLearnerInsights(): void {
     forkJoin({
       analytics: this.api.learnerAnalytics(this.learnerId),
       sessions: this.api.learnerSessions(this.learnerId),
@@ -105,7 +164,21 @@ export class LearnerDetail implements OnInit {
     });
   }
 
-  private loadSessions(): void {
-    this.loadLearnerData();
+  private defaultPracticeRequest(pluginId: string): PracticeRequest {
+    const plugin = this.catalog()?.plugins.find((entry) => entry.plugin === pluginId);
+    if (plugin === undefined) {
+      throw new Error(`Unknown plugin: ${pluginId}`);
+    }
+    const pluginSettings = Object.fromEntries(
+      plugin.settings.map((setting) => [setting.name, [...setting.default]]),
+    );
+    return {
+      plugin: pluginId,
+      plugin_settings: pluginSettings,
+      question_count: 10,
+      requested_locale: plugin.default_locale,
+      feedback_mode: 'immediate',
+      show_timer: false,
+    };
   }
 }
