@@ -149,6 +149,32 @@ class PracticeRepositoryTests(unittest.TestCase):
 
         self.assertEqual(results.id, session.id)
 
+    def test_learner_analytics_supports_completed_legacy_sessions_without_completed_at(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        self.repository.create_practice_session(
+            learner.id,
+            self._snapshot(),
+            student_token="legacy-student-token",
+        )
+        session = self.repository.get_session_by_student_token("legacy-student-token")
+        for question in session.questions:
+            self.repository.submit_answer(
+                "legacy-student-token",
+                question.public_identifier,
+                str(question.expected_answer),
+            )
+        with self.session_factory() as database_session:
+            legacy_session = database_session.get(PracticeSessionEntity, session.id)
+            legacy_session.status = "completed"
+            legacy_session.completed_at = None
+            database_session.commit()
+
+        analytics = self.repository.get_learner_analytics(learner.id)
+
+        self.assertEqual(analytics.total_sessions, 1)
+        self.assertEqual(analytics.completed_sessions, 1)
+        self.assertIsNotNone(analytics.last_completed_at)
+
     def test_aggregates_learner_analytics_and_mistake_notebook(self) -> None:
         learner = self.repository.create_learner("Alex")
         self.repository.create_practice_session(

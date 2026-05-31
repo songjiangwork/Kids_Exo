@@ -313,7 +313,10 @@ class PracticeRepository:
                 else None
             ),
             last_completed_at=max(
-                (saved_session.completed_at for saved_session in completed_sessions),
+                (
+                    saved_session.completed_at or saved_session.created_at
+                    for saved_session in completed_sessions
+                ),
                 default=None,
             ),
             skill_breakdown=skill_breakdown,
