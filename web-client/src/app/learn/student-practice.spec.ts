@@ -43,6 +43,36 @@ describe('StudentPractice', () => {
     expect(fixture.nativeElement.textContent).toContain('Check answer');
   });
 
+  it('supports the short /s/:token route token shape', async () => {
+    await TestBed.configureTestingModule({
+      imports: [StudentPractice],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: ActivatedRoute,
+          useValue: { paramMap: of(convertToParamMap({ token: 's12-k7m4p9qx' })) },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(StudentPractice);
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/student/sessions/s12-k7m4p9qx').flush({
+      plugin: 'multiply_by_11',
+      requested_locale: 'en-CA',
+      feedback_mode: 'immediate',
+      show_timer: false,
+      questions: [
+        { identifier: 'question-1', position: 1, total_questions: 10, prompt: '42 x 11 = __________' },
+      ],
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('42 x 11');
+  });
+
   it('submits a value entered through the numeric answer input', async () => {
     const { fixture, http } = await createFixture();
     const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;

@@ -85,7 +85,7 @@
           <h2>{{ pluginTitle(session.plugin) }}</h2>
           <p>10 focused questions are ready for {{ profile.nickname }}.</p>
           <div class="handoff-actions">
-            <a mat-flat-button class="primary-action" [routerLink]="['/learn/session', session.student_token]">
+            <a mat-flat-button class="primary-action" [routerLink]="['/s', session.student_token]">
               Open learner practice
             </a>
             <a mat-button [routerLink]="['/manage/learners', profile.id]">

@@ -168,6 +168,10 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()["plugin"], "square_ending_in_5")
         self.assertIn(" x ", response.json()["questions"][0]["prompt"])
+        self.assertRegex(
+            response.json()["student_token"],
+            rf"^s{response.json()['id']}-[23456789abcdefghjkmnpqrstvwxyz]{{8}}$",
+        )
 
     def test_parent_can_view_learner_analytics_and_mistake_notebook(self) -> None:
         learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()

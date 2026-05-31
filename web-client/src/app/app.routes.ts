@@ -28,6 +28,10 @@ export const routes: Routes = [
     loadComponent: () => import('./manage/learner-detail').then((module) => module.LearnerDetail),
   },
   {
+    path: 's/:token',
+    loadComponent: () => import('./learn/student-practice').then((module) => module.StudentPractice),
+  },
+  {
     path: 'learn/session/:token',
     loadComponent: () => import('./learn/student-practice').then((module) => module.StudentPractice),
   },

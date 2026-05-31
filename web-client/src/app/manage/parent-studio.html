@@ -125,7 +125,7 @@
         @if (session.localization_fallback_keys.length > 0) {
           <p class="language-note">Some teaching content is displayed in English for this skill.</p>
         }
-        <a mat-flat-button class="open-button" [routerLink]="['/learn/session', session.student_token]">
+        <a mat-flat-button class="open-button" [routerLink]="['/s', session.student_token]">
           Open learner practice
         </a>
         @if (learnerId !== null) {

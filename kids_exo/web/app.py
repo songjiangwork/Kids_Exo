@@ -1,4 +1,3 @@
-import secrets
 import os
 
 from fastapi import FastAPI, HTTPException
@@ -170,7 +169,6 @@ def create_app(repository: PracticeRepository | None = None) -> FastAPI:
             saved = storage.create_practice_session(
                 learner_id,
                 snapshot,
-                student_token=secrets.token_urlsafe(24),
             )
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc

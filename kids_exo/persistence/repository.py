@@ -1,5 +1,6 @@
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+import secrets
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload, sessionmaker
@@ -42,6 +43,9 @@ class LearnerAnalytics:
     last_completed_at: datetime | None
     skill_breakdown: tuple[LearnerSkillBreakdown, ...]
     mistake_notebook: tuple[LearnerMistakeEntry, ...]
+
+
+_SESSION_TOKEN_ALPHABET = "23456789abcdefghjkmnpqrstvwxyz"
 
 
 class PracticeRepository:
@@ -105,14 +109,14 @@ class PracticeRepository:
         learner_id: int,
         snapshot: PracticeSessionSnapshot,
         *,
-        student_token: str,
+        student_token: str | None = None,
     ) -> PracticeSessionEntity:
         with self._session_factory() as database_session:
             if database_session.get(LearnerEntity, learner_id) is None:
                 raise ValueError(f"Unknown learner: {learner_id}")
             practice_session = PracticeSessionEntity(
                 learner_id=learner_id,
-                student_token=student_token,
+                student_token=student_token or "pending-token",
                 plugin=snapshot.plugin,
                 plugin_settings=asdict(snapshot.plugin_settings),
                 requested_locale=snapshot.requested_locale,
@@ -134,6 +138,12 @@ class PracticeRepository:
                 ],
             )
             database_session.add(practice_session)
+            database_session.flush()
+            if student_token is None:
+                practice_session.student_token = self._generate_student_token(
+                    database_session,
+                    practice_session.id,
+                )
             database_session.commit()
             return practice_session
 
@@ -384,3 +394,19 @@ class PracticeRepository:
             0,
             int((practice_session.completed_at - practice_session.started_at).total_seconds()),
         )
+
+    @staticmethod
+    def _generate_student_token(database_session, session_id: int) -> str:
+        while True:
+            secret = "".join(
+                secrets.choice(_SESSION_TOKEN_ALPHABET)
+                for _ in range(8)
+            )
+            token = f"s{session_id}-{secret}"
+            existing = database_session.scalar(
+                select(PracticeSessionEntity.id).where(
+                    PracticeSessionEntity.student_token == token
+                )
+            )
+            if existing is None:
+                return token
