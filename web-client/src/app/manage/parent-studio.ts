@@ -56,7 +56,7 @@ export class ParentStudio implements OnInit {
   protected digits = 2;
   protected selectedStrategies = new Set<string>();
   protected feedbackMode = 'immediate';
-  protected showTimer = false;
+  protected showTimer = true;
   protected locale = 'en-CA';
 
   constructor(private readonly api: PracticeApi) {}

@@ -20,7 +20,7 @@ class OnlineSessionRequest:
     question_count: int
     requested_locale: str = "en-CA"
     feedback_mode: str = "immediate"
-    show_timer: bool = False
+    show_timer: bool = True
     seed: int | None = None
 
 

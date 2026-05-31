@@ -35,7 +35,16 @@
         <p class="counter">Question {{ activeQuestion.position }} of {{ activeQuestion.total_questions }}</p>
       </div>
       @if (session()?.show_timer) {
-        <div class="timer">{{ timerText() }}</div>
+        <div class="timer-panel">
+          <div class="timer">{{ timerText() }}</div>
+          @if (!complete()) {
+            @if (timerPaused()) {
+              <button mat-stroked-button (click)="resumeTimer()" [disabled]="timerUpdating()">Resume</button>
+            } @else {
+              <button mat-stroked-button (click)="pauseTimer()" [disabled]="timerUpdating()">Pause</button>
+            }
+          }
+        </div>
       }
     </div>
 
@@ -50,13 +59,17 @@
           type="number"
           inputmode="numeric"
           [(ngModel)]="answer"
-          [disabled]="feedback() !== null"
+          [disabled]="feedback() !== null || isPracticePaused()"
           (keyup.enter)="checkAnswer()"
         />
       </mat-form-field>
 
+      @if (isPracticePaused()) {
+        <p class="paused-note">Timer paused. Resume when you are ready to keep practicing.</p>
+      }
+
       @if (feedback() === null) {
-        <button mat-flat-button class="check-button" (click)="checkAnswer()" [disabled]="submitting()">
+        <button mat-flat-button class="check-button" (click)="checkAnswer()" [disabled]="submitting() || isPracticePaused()">
           @if (submitting()) { Checking... } @else { Check answer }
         </button>
       } @else {

@@ -41,6 +41,9 @@ class PracticeSessionEntity(Base):
     )
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    active_elapsed_seconds: Mapped[int] = mapped_column(Integer, default=0)
+    timer_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     learner: Mapped[LearnerEntity] = relationship(back_populates="practice_sessions")
     questions: Mapped[list["QuestionInstanceEntity"]] = relationship(
         back_populates="practice_session",
@@ -80,4 +83,8 @@ class ResponseAttemptEntity(Base):
     submitted_answer: Mapped[str] = mapped_column(String(100))
     normalized_answer: Mapped[int] = mapped_column(Integer)
     is_correct: Mapped[bool] = mapped_column(Boolean)
+    submitted_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
     question: Mapped[QuestionInstanceEntity] = relationship(back_populates="attempts")

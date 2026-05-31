@@ -67,7 +67,7 @@ class PracticePreviewRequest(BaseModel):
     question_count: int
     requested_locale: str = "en-CA"
     feedback_mode: str = "immediate"
-    show_timer: bool = False
+    show_timer: bool = True
     seed: int | None = None
 
 
@@ -173,10 +173,20 @@ class SavedPracticeSessionResponse(BaseModel):
 
 class StudentSessionResponse(BaseModel):
     plugin: str
+    status: str
+    timer_status: str
     requested_locale: str
     feedback_mode: str
     show_timer: bool
+    answered_questions: int
+    correct_answers: int
+    active_elapsed_seconds: int
     questions: tuple[StudentQuestionResponse, ...]
+
+
+class TimerStatusResponse(BaseModel):
+    timer_status: str
+    active_elapsed_seconds: int
 
 
 class AnswerSubmissionRequest(BaseModel):

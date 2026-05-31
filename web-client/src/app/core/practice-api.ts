@@ -135,10 +135,20 @@ export interface PrintableWorksheetChoice {
 
 export interface StudentSession {
   plugin: string;
+  status: string;
+  timer_status: string;
   requested_locale: string;
   feedback_mode: string;
   show_timer: boolean;
+  answered_questions: number;
+  correct_answers: number;
+  active_elapsed_seconds: number;
   questions: StudentQuestion[];
+}
+
+export interface TimerStatus {
+  timer_status: string;
+  active_elapsed_seconds: number;
 }
 
 export interface AnswerResult {
@@ -183,6 +193,14 @@ export class PracticeApi {
 
   studentSession(token: string): Observable<StudentSession> {
     return this.http.get<StudentSession>(`/api/student/sessions/${token}`);
+  }
+
+  pauseStudentTimer(token: string): Observable<TimerStatus> {
+    return this.http.post<TimerStatus>(`/api/student/sessions/${token}/timer/pause`, {});
+  }
+
+  resumeStudentTimer(token: string): Observable<TimerStatus> {
+    return this.http.post<TimerStatus>(`/api/student/sessions/${token}/timer/resume`, {});
   }
 
   learnerSessions(learnerId: number): Observable<SessionSummary[]> {

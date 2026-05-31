@@ -1,5 +1,6 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from datetime import datetime, timedelta, timezone
 import unittest
 
 from alembic import command
@@ -69,6 +70,60 @@ class PracticeRepositoryTests(unittest.TestCase):
 
         self.assertTrue(attempt.is_correct)
         self.assertEqual(attempt.normalized_answer, question.expected_answer)
+
+    def test_tracks_active_elapsed_time_and_settles_stale_timer_on_reopen(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        self.repository.create_practice_session(
+            learner.id,
+            self._snapshot(),
+            student_token="student-token",
+        )
+        self.repository.start_student_session("student-token")
+        session = self.repository.get_session_by_student_token("student-token")
+        question = session.questions[0]
+        with self.session_factory() as database_session:
+            saved = database_session.get(PracticeSessionEntity, session.id)
+            saved.timer_started_at = datetime.now(timezone.utc) - timedelta(seconds=12)
+            database_session.commit()
+
+        self.repository.submit_answer(
+            "student-token",
+            question.public_identifier,
+            str(question.expected_answer),
+        )
+        answered = self.repository.get_session_by_student_token("student-token")
+        self.assertGreaterEqual(answered.active_elapsed_seconds, 10)
+        self.assertIsNotNone(answered.timer_started_at)
+
+        with self.session_factory() as database_session:
+            saved = database_session.get(PracticeSessionEntity, session.id)
+            saved.timer_started_at = saved.last_answered_at
+            database_session.commit()
+
+        reopened = self.repository.start_student_session("student-token")
+
+        self.assertLess(reopened.active_elapsed_seconds, 60)
+        self.assertIsNotNone(reopened.timer_started_at)
+
+    def test_can_pause_and_resume_student_timer(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        self.repository.create_practice_session(
+            learner.id,
+            self._snapshot(),
+            student_token="student-token",
+        )
+        session = self.repository.start_student_session("student-token")
+        with self.session_factory() as database_session:
+            saved = database_session.get(PracticeSessionEntity, session.id)
+            saved.timer_started_at = datetime.now(timezone.utc) - timedelta(seconds=8)
+            database_session.commit()
+
+        paused = self.repository.pause_student_timer("student-token")
+        resumed = self.repository.resume_student_timer("student-token")
+
+        self.assertGreaterEqual(paused.active_elapsed_seconds, 6)
+        self.assertIsNone(paused.timer_started_at)
+        self.assertIsNotNone(resumed.timer_started_at)
 
     def test_tracks_session_progress_and_lists_learner_history(self) -> None:
         learner = self.repository.create_learner("Alex")
@@ -253,7 +308,24 @@ class AlembicMigrationTests(unittest.TestCase):
                     build_engine(f"sqlite+pysqlite:///{database_path}")
                 ).get_columns("practice_sessions")
             }
-            self.assertTrue({"created_at", "started_at", "completed_at"} <= session_columns)
+            self.assertTrue(
+                {
+                    "created_at",
+                    "started_at",
+                    "completed_at",
+                    "active_elapsed_seconds",
+                    "timer_started_at",
+                    "last_answered_at",
+                }
+                <= session_columns
+            )
+            attempt_columns = {
+                column["name"]
+                for column in inspect(
+                    build_engine(f"sqlite+pysqlite:///{database_path}")
+                ).get_columns("response_attempts")
+            }
+            self.assertIn("submitted_at", attempt_columns)
 
 
 if __name__ == "__main__":

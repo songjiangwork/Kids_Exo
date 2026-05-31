@@ -29,6 +29,7 @@ from kids_exo.web.schemas import (
     SessionSummaryResponse,
     StudentQuestionResponse,
     StudentSessionResponse,
+    TimerStatusResponse,
 )
 
 
@@ -215,13 +216,47 @@ def create_app(repository: PracticeRepository | None = None) -> FastAPI:
             saved = storage.get_session_by_student_token(token)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        attempts = [
+            question.attempts[0]
+            for question in saved.questions
+            if question.attempts
+        ]
         return StudentSessionResponse(
             plugin=saved.plugin,
+            status=_display_status(saved, attempts),
+            timer_status=PracticeRepository._timer_status(saved),
             requested_locale=saved.requested_locale,
             feedback_mode=saved.feedback_mode,
             show_timer=saved.show_timer,
+            answered_questions=len(attempts),
+            correct_answers=sum(attempt.is_correct for attempt in attempts),
+            active_elapsed_seconds=saved.active_elapsed_seconds or 0,
             questions=_student_questions(saved),
         )
+
+    @app.post(
+        "/api/student/sessions/{token}/timer/pause",
+        response_model=TimerStatusResponse,
+    )
+    def pause_student_timer(token: str) -> TimerStatusResponse:
+        storage = _require_repository(repository)
+        try:
+            saved = storage.pause_student_timer(token)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return _timer_status_response(saved)
+
+    @app.post(
+        "/api/student/sessions/{token}/timer/resume",
+        response_model=TimerStatusResponse,
+    )
+    def resume_student_timer(token: str) -> TimerStatusResponse:
+        storage = _require_repository(repository)
+        try:
+            saved = storage.resume_student_timer(token)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return _timer_status_response(saved)
 
     @app.get(
         "/api/student/sessions/{token}/results",
@@ -355,6 +390,13 @@ def _practice_results_response(saved_session) -> PracticeResultsResponse:
             for question, attempt in attempts
             if not attempt.is_correct
         ),
+    )
+
+
+def _timer_status_response(saved_session) -> TimerStatusResponse:
+    return TimerStatusResponse(
+        timer_status=PracticeRepository._timer_status(saved_session),
+        active_elapsed_seconds=saved_session.active_elapsed_seconds or 0,
     )
 
 

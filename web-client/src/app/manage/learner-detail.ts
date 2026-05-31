@@ -10,6 +10,7 @@ import {
   OnlineCatalog,
   PracticeApi,
   PracticeRequest,
+  PracticeResults,
   SavedSession,
   SessionSummary,
 } from '../core/practice-api';
@@ -26,6 +27,7 @@ export class LearnerDetail implements OnInit {
   protected readonly analytics = signal<LearnerAnalytics | null>(null);
   protected readonly sessions = signal<SessionSummary[]>([]);
   protected readonly createdSession = signal<SavedSession | null>(null);
+  protected readonly selectedResults = signal<PracticeResults | null>(null);
   protected readonly loading = signal(true);
   protected readonly creatingPracticePlugin = signal<string | null>(null);
   protected readonly error = signal('');
@@ -126,6 +128,17 @@ export class LearnerDetail implements OnInit {
     });
   }
 
+  protected reviewResults(session: SessionSummary): void {
+    if (session.status !== 'completed') {
+      return;
+    }
+    this.error.set('');
+    this.api.parentResults(this.learnerId, session.id).subscribe({
+      next: (results) => this.selectedResults.set(results),
+      error: () => this.error.set('Could not load these results.'),
+    });
+  }
+
   protected isCreatingPractice(pluginId: string): boolean {
     return this.creatingPracticePlugin() === pluginId;
   }
@@ -178,7 +191,7 @@ export class LearnerDetail implements OnInit {
       question_count: 10,
       requested_locale: plugin.default_locale,
       feedback_mode: 'immediate',
-      show_timer: false,
+      show_timer: true,
     };
   }
 }

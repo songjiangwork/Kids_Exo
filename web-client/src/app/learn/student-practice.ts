@@ -36,6 +36,8 @@ export class StudentPractice implements OnInit, OnDestroy {
   protected readonly complete = signal(false);
   protected readonly results = signal<PracticeResults | null>(null);
   protected readonly elapsedSeconds = signal(0);
+  protected readonly timerPaused = signal(false);
+  protected readonly timerUpdating = signal(false);
   protected answer: string | number | null = '';
 
   protected readonly question = computed(() => this.session()?.questions[this.index()]);
@@ -58,13 +60,14 @@ export class StudentPractice implements OnInit, OnDestroy {
       this.token = params.get('token') ?? '';
       this.api.studentSession(this.token).subscribe({
         next: (session) => {
+          this.stopLocalTimer();
           this.session.set(session);
+          this.elapsedSeconds.set(session.active_elapsed_seconds);
+          this.timerPaused.set(session.timer_status !== 'running');
+          this.resumeSession(session);
           this.loading.set(false);
-          if (session.show_timer) {
-            this.timer = setInterval(
-              () => this.elapsedSeconds.update((seconds) => seconds + 1),
-              1000,
-            );
+          if (this.shouldRunLocalTimer(session)) {
+            this.startLocalTimer();
           }
         },
         error: () => {
@@ -77,15 +80,13 @@ export class StudentPractice implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routeSubscription?.unsubscribe();
-    if (this.timer) {
-      clearInterval(this.timer);
-    }
+    this.stopLocalTimer();
   }
 
   protected checkAnswer(): void {
     const question = this.question();
     const normalizedAnswer = this.answer === null ? '' : String(this.answer).trim();
-    if (!question || normalizedAnswer === '') {
+    if (!question || normalizedAnswer === '' || this.isPracticePaused()) {
       return;
     }
     this.submitting.set(true);
@@ -110,21 +111,7 @@ export class StudentPractice implements OnInit, OnDestroy {
   protected nextQuestion(): void {
     const total = this.session()?.questions.length ?? 0;
     if (this.index() + 1 >= total) {
-      if (this.timer) {
-        clearInterval(this.timer);
-      }
-      this.submitting.set(true);
-      this.api.studentResults(this.token).subscribe({
-        next: (results) => {
-          this.results.set(results);
-          this.complete.set(true);
-          this.submitting.set(false);
-        },
-        error: () => {
-          this.error.set('Your results could not be loaded.');
-          this.submitting.set(false);
-        },
-      });
+      this.loadResults();
       return;
     }
     this.index.update((value) => value + 1);
@@ -140,8 +127,100 @@ export class StudentPractice implements OnInit, OnDestroy {
     return this.formatSeconds(this.results()?.elapsed_seconds ?? 0);
   }
 
+  protected isPracticePaused(): boolean {
+    return Boolean(this.session()?.show_timer && this.timerPaused());
+  }
+
+  protected pauseTimer(): void {
+    if (!this.session()?.show_timer || this.timerPaused() || this.timerUpdating()) {
+      return;
+    }
+    this.timerUpdating.set(true);
+    this.api.pauseStudentTimer(this.token).subscribe({
+      next: (timerStatus) => {
+        this.stopLocalTimer();
+        this.elapsedSeconds.set(timerStatus.active_elapsed_seconds);
+        this.timerPaused.set(true);
+        this.timerUpdating.set(false);
+      },
+      error: () => {
+        this.error.set('The timer could not be paused.');
+        this.timerUpdating.set(false);
+      },
+    });
+  }
+
+  protected resumeTimer(): void {
+    if (!this.session()?.show_timer || !this.timerPaused() || this.timerUpdating()) {
+      return;
+    }
+    this.timerUpdating.set(true);
+    this.api.resumeStudentTimer(this.token).subscribe({
+      next: (timerStatus) => {
+        this.elapsedSeconds.set(timerStatus.active_elapsed_seconds);
+        this.timerPaused.set(false);
+        this.startLocalTimer();
+        this.timerUpdating.set(false);
+      },
+      error: () => {
+        this.error.set('The timer could not be resumed.');
+        this.timerUpdating.set(false);
+      },
+    });
+  }
+
+  private resumeSession(session: StudentSession): void {
+    if (session.status === 'completed' || session.answered_questions >= session.questions.length) {
+      this.loadResults();
+      return;
+    }
+    this.index.set(Math.max(0, session.answered_questions));
+    this.feedback.set(null);
+    this.answer = '';
+  }
+
+  private loadResults(): void {
+    this.stopLocalTimer();
+    this.submitting.set(true);
+    this.api.studentResults(this.token).subscribe({
+      next: (results) => {
+        this.results.set(results);
+        this.complete.set(true);
+        this.submitting.set(false);
+      },
+      error: () => {
+        this.error.set('Your results could not be loaded.');
+        this.submitting.set(false);
+      },
+    });
+  }
+
   private formatSeconds(seconds: number): string {
     const minutes = Math.floor(seconds / 60);
     return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
+  }
+
+  private shouldRunLocalTimer(session: StudentSession): boolean {
+    return (
+      session.show_timer &&
+      session.status !== 'completed' &&
+      session.answered_questions < session.questions.length &&
+      session.timer_status === 'running'
+    );
+  }
+
+  private startLocalTimer(): void {
+    this.stopLocalTimer();
+    this.timer = setInterval(
+      () => this.elapsedSeconds.update((seconds) => seconds + 1),
+      1000,
+    );
+  }
+
+  private stopLocalTimer(): void {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = undefined;
+    }
   }
 }

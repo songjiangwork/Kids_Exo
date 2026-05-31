@@ -276,7 +276,68 @@ class PracticeWebApiTests(unittest.TestCase):
         )
         self.assertEqual(student.status_code, 200)
         self.assertEqual(len(student.json()["questions"]), 10)
+        self.assertEqual(student.json()["status"], "in_progress")
+        self.assertEqual(student.json()["timer_status"], "running")
+        self.assertEqual(student.json()["answered_questions"], 0)
+        self.assertEqual(student.json()["correct_answers"], 0)
+        self.assertEqual(student.json()["active_elapsed_seconds"], 0)
         self.assertNotIn("expected_answer", student.text)
+
+    def test_student_session_reports_resume_progress_without_exposing_answers(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        created = self.client.post(
+            f"/api/learners/{learner['id']}/sessions",
+            json={
+                "plugin": "multiply_by_11",
+                "plugin_settings": {"multiplicand_digits": [2]},
+                "question_count": 10,
+                "seed": 23,
+            },
+        ).json()
+
+        for question in created["questions"][:3]:
+            left_operand = question["prompt"].split(" x ")[0]
+            self.client.post(
+                f"/api/student/sessions/{created['student_token']}/questions/{question['identifier']}/attempts",
+                json={"answer": str(int(left_operand) * 11)},
+            )
+
+        student = self.client.get(
+            f"/api/student/sessions/{created['student_token']}"
+        )
+
+        self.assertEqual(student.status_code, 200)
+        self.assertEqual(student.json()["status"], "in_progress")
+        self.assertEqual(student.json()["answered_questions"], 3)
+        self.assertEqual(student.json()["correct_answers"], 3)
+        self.assertNotIn("expected_answer", student.text)
+
+    def test_student_can_pause_and_resume_visible_timer(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        created = self.client.post(
+            f"/api/learners/{learner['id']}/sessions",
+            json={
+                "plugin": "multiply_by_11",
+                "plugin_settings": {"multiplicand_digits": [2]},
+                "question_count": 10,
+                "show_timer": True,
+                "seed": 23,
+            },
+        ).json()
+
+        opened = self.client.get(f"/api/student/sessions/{created['student_token']}")
+        paused = self.client.post(
+            f"/api/student/sessions/{created['student_token']}/timer/pause"
+        )
+        resumed = self.client.post(
+            f"/api/student/sessions/{created['student_token']}/timer/resume"
+        )
+
+        self.assertEqual(opened.json()["timer_status"], "running")
+        self.assertEqual(paused.status_code, 200)
+        self.assertEqual(paused.json()["timer_status"], "paused")
+        self.assertEqual(resumed.status_code, 200)
+        self.assertEqual(resumed.json()["timer_status"], "running")
 
     def test_parent_can_list_learners_and_their_session_history(self) -> None:
         learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()

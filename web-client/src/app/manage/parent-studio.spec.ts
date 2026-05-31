@@ -122,6 +122,7 @@ describe('ParentStudio', () => {
 
     const request = http.expectOne('/api/learners/1/sessions');
     expect(request.request.body.plugin).toBe('square_ending_in_5');
+    expect(request.request.body.show_timer).toBe(true);
     expect(request.request.body.plugin_settings).toEqual({
       strategies: ['ending_in_5_square'],
     });

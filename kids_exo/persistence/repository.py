@@ -164,6 +164,7 @@ class PracticeRepository:
 
     def start_student_session(self, token: str) -> PracticeSessionEntity:
         with self._session_factory() as database_session:
+            now = self._now()
             practice_session = database_session.scalars(
                 select(PracticeSessionEntity).where(
                     PracticeSessionEntity.student_token == token
@@ -171,10 +172,41 @@ class PracticeRepository:
             ).one_or_none()
             if practice_session is None:
                 raise ValueError("Unknown student session token")
+            should_commit = False
             if practice_session.status == "created":
                 practice_session.status = "in_progress"
-                practice_session.started_at = datetime.now(timezone.utc)
+                practice_session.started_at = now
+                should_commit = True
+            if practice_session.show_timer and practice_session.status != "completed":
+                self._settle_stale_timer(practice_session)
+                practice_session.timer_started_at = now
+                should_commit = True
+            if should_commit:
                 database_session.commit()
+            return practice_session
+
+    def pause_student_timer(self, token: str) -> PracticeSessionEntity:
+        with self._session_factory() as database_session:
+            practice_session = self._get_session_for_timer_update(database_session, token)
+            self._settle_timer(practice_session, self._now())
+            database_session.commit()
+            return practice_session
+
+    def resume_student_timer(self, token: str) -> PracticeSessionEntity:
+        with self._session_factory() as database_session:
+            now = self._now()
+            practice_session = self._get_session_for_timer_update(database_session, token)
+            if practice_session.status == "created":
+                practice_session.status = "in_progress"
+                practice_session.started_at = now
+            if self._is_complete(practice_session):
+                practice_session.status = "completed"
+                database_session.commit()
+                return practice_session
+            if practice_session.show_timer:
+                self._settle_stale_timer(practice_session)
+                practice_session.timer_started_at = now
+            database_session.commit()
             return practice_session
 
     def list_sessions_for_learner(self, learner_id: int) -> list[PracticeSessionEntity]:
@@ -363,23 +395,31 @@ class PracticeRepository:
                 raise ValueError("Unknown student question")
             if question.attempts:
                 raise ValueError("Question already submitted")
+            now = self._now()
+            if practice_session.show_timer and practice_session.timer_started_at is not None:
+                self._settle_timer(practice_session, now)
             attempt = ResponseAttemptEntity(
                 question_instance_id=question.id,
                 attempt_number=len(question.attempts) + 1,
                 submitted_answer=submitted_answer,
                 normalized_answer=normalized_answer,
                 is_correct=normalized_answer == question.expected_answer,
+                submitted_at=now,
             )
             database_session.add(attempt)
             if practice_session.status == "created":
                 practice_session.status = "in_progress"
-                practice_session.started_at = datetime.now(timezone.utc)
+                practice_session.started_at = now
+            practice_session.last_answered_at = now
+            if practice_session.show_timer:
+                practice_session.timer_started_at = now
             if all(
                 saved_question.attempts or saved_question.id == question.id
                 for saved_question in practice_session.questions
             ):
                 practice_session.status = "completed"
-                practice_session.completed_at = datetime.now(timezone.utc)
+                practice_session.completed_at = now
+                practice_session.timer_started_at = None
             database_session.commit()
             return attempt
 
@@ -391,12 +431,73 @@ class PracticeRepository:
 
     @staticmethod
     def _elapsed_seconds(practice_session: PracticeSessionEntity) -> int | None:
+        active_elapsed_seconds = getattr(practice_session, "active_elapsed_seconds", 0) or 0
+        if active_elapsed_seconds:
+            return active_elapsed_seconds
         if practice_session.started_at is None or practice_session.completed_at is None:
             return None
+        completed_at = PracticeRepository._normalize_datetime(practice_session.completed_at)
+        started_at = PracticeRepository._normalize_datetime(practice_session.started_at)
         return max(
             0,
-            int((practice_session.completed_at - practice_session.started_at).total_seconds()),
+            int((completed_at - started_at).total_seconds()),
         )
+
+    @staticmethod
+    def _timer_status(practice_session: PracticeSessionEntity) -> str:
+        if practice_session.timer_started_at is not None:
+            return "running"
+        return "paused"
+
+    def _get_session_for_timer_update(self, database_session, token: str) -> PracticeSessionEntity:
+        practice_session = database_session.scalars(
+            select(PracticeSessionEntity)
+            .where(PracticeSessionEntity.student_token == token)
+            .options(
+                selectinload(PracticeSessionEntity.questions).selectinload(
+                    QuestionInstanceEntity.attempts
+                )
+            )
+        ).one_or_none()
+        if practice_session is None:
+            raise ValueError("Unknown student session token")
+        return practice_session
+
+    def _settle_stale_timer(self, practice_session: PracticeSessionEntity) -> None:
+        if practice_session.timer_started_at is None:
+            return
+        end_at = practice_session.last_answered_at
+        timer_started_at = self._normalize_datetime(practice_session.timer_started_at)
+        if end_at is None or self._normalize_datetime(end_at) < timer_started_at:
+            end_at = practice_session.timer_started_at
+        self._settle_timer(practice_session, end_at)
+
+    @staticmethod
+    def _settle_timer(practice_session: PracticeSessionEntity, end_at: datetime) -> None:
+        if practice_session.timer_started_at is None:
+            return
+        timer_started_at = PracticeRepository._normalize_datetime(
+            practice_session.timer_started_at
+        )
+        normalized_end_at = PracticeRepository._normalize_datetime(end_at)
+        elapsed = max(
+            0,
+            int((normalized_end_at - timer_started_at).total_seconds()),
+        )
+        practice_session.active_elapsed_seconds = (
+            (practice_session.active_elapsed_seconds or 0) + elapsed
+        )
+        practice_session.timer_started_at = None
+
+    @staticmethod
+    def _now() -> datetime:
+        return datetime.now(timezone.utc).replace(tzinfo=None)
+
+    @staticmethod
+    def _normalize_datetime(value: datetime) -> datetime:
+        if value.tzinfo is None:
+            return value
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
 
     @staticmethod
     def _generate_student_token(database_session, session_id: int) -> str:

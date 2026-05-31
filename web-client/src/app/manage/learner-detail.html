@@ -101,18 +101,48 @@
       @for (session of sessions(); track session.id) {
         <mat-card class="history-card" appearance="outlined">
           <mat-card-content>
-            <strong>{{ session.plugin }}</strong>
-            <span>{{ session.status }}</span>
-            <span>{{ session.correct_answers }} / {{ session.total_questions }} correct</span>
-            @if (session.elapsed_seconds !== null) {
-              <span>Time {{ formatTime(session.elapsed_seconds) }}</span>
-            }
+            <div class="history-main">
+              <strong>{{ pluginTitle(session.plugin) }}</strong>
+              <span class="status-pill">{{ session.status }}</span>
+              <span>{{ session.correct_answers }} / {{ session.total_questions }} correct</span>
+              @if (session.elapsed_seconds !== null) {
+                <span>Time {{ formatTime(session.elapsed_seconds) }}</span>
+              }
+            </div>
+            <div class="history-actions">
+              @if (session.status === 'completed') {
+                <button mat-stroked-button (click)="reviewResults(session)">Review results</button>
+              } @else {
+                <a mat-flat-button class="primary-action" [routerLink]="['/s', session.student_token]">
+                  Open practice
+                </a>
+              }
+            </div>
           </mat-card-content>
         </mat-card>
       } @empty {
         <p>No practice sessions yet.</p>
       }
     </section>
+
+    @if (selectedResults(); as results) {
+      <mat-card class="review-card" appearance="outlined">
+        <mat-card-content>
+          <p class="eyebrow">Session review</p>
+          <h2>{{ results.correct_answers }} / {{ results.total_questions }} correct</h2>
+          @if (results.incorrect_questions.length === 0) {
+            <p>No mistakes in this session.</p>
+          } @else {
+            @for (missed of results.incorrect_questions; track missed.prompt) {
+              <div class="review-row">
+                <strong>{{ missed.prompt }}</strong>
+                <span>Answered {{ missed.submitted_answer }}; correct answer {{ missed.expected_answer }}</span>
+              </div>
+            }
+          }
+        </mat-card-content>
+      </mat-card>
+    }
   }
 
   @if (error()) {
