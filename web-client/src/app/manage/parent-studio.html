@@ -43,9 +43,18 @@
             }
 
             <mat-form-field appearance="outline">
+              <mat-label>Subject</mat-label>
+              <mat-select [(ngModel)]="subject" (ngModelChange)="selectSubject($event)">
+                @for (subjectName of subjects(); track subjectName) {
+                  <mat-option [value]="subjectName">{{ subjectName }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
               <mat-label>Skill</mat-label>
               <mat-select [(ngModel)]="pluginId" (ngModelChange)="selectPlugin($event)">
-                @for (plugin of catalog()?.plugins; track plugin.plugin) {
+                @for (plugin of pluginsForSubject(); track plugin.plugin) {
                   <mat-option [value]="plugin.plugin">{{ plugin.title }}</mat-option>
                 }
               </mat-select>

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import random
 
 from kids_exo.localization import LocalizedPresentation, LocalizedText
+from kids_exo.online.catalog import get_online_plugin
 from kids_exo.online.models import OnlineQuestionSnapshot, PracticeSessionSnapshot
 
 
@@ -63,6 +64,7 @@ STRATEGY_LABELS = {
 
 
 def create_french_alphabet_session(request) -> PracticeSessionSnapshot:
+    descriptor = get_online_plugin(request.plugin)
     strategies = tuple(request.plugin_settings.get("strategies", ()))
     if not strategies:
         strategies = ("letter_name_to_letter", "word_sound_to_word")
@@ -80,6 +82,9 @@ def create_french_alphabet_session(request) -> PracticeSessionSnapshot:
     )
     return PracticeSessionSnapshot(
         plugin=request.plugin,
+        subject=descriptor.subject,
+        category=descriptor.category,
+        skill=descriptor.title,
         plugin_settings={"strategies": list(strategies)},
         requested_locale=request.requested_locale,
         feedback_mode=request.feedback_mode,

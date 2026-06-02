@@ -118,6 +118,9 @@ class PracticeRepository:
                 learner_id=learner_id,
                 student_token=student_token or "pending-token",
                 plugin=snapshot.plugin,
+                subject=snapshot.subject,
+                category=snapshot.category,
+                skill=snapshot.skill,
                 plugin_settings=(
                     asdict(snapshot.plugin_settings)
                     if is_dataclass(snapshot.plugin_settings)

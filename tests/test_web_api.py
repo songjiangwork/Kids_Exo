@@ -168,6 +168,9 @@ class PracticeWebApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()["plugin"], "square_ending_in_5")
+        self.assertEqual(response.json()["subject"], "Math")
+        self.assertEqual(response.json()["category"], "Mental Multiplication")
+        self.assertEqual(response.json()["skill"], "Squares Ending in 5")
         self.assertIn(" x ", response.json()["questions"][0]["prompt"])
         self.assertRegex(
             response.json()["student_token"],
@@ -235,6 +238,8 @@ class PracticeWebApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         preview = response.json()
+        self.assertEqual(preview["subject"], "Math")
+        self.assertEqual(preview["skill"], "Multiply by 11")
         self.assertEqual(preview["requested_locale"], "zh-CN")
         self.assertEqual(preview["localization_fallback_keys"], ["heading", "instruction_1"])
         self.assertEqual(len(preview["questions"]), 10)

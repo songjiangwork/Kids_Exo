@@ -51,6 +51,7 @@ export class ParentStudio implements OnInit {
 
   protected nickname = 'Alex';
   protected learnerId: number | null = null;
+  protected subject = 'Math';
   protected pluginId = 'multiply_by_11';
   protected questionCount = 10;
   protected digits = 2;
@@ -66,7 +67,7 @@ export class ParentStudio implements OnInit {
       next: (catalog) => {
         this.catalog.set(catalog);
         this.questionCount = catalog.question_counts[0];
-        this.selectPlugin(catalog.plugins[0].plugin);
+        this.selectSubject(catalog.plugins[0].subject);
         this.api.learners().subscribe({
           next: (learners) => {
             this.learners.set(learners);
@@ -135,11 +136,32 @@ export class ParentStudio implements OnInit {
 
   protected selectPlugin(pluginId: string): void {
     this.pluginId = pluginId;
+    const plugin = this.selectedPlugin();
+    if (plugin) {
+      this.subject = plugin.subject;
+      this.locale = plugin.default_locale;
+    }
     const digitDefault = this.setting('multiplicand_digits')?.default[0];
     this.digits = Number(digitDefault ?? 2);
     this.selectedStrategies = new Set(
       (this.setting('strategies')?.default ?? []).map(String),
     );
+  }
+
+  protected selectSubject(subject: string): void {
+    this.subject = subject;
+    const firstPlugin = this.pluginsForSubject()[0];
+    if (firstPlugin) {
+      this.selectPlugin(firstPlugin.plugin);
+    }
+  }
+
+  protected subjects(): string[] {
+    return [...new Set((this.catalog()?.plugins ?? []).map((plugin) => plugin.subject))];
+  }
+
+  protected pluginsForSubject(): OnlinePlugin[] {
+    return (this.catalog()?.plugins ?? []).filter((plugin) => plugin.subject === this.subject);
   }
 
   protected formatTime(seconds: number | null): string {

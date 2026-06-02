@@ -26,6 +26,9 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         second = create_practice_session(self._request())
 
         self.assertEqual(first.plugin, "multiply_by_11")
+        self.assertEqual(first.subject, "Math")
+        self.assertEqual(first.category, "Mental Multiplication")
+        self.assertEqual(first.skill, "Multiply by 11")
         self.assertEqual(first.seed, 1122)
         self.assertEqual(first.questions, second.questions)
         self.assertEqual(len(first.questions), 10)
@@ -126,6 +129,9 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         student_view = session.student_questions()[0]
 
         self.assertEqual(session.plugin, "french_alphabet_sounds")
+        self.assertEqual(session.subject, "French")
+        self.assertEqual(session.category, "Pronunciation")
+        self.assertEqual(session.skill, "French Alphabet Sounds")
         self.assertEqual(first.question_type, "multiple_choice")
         self.assertEqual(len(first.choices), 4)
         self.assertEqual(first.speech_locale, "fr-CA")

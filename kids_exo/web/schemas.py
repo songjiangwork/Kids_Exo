@@ -84,6 +84,9 @@ class StudentQuestionResponse(FromDomainModel):
 
 class PracticePreviewResponse(BaseModel):
     plugin: str
+    subject: str
+    category: str
+    skill: str
     requested_locale: str
     feedback_mode: str
     show_timer: bool
@@ -140,6 +143,9 @@ class SessionSummaryResponse(BaseModel):
     id: int
     student_token: str
     plugin: str
+    subject: str
+    category: str
+    skill: str
     status: str
     total_questions: int
     answered_questions: int
@@ -168,6 +174,9 @@ class SavedPracticeSessionResponse(BaseModel):
     id: int
     student_token: str
     plugin: str
+    subject: str
+    category: str
+    skill: str
     requested_locale: str
     feedback_mode: str
     show_timer: bool
@@ -177,6 +186,9 @@ class SavedPracticeSessionResponse(BaseModel):
 
 class StudentSessionResponse(BaseModel):
     plugin: str
+    subject: str
+    category: str
+    skill: str
     status: str
     timer_status: str
     requested_locale: str

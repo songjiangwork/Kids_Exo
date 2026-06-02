@@ -29,6 +29,7 @@ def create_practice_session(request: OnlineSessionRequest) -> PracticeSessionSna
     """Create an immutable online-practice snapshot before persistence is introduced."""
 
     _validate_request(request)
+    descriptor = get_online_plugin(request.plugin)
     if request.plugin == "french_alphabet_sounds":
         return create_french_alphabet_session(request)
     definition = get_plugin_definition(request.plugin)
@@ -64,6 +65,9 @@ def create_practice_session(request: OnlineSessionRequest) -> PracticeSessionSna
     )
     return PracticeSessionSnapshot(
         plugin=request.plugin,
+        subject=descriptor.subject,
+        category=descriptor.category,
+        skill=descriptor.title,
         plugin_settings=settings,
         requested_locale=request.requested_locale,
         feedback_mode=request.feedback_mode,

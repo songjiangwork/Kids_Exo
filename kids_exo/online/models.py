@@ -39,6 +39,9 @@ class AnswerEvaluation:
 @dataclass(frozen=True)
 class PracticeSessionSnapshot:
     plugin: str
+    subject: str
+    category: str
+    skill: str
     plugin_settings: Any
     requested_locale: str
     feedback_mode: str

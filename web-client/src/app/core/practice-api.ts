@@ -59,6 +59,9 @@ export interface SavedSession {
   id: number;
   student_token: string;
   plugin: string;
+  subject: string;
+  category: string;
+  skill: string;
   requested_locale: string;
   feedback_mode: string;
   show_timer: boolean;
@@ -106,6 +109,9 @@ export interface SessionSummary {
   id: number;
   student_token: string;
   plugin: string;
+  subject: string;
+  category: string;
+  skill: string;
   status: string;
   total_questions: number;
   answered_questions: number;
@@ -139,6 +145,9 @@ export interface PrintableWorksheetChoice {
 
 export interface StudentSession {
   plugin: string;
+  subject: string;
+  category: string;
+  skill: string;
   status: string;
   timer_status: string;
   requested_locale: string;

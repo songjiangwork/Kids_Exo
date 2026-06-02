@@ -82,7 +82,7 @@
       <mat-card class="handoff" appearance="outlined">
         <mat-card-content>
           <p class="eyebrow">New practice ready</p>
-          <h2>{{ pluginTitle(session.plugin) }}</h2>
+          <h2>{{ session.skill }}</h2>
           <p>10 focused questions are ready for {{ profile.nickname }}.</p>
           <div class="handoff-actions">
             <a mat-flat-button class="primary-action" [routerLink]="['/s', session.student_token]">
@@ -103,6 +103,7 @@
           <mat-card-content>
             <div class="history-main">
               <strong>{{ pluginTitle(session.plugin) }}</strong>
+              <small>{{ session.subject }} / {{ session.category }}</small>
               <span class="status-pill">{{ session.status }}</span>
               <span>{{ session.correct_answers }} / {{ session.total_questions }} correct</span>
               @if (session.elapsed_seconds !== null) {

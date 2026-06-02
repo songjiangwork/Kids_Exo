@@ -85,6 +85,24 @@ describe('ParentStudio', () => {
             },
           ],
         },
+        {
+          plugin: 'french_alphabet_sounds',
+          title: 'French Alphabet Sounds',
+          description: 'Listen and choose what you hear.',
+          subject: 'French',
+          category: 'Pronunciation',
+          default_locale: 'en-CA',
+          locale_coverage: [],
+          settings: [
+            {
+              name: 'strategies',
+              label: 'Question types',
+              control: 'multiple_choice',
+              default: ['letter_name_to_letter'],
+              options: [{ value: 'letter_name_to_letter', label: 'French letter names' }],
+            },
+          ],
+        },
       ],
     });
     http.expectOne('/api/learners').flush([
@@ -112,6 +130,23 @@ describe('ParentStudio', () => {
       50,
       100,
     ]);
+  });
+
+  it('filters skills after choosing a subject', async () => {
+    const { fixture } = await createFixture();
+    const component = fixture.componentInstance as any;
+
+    expect(component.subjects()).toEqual(['Math', 'French']);
+
+    component.selectSubject('French');
+    fixture.detectChanges();
+
+    expect(component.pluginId).toBe('french_alphabet_sounds');
+    expect(component.pluginsForSubject().map((plugin: any) => plugin.plugin)).toEqual([
+      'french_alphabet_sounds',
+    ]);
+    expect(fixture.nativeElement.textContent).toContain('French Alphabet Sounds');
+    expect(fixture.nativeElement.textContent).toContain('French / Pronunciation');
   });
 
   it('submits only settings exposed by a newly selected plugin', async () => {
@@ -147,6 +182,9 @@ describe('ParentStudio', () => {
       id: 8,
       student_token: 'student-token',
       plugin: 'multiply_by_11',
+      subject: 'Math',
+      category: 'Mental Multiplication',
+      skill: 'Multiply by 11',
       requested_locale: 'en-CA',
       feedback_mode: 'immediate',
       show_timer: false,

@@ -90,6 +90,9 @@ def create_app(repository: PracticeRepository | None = None) -> FastAPI:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return PracticePreviewResponse(
             plugin=session.plugin,
+            subject=session.subject,
+            category=session.category,
+            skill=session.skill,
             requested_locale=session.requested_locale,
             feedback_mode=session.feedback_mode,
             show_timer=session.show_timer,
@@ -223,6 +226,9 @@ def create_app(repository: PracticeRepository | None = None) -> FastAPI:
         ]
         return StudentSessionResponse(
             plugin=saved.plugin,
+            subject=saved.subject,
+            category=saved.category,
+            skill=saved.skill,
             status=_display_status(saved, attempts),
             timer_status=PracticeRepository._timer_status(saved),
             requested_locale=saved.requested_locale,
@@ -340,6 +346,9 @@ def _saved_session_response(saved_session) -> SavedPracticeSessionResponse:
         id=saved_session.id,
         student_token=saved_session.student_token,
         plugin=saved_session.plugin,
+        subject=saved_session.subject,
+        category=saved_session.category,
+        skill=saved_session.skill,
         requested_locale=saved_session.requested_locale,
         feedback_mode=saved_session.feedback_mode,
         show_timer=saved_session.show_timer,
@@ -363,6 +372,9 @@ def _session_summary_response(saved_session) -> SessionSummaryResponse:
         id=saved_session.id,
         student_token=saved_session.student_token,
         plugin=saved_session.plugin,
+        subject=saved_session.subject,
+        category=saved_session.category,
+        skill=saved_session.skill,
         status=status,
         total_questions=len(saved_session.questions),
         answered_questions=len(attempts),

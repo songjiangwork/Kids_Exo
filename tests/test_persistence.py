@@ -47,6 +47,9 @@ class PracticeRepositoryTests(unittest.TestCase):
         retrieved = self.repository.get_session_by_student_token("student-token")
 
         self.assertEqual(saved.learner_id, learner.id)
+        self.assertEqual(retrieved.subject, "Math")
+        self.assertEqual(retrieved.category, "Mental Multiplication")
+        self.assertEqual(retrieved.skill, "Multiply by 11")
         self.assertEqual(retrieved.requested_locale, "zh-CN")
         self.assertEqual(retrieved.localization_fallback_keys, ["heading", "instruction_1"])
         self.assertEqual(len(retrieved.questions), 10)
@@ -316,6 +319,9 @@ class AlembicMigrationTests(unittest.TestCase):
                     "active_elapsed_seconds",
                     "timer_started_at",
                     "last_answered_at",
+                    "subject",
+                    "category",
+                    "skill",
                 }
                 <= session_columns
             )
