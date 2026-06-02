@@ -1,4 +1,4 @@
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, is_dataclass
 from datetime import datetime, timezone
 import secrets
 
@@ -118,7 +118,11 @@ class PracticeRepository:
                 learner_id=learner_id,
                 student_token=student_token or "pending-token",
                 plugin=snapshot.plugin,
-                plugin_settings=asdict(snapshot.plugin_settings),
+                plugin_settings=(
+                    asdict(snapshot.plugin_settings)
+                    if is_dataclass(snapshot.plugin_settings)
+                    else dict(snapshot.plugin_settings)
+                ),
                 requested_locale=snapshot.requested_locale,
                 feedback_mode=snapshot.feedback_mode,
                 show_timer=snapshot.show_timer,
@@ -133,6 +137,10 @@ class PracticeRepository:
                         strategy=question.strategy,
                         expected_answer=question.expected_answer,
                         skill_tags=list(question.skill_tags),
+                        question_type=question.question_type,
+                        choices=list(question.choices),
+                        speech_text=question.speech_text,
+                        speech_locale=question.speech_locale,
                     )
                     for position, question in enumerate(snapshot.questions, start=1)
                 ],

@@ -326,6 +326,10 @@ def _student_questions(saved_session) -> tuple[StudentQuestionResponse, ...]:
             position=question.position,
             total_questions=total,
             prompt=question.prompt,
+            question_type=question.question_type,
+            choices=tuple(question.choices or ()),
+            speech_text=question.speech_text,
+            speech_locale=question.speech_locale,
         )
         for question in saved_session.questions
     )

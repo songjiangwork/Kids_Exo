@@ -25,6 +25,7 @@ class OnlinePluginCatalogTests(unittest.TestCase):
                 "tens_sum_to_ten_same_ones",
                 "near_round_pair_multiplication",
                 "difference_of_squares",
+                "french_alphabet_sounds",
             ),
         )
 
@@ -91,6 +92,7 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         tens_same_ones = get_online_plugin("tens_sum_to_ten_same_ones")
         near_round = get_online_plugin("near_round_pair_multiplication")
         difference = get_online_plugin("difference_of_squares")
+        french_alphabet = get_online_plugin("french_alphabet_sounds")
 
         self.assertEqual(distributive.title, "Distributive Property Multiplication")
         self.assertEqual(tuple(setting.name for setting in distributive.settings), ("strategies",))
@@ -120,6 +122,12 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         )
         self.assertEqual(
             tuple(setting.name for setting in difference.settings),
+            ("strategies",),
+        )
+        self.assertEqual(french_alphabet.subject, "French")
+        self.assertEqual(french_alphabet.category, "Pronunciation")
+        self.assertEqual(
+            tuple(setting.name for setting in french_alphabet.settings),
             ("strategies",),
         )
 

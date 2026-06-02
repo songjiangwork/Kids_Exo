@@ -41,6 +41,7 @@ class PracticeWebApiTests(unittest.TestCase):
                 "tens_sum_to_ten_same_ones",
                 "near_round_pair_multiplication",
                 "difference_of_squares",
+                "french_alphabet_sounds",
             ],
         )
         plugin = catalog["plugins"][0]
@@ -281,6 +282,32 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(student.json()["answered_questions"], 0)
         self.assertEqual(student.json()["correct_answers"], 0)
         self.assertEqual(student.json()["active_elapsed_seconds"], 0)
+        self.assertNotIn("expected_answer", student.text)
+
+    def test_french_alphabet_session_exposes_audio_choices_without_answers(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        response = self.client.post(
+            f"/api/learners/{learner['id']}/sessions",
+            json={
+                "plugin": "french_alphabet_sounds",
+                "plugin_settings": {"strategies": ["letter_name_to_letter"]},
+                "question_count": 10,
+                "seed": 23,
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        created = response.json()
+        student = self.client.get(
+            f"/api/student/sessions/{created['student_token']}"
+        )
+        first_question = student.json()["questions"][0]
+
+        self.assertEqual(student.status_code, 200)
+        self.assertEqual(first_question["question_type"], "multiple_choice")
+        self.assertEqual(len(first_question["choices"]), 4)
+        self.assertEqual(first_question["speech_locale"], "fr-CA")
+        self.assertIsNotNone(first_question["speech_text"])
         self.assertNotIn("expected_answer", student.text)
 
     def test_student_session_reports_resume_progress_without_exposing_answers(self) -> None:

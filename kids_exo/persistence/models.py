@@ -66,6 +66,10 @@ class QuestionInstanceEntity(Base):
     strategy: Mapped[str] = mapped_column(String(100))
     expected_answer: Mapped[int] = mapped_column(Integer)
     skill_tags: Mapped[list[str]] = mapped_column(JSON)
+    question_type: Mapped[str] = mapped_column(String(30), default="numeric")
+    choices: Mapped[list[str]] = mapped_column(JSON, default=list)
+    speech_text: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    speech_locale: Mapped[str | None] = mapped_column(String(20), nullable=True)
     practice_session: Mapped[PracticeSessionEntity] = relationship(back_populates="questions")
     attempts: Mapped[list["ResponseAttemptEntity"]] = relationship(
         back_populates="question",

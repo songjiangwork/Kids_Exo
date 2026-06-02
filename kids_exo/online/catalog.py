@@ -290,6 +290,28 @@ _DIFFERENCE_OF_SQUARES = OnlinePluginDescriptor(
     ),
 )
 
+_FRENCH_ALPHABET_SOUNDS = OnlinePluginDescriptor(
+    plugin="french_alphabet_sounds",
+    subject="French",
+    category="Pronunciation",
+    title="French Alphabet Sounds",
+    description="Listen to French letter names and simple words, then choose what you hear.",
+    default_locale="en-CA",
+    locale_coverage=(LocaleCoverage("en-CA", ("practice",)),),
+    settings=(
+        PluginSettingSchema(
+            name="strategies",
+            label="Question types",
+            control="multiple_choice",
+            default=("letter_name_to_letter", "word_sound_to_word"),
+            options=(
+                SettingOption("letter_name_to_letter", "French letter names"),
+                SettingOption("word_sound_to_word", "Simple French words"),
+            ),
+        ),
+    ),
+)
+
 _ONLINE_CATALOG = OnlineCatalog(
     default_locale="en-CA",
     question_counts=(10, 20, 30, 40, 50, 100),
@@ -306,6 +328,7 @@ _ONLINE_CATALOG = OnlineCatalog(
         _TENS_SUM_TO_TEN_SAME_ONES,
         _NEAR_ROUND_PAIR,
         _DIFFERENCE_OF_SQUARES,
+        _FRENCH_ALPHABET_SOUNDS,
     ),
 )
 

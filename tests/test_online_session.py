@@ -113,6 +113,27 @@ class OnlinePracticeSessionTests(unittest.TestCase):
                 )
                 self.assertEqual(session.presentation.heading.locale, "en-CA")
 
+    def test_french_alphabet_session_generates_audio_choice_questions(self) -> None:
+        session = create_practice_session(
+            OnlineSessionRequest(
+                plugin="french_alphabet_sounds",
+                plugin_settings={"strategies": ["letter_name_to_letter", "word_sound_to_word"]},
+                question_count=10,
+                seed=123,
+            )
+        )
+        first = session.questions[0]
+        student_view = session.student_questions()[0]
+
+        self.assertEqual(session.plugin, "french_alphabet_sounds")
+        self.assertEqual(first.question_type, "multiple_choice")
+        self.assertEqual(len(first.choices), 4)
+        self.assertEqual(first.speech_locale, "fr-CA")
+        self.assertIsNotNone(first.speech_text)
+        self.assertTrue(session.evaluate_answer(first.identifier, str(first.expected_answer)).is_correct)
+        self.assertEqual(student_view.choices, first.choices)
+        self.assertEqual(student_view.speech_text, first.speech_text)
+
 
 if __name__ == "__main__":
     unittest.main()

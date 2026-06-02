@@ -6,6 +6,24 @@ import { of } from 'rxjs';
 import { StudentPractice } from './student-practice';
 
 describe('StudentPractice', () => {
+  const originalSpeechSynthesis = window.speechSynthesis;
+  const originalSpeechSynthesisUtterance = globalThis.SpeechSynthesisUtterance;
+
+  afterEach(() => {
+    Object.defineProperty(window, 'speechSynthesis', {
+      configurable: true,
+      value: originalSpeechSynthesis,
+    });
+    if (originalSpeechSynthesisUtterance === undefined) {
+      delete (globalThis as { SpeechSynthesisUtterance?: typeof SpeechSynthesisUtterance }).SpeechSynthesisUtterance;
+    } else {
+      Object.defineProperty(globalThis, 'SpeechSynthesisUtterance', {
+        configurable: true,
+        value: originalSpeechSynthesisUtterance,
+      });
+    }
+  });
+
   async function createFixture() {
     await TestBed.configureTestingModule({
       imports: [StudentPractice],
@@ -103,10 +121,148 @@ describe('StudentPractice', () => {
     expect(fixture.nativeElement.textContent).toContain('Nice work. That is correct.');
   });
 
+  it('submits a multiple-choice answer for an audio question', async () => {
+    await TestBed.configureTestingModule({
+      imports: [StudentPractice],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: ActivatedRoute,
+          useValue: { paramMap: of(convertToParamMap({ token: 'student-token' })) },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(StudentPractice);
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/student/sessions/student-token').flush({
+      plugin: 'french_alphabet_sounds',
+      status: 'created',
+      requested_locale: 'en-CA',
+      feedback_mode: 'immediate',
+      show_timer: false,
+      timer_status: 'paused',
+      answered_questions: 0,
+      correct_answers: 0,
+      active_elapsed_seconds: 0,
+      questions: [
+        {
+          identifier: 'question-1',
+          position: 1,
+          total_questions: 10,
+          prompt: 'Listen to the French letter name. Which letter do you hear?',
+          question_type: 'multiple_choice',
+          choices: ['A', 'B', 'C', 'D'],
+          speech_text: 'A',
+          speech_locale: 'fr-CA',
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Play sound');
+    expect(fixture.nativeElement.textContent).not.toContain('Check answer');
+    const choices = fixture.nativeElement.querySelectorAll('.choice-button') as NodeListOf<HTMLButtonElement>;
+    choices[0].click();
+
+    const submission = http.expectOne(
+      '/api/student/sessions/student-token/questions/question-1/attempts',
+    );
+    expect(submission.request.body).toEqual({ answer: '1' });
+    submission.flush({ normalized_answer: 1, is_correct: true });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Nice work. That is correct.');
+  });
+
+  it('lets the learner choose a French speech voice', async () => {
+    class MockSpeechSynthesisUtterance {
+      lang = '';
+      pitch = 1;
+      rate = 1;
+      voice: SpeechSynthesisVoice | null = null;
+
+      constructor(public text: string) {}
+    }
+    const voices = [
+      { name: 'Poor French', lang: 'fr-FR', localService: false },
+      { name: 'Microsoft Denise Natural', lang: 'fr-CA', localService: true },
+    ] as SpeechSynthesisVoice[];
+    const speak = vi.fn();
+    Object.defineProperty(globalThis, 'SpeechSynthesisUtterance', {
+      configurable: true,
+      value: MockSpeechSynthesisUtterance,
+    });
+    Object.defineProperty(window, 'speechSynthesis', {
+      configurable: true,
+      value: {
+        cancel: vi.fn(),
+        getVoices: () => voices,
+        speak,
+        onvoiceschanged: null,
+      },
+    });
+    await TestBed.configureTestingModule({
+      imports: [StudentPractice],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: ActivatedRoute,
+          useValue: { paramMap: of(convertToParamMap({ token: 'student-token' })) },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(StudentPractice);
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/student/sessions/student-token').flush({
+      plugin: 'french_alphabet_sounds',
+      status: 'created',
+      requested_locale: 'en-CA',
+      feedback_mode: 'immediate',
+      show_timer: false,
+      timer_status: 'paused',
+      answered_questions: 0,
+      correct_answers: 0,
+      active_elapsed_seconds: 0,
+      questions: [
+        {
+          identifier: 'question-1',
+          position: 1,
+          total_questions: 10,
+          prompt: 'Listen to the French word. Which word do you hear?',
+          question_type: 'multiple_choice',
+          choices: ['ami (friend)', 'chat (cat)', 'lune (moon)', 'école (school)'],
+          speech_text: 'ami',
+          speech_locale: 'fr-CA',
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Voice');
+    (fixture.componentInstance as any).selectedSpeechVoiceId = 'Microsoft Denise Natural|fr-CA';
+    (fixture.nativeElement.querySelector('.audio-button') as HTMLButtonElement).click();
+
+    expect(speak).toHaveBeenCalled();
+    const utterance = speak.mock.calls.at(-1)?.[0] as SpeechSynthesisUtterance;
+    expect(utterance.voice).toBe(voices[1]);
+    expect(utterance.rate).toBe(0.82);
+  });
+
   it('offers a local scratch pad that can be cleared', async () => {
     const { fixture } = await createFixture();
 
-    expect(fixture.nativeElement.textContent).toContain('Scratch pad');
+    expect(fixture.nativeElement.textContent).toContain('Open scratch pad');
+    expect(fixture.nativeElement.querySelector('.scratch-pad textarea')).toBeNull();
+    (fixture.nativeElement.querySelector('.scratch-toggle') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Hide scratch pad');
     const scratchPad = fixture.nativeElement.querySelector('.scratch-pad textarea') as HTMLTextAreaElement;
     scratchPad.value = '42 x 11: 4 + 2 = 6';
     scratchPad.dispatchEvent(new Event('input'));
@@ -125,6 +281,9 @@ describe('StudentPractice', () => {
   it('switches between typed notes and drawing mode without losing typed notes', async () => {
     const { fixture } = await createFixture();
     const component = fixture.componentInstance as any;
+    component.toggleScratchPad();
+    fixture.detectChanges();
+
     const scratchPad = fixture.nativeElement.querySelector('.scratch-pad textarea') as HTMLTextAreaElement;
     scratchPad.value = '42 x 11: 4 + 2 = 6';
     scratchPad.dispatchEvent(new Event('input'));
@@ -150,6 +309,9 @@ describe('StudentPractice', () => {
   it('records and clears draw-mode scratch strokes', async () => {
     const { fixture } = await createFixture();
     const component = fixture.componentInstance as any;
+    component.toggleScratchPad();
+    fixture.detectChanges();
+
     component.setScratchMode('draw');
     fixture.detectChanges();
 

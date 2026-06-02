@@ -326,6 +326,16 @@ class AlembicMigrationTests(unittest.TestCase):
                 ).get_columns("response_attempts")
             }
             self.assertIn("submitted_at", attempt_columns)
+            question_columns = {
+                column["name"]
+                for column in inspect(
+                    build_engine(f"sqlite+pysqlite:///{database_path}")
+                ).get_columns("question_instances")
+            }
+            self.assertTrue(
+                {"question_type", "choices", "speech_text", "speech_locale"}
+                <= question_columns
+            )
 
 
 if __name__ == "__main__":

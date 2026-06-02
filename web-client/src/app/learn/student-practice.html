@@ -52,90 +52,130 @@
 
     <mat-card class="question-card">
       <p class="prompt">{{ activeQuestion.prompt }}</p>
-      <mat-form-field class="answer-field" appearance="outline">
-        <mat-label>Your answer</mat-label>
-        <input
-          matInput
-          type="number"
-          inputmode="numeric"
-          [(ngModel)]="answer"
-          [disabled]="feedback() !== null || isPracticePaused()"
-          (keyup.enter)="checkAnswer()"
-        />
-      </mat-form-field>
+      @if (activeQuestion.speech_text) {
+        <section class="audio-panel" aria-label="Audio controls">
+          <button mat-stroked-button class="audio-button" type="button" (click)="playQuestionAudio()">
+            Play sound
+          </button>
+          @if (speechVoices().length > 1) {
+            <mat-form-field class="voice-field" appearance="outline">
+              <mat-label>Voice</mat-label>
+              <mat-select [(ngModel)]="selectedSpeechVoiceId">
+                @for (voice of speechVoices(); track voice.id) {
+                  <mat-option [value]="voice.id">{{ voice.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+        </section>
+      }
 
-      <section class="scratch-pad" aria-label="Scratch pad">
-        <div class="scratch-pad__header">
-          <div>
-            <p class="scratch-pad__label">Scratch pad</p>
-            <p class="scratch-pad__hint">
-              @if (scratchMode() === 'draw') {
-                Draw with a finger, stylus, or mouse.
-              } @else {
-                Type any steps you want to remember.
-              }
-            </p>
-          </div>
-          <div class="scratch-pad__actions">
-            <div class="scratch-mode" aria-label="Scratch mode">
-              <button
-                mat-stroked-button
-                type="button"
-                [class.active]="scratchMode() === 'type'"
-                (click)="setScratchMode('type')"
-              >
-                Type
-              </button>
-              <button
-                mat-stroked-button
-                type="button"
-                [class.active]="scratchMode() === 'draw'"
-                (click)="setScratchMode('draw')"
-              >
-                Draw
+      @if ((activeQuestion.choices?.length ?? 0) > 0) {
+        <div class="choice-grid" aria-label="Answer choices">
+          @for (choice of activeQuestion.choices ?? []; track choice; let index = $index) {
+            <button
+              mat-stroked-button
+              type="button"
+              class="choice-button"
+              (click)="submitChoice(index + 1)"
+              [disabled]="feedback() !== null || isPracticePaused() || submitting()"
+            >
+              {{ choice }}
+            </button>
+          }
+        </div>
+      } @else {
+        <mat-form-field class="answer-field" appearance="outline">
+          <mat-label>Your answer</mat-label>
+          <input
+            matInput
+            type="number"
+            inputmode="numeric"
+            [(ngModel)]="answer"
+            [disabled]="feedback() !== null || isPracticePaused()"
+            (keyup.enter)="checkAnswer()"
+          />
+        </mat-form-field>
+      }
+
+      <button mat-stroked-button class="scratch-toggle" type="button" (click)="toggleScratchPad()">
+        @if (scratchPadOpen()) { Hide scratch pad } @else { Open scratch pad }
+      </button>
+
+      @if (scratchPadOpen()) {
+        <section class="scratch-pad" aria-label="Scratch pad">
+          <div class="scratch-pad__header">
+            <div>
+              <p class="scratch-pad__label">Scratch pad</p>
+              <p class="scratch-pad__hint">
+                @if (scratchMode() === 'draw') {
+                  Draw with a finger, stylus, or mouse.
+                } @else {
+                  Type any steps you want to remember.
+                }
+              </p>
+            </div>
+            <div class="scratch-pad__actions">
+              <div class="scratch-mode" aria-label="Scratch mode">
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [class.active]="scratchMode() === 'type'"
+                  (click)="setScratchMode('type')"
+                >
+                  Type
+                </button>
+                <button
+                  mat-stroked-button
+                  type="button"
+                  [class.active]="scratchMode() === 'draw'"
+                  (click)="setScratchMode('draw')"
+                >
+                  Draw
+                </button>
+              </div>
+              <button mat-stroked-button type="button" (click)="clearScratchPad()" [disabled]="!hasScratchContent()">
+                Clear
               </button>
             </div>
-            <button mat-stroked-button type="button" (click)="clearScratchPad()" [disabled]="!hasScratchContent()">
-              Clear
-            </button>
           </div>
-        </div>
-        @if (scratchMode() === 'type') {
-          <mat-form-field class="scratch-pad__field" appearance="outline">
-            <mat-label>Working notes</mat-label>
-            <textarea
-              matInput
-              rows="4"
-              [ngModel]="scratchPad()"
-              (ngModelChange)="scratchPad.set($event)"
-              placeholder="Example: 48 x 49 = ..."
-            ></textarea>
-          </mat-form-field>
-        } @else {
-          <canvas
-            #scratchCanvas
-            class="scratch-pad__canvas"
-            width="900"
-            height="360"
-            aria-label="Drawing scratch pad"
-            (pointerdown)="startDrawing($event)"
-            (pointermove)="continueDrawing($event)"
-            (pointerup)="stopDrawing($event)"
-            (pointercancel)="stopDrawing($event)"
-            (pointerleave)="stopDrawing($event)"
-          ></canvas>
-        }
-      </section>
+          @if (scratchMode() === 'type') {
+            <mat-form-field class="scratch-pad__field" appearance="outline">
+              <mat-label>Working notes</mat-label>
+              <textarea
+                matInput
+                rows="4"
+                [ngModel]="scratchPad()"
+                (ngModelChange)="scratchPad.set($event)"
+                placeholder="Example: 48 x 49 = ..."
+              ></textarea>
+            </mat-form-field>
+          } @else {
+            <canvas
+              #scratchCanvas
+              class="scratch-pad__canvas"
+              width="900"
+              height="360"
+              aria-label="Drawing scratch pad"
+              (pointerdown)="startDrawing($event)"
+              (pointermove)="continueDrawing($event)"
+              (pointerup)="stopDrawing($event)"
+              (pointercancel)="stopDrawing($event)"
+              (pointerleave)="stopDrawing($event)"
+            ></canvas>
+          }
+        </section>
+      }
 
       @if (isPracticePaused()) {
         <p class="paused-note">Timer paused. Resume when you are ready to keep practicing.</p>
       }
 
-      @if (feedback() === null) {
+      @if (feedback() === null && (activeQuestion.choices?.length ?? 0) === 0) {
         <button mat-flat-button class="check-button" (click)="checkAnswer()" [disabled]="submitting() || isPracticePaused()">
           @if (submitting()) { Checking... } @else { Check answer }
         </button>
-      } @else {
+      } @else if (feedback() !== null) {
         <div class="feedback" [class.good]="feedback() === 'correct'" [class.calm]="feedback() === 'saved'">
           @if (feedback() === 'correct') { Nice work. That is correct. }
           @if (feedback() === 'incorrect') { Not correct. Keep going. }

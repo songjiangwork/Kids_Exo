@@ -10,6 +10,10 @@ class StudentQuestionView:
     position: int
     total_questions: int
     prompt: str
+    question_type: str = "numeric"
+    choices: tuple[str, ...] = ()
+    speech_text: str | None = None
+    speech_locale: str | None = None
 
 
 @dataclass(frozen=True)
@@ -19,6 +23,10 @@ class OnlineQuestionSnapshot:
     strategy: str
     expected_answer: int
     skill_tags: tuple[str, ...]
+    question_type: str = "numeric"
+    choices: tuple[str, ...] = ()
+    speech_text: str | None = None
+    speech_locale: str | None = None
 
 
 @dataclass(frozen=True)
@@ -51,6 +59,10 @@ class PracticeSessionSnapshot:
                 position=position,
                 total_questions=total,
                 prompt=question.prompt,
+                question_type=question.question_type,
+                choices=question.choices,
+                speech_text=question.speech_text,
+                speech_locale=question.speech_locale,
             )
             for position, question in enumerate(self.questions, start=1)
         )

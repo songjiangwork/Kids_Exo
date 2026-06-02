@@ -49,6 +49,10 @@ export interface StudentQuestion {
   position: number;
   total_questions: number;
   prompt: string;
+  question_type?: string;
+  choices?: string[];
+  speech_text?: string | null;
+  speech_locale?: string | null;
 }
 
 export interface SavedSession {

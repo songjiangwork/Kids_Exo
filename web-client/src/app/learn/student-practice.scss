@@ -91,6 +91,61 @@ mat-progress-bar {
   text-align: center;
 }
 
+.audio-panel {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  max-width: 560px;
+  width: 100%;
+}
+
+.audio-button {
+  border-color: var(--teal);
+  border-radius: 999px;
+  color: var(--teal);
+  font-weight: 800;
+  min-height: 48px;
+  padding-inline: 28px;
+}
+
+.voice-field {
+  min-width: min(100%, 310px);
+}
+
+.choice-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 560px;
+  width: 100%;
+}
+
+.choice-button {
+  background: #fffdf8;
+  border-color: #d9c8ad;
+  border-radius: 18px;
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 750;
+  min-height: 58px;
+  white-space: normal;
+}
+
+.choice-button:hover {
+  border-color: var(--teal);
+}
+
+.scratch-toggle {
+  border-color: var(--teal);
+  border-radius: 999px;
+  color: var(--teal);
+  font-weight: 800;
+  min-height: 44px;
+  padding-inline: 24px;
+}
+
 .scratch-pad {
   background: #fff8df;
   border: 1px solid #ead9c5;
@@ -329,5 +384,9 @@ mat-progress-bar {
 
   .timer-panel {
     justify-content: flex-start;
+  }
+
+  .choice-grid {
+    grid-template-columns: 1fr;
   }
 }

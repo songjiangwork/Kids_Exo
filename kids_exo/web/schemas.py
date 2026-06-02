@@ -76,6 +76,10 @@ class StudentQuestionResponse(FromDomainModel):
     position: int
     total_questions: int
     prompt: str
+    question_type: str = "numeric"
+    choices: tuple[str, ...] = ()
+    speech_text: str | None = None
+    speech_locale: str | None = None
 
 
 class PracticePreviewResponse(BaseModel):
