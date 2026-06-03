@@ -14,6 +14,7 @@ class StudentQuestionView:
     choices: tuple[str, ...] = ()
     speech_text: str | None = None
     speech_locale: str | None = None
+    audio_url: str | None = None
 
 
 @dataclass(frozen=True)
@@ -27,6 +28,7 @@ class OnlineQuestionSnapshot:
     choices: tuple[str, ...] = ()
     speech_text: str | None = None
     speech_locale: str | None = None
+    audio_url: str | None = None
 
 
 @dataclass(frozen=True)
@@ -66,6 +68,7 @@ class PracticeSessionSnapshot:
                 choices=question.choices,
                 speech_text=question.speech_text,
                 speech_locale=question.speech_locale,
+                audio_url=question.audio_url,
             )
             for position, question in enumerate(self.questions, start=1)
         )

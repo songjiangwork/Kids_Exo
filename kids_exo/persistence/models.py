@@ -73,6 +73,7 @@ class QuestionInstanceEntity(Base):
     choices: Mapped[list[str]] = mapped_column(JSON, default=list)
     speech_text: Mapped[str | None] = mapped_column(String(300), nullable=True)
     speech_locale: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    audio_url: Mapped[str | None] = mapped_column(String(300), nullable=True)
     practice_session: Mapped[PracticeSessionEntity] = relationship(back_populates="questions")
     attempts: Mapped[list["ResponseAttemptEntity"]] = relationship(
         back_populates="question",

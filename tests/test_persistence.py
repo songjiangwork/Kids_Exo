@@ -339,7 +339,7 @@ class AlembicMigrationTests(unittest.TestCase):
                 ).get_columns("question_instances")
             }
             self.assertTrue(
-                {"question_type", "choices", "speech_text", "speech_locale"}
+                {"question_type", "choices", "speech_text", "speech_locale", "audio_url"}
                 <= question_columns
             )
 

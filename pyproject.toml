@@ -18,6 +18,9 @@ web = [
 test = [
     "httpx>=0.27,<1",
 ]
+tts = [
+    "edge-tts>=7.2,<8",
+]
 
 [tool.setuptools.packages.find]
 include = ["kids_exo*"]

@@ -52,21 +52,11 @@
 
     <mat-card class="question-card">
       <p class="prompt">{{ activeQuestion.prompt }}</p>
-      @if (activeQuestion.speech_text) {
+      @if (activeQuestion.audio_url || activeQuestion.speech_text) {
         <section class="audio-panel" aria-label="Audio controls">
           <button mat-stroked-button class="audio-button" type="button" (click)="playQuestionAudio()">
             Play sound
           </button>
-          @if (speechVoices().length > 1) {
-            <mat-form-field class="voice-field" appearance="outline">
-              <mat-label>Voice</mat-label>
-              <mat-select [(ngModel)]="selectedSpeechVoiceId">
-                @for (voice of speechVoices(); track voice.id) {
-                  <mat-option [value]="voice.id">{{ voice.label }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-          }
         </section>
       }
 
@@ -98,73 +88,75 @@
         </mat-form-field>
       }
 
-      <button mat-stroked-button class="scratch-toggle" type="button" (click)="toggleScratchPad()">
-        @if (scratchPadOpen()) { Hide scratch pad } @else { Open scratch pad }
-      </button>
+      @if (!isLanguagePractice()) {
+        <button mat-stroked-button class="scratch-toggle" type="button" (click)="toggleScratchPad()">
+          @if (scratchPadOpen()) { Hide scratch pad } @else { Open scratch pad }
+        </button>
 
-      @if (scratchPadOpen()) {
-        <section class="scratch-pad" aria-label="Scratch pad">
-          <div class="scratch-pad__header">
-            <div>
-              <p class="scratch-pad__label">Scratch pad</p>
-              <p class="scratch-pad__hint">
-                @if (scratchMode() === 'draw') {
-                  Draw with a finger, stylus, or mouse.
-                } @else {
-                  Type any steps you want to remember.
-                }
-              </p>
-            </div>
-            <div class="scratch-pad__actions">
-              <div class="scratch-mode" aria-label="Scratch mode">
-                <button
-                  mat-stroked-button
-                  type="button"
-                  [class.active]="scratchMode() === 'type'"
-                  (click)="setScratchMode('type')"
-                >
-                  Type
-                </button>
-                <button
-                  mat-stroked-button
-                  type="button"
-                  [class.active]="scratchMode() === 'draw'"
-                  (click)="setScratchMode('draw')"
-                >
-                  Draw
+        @if (scratchPadOpen()) {
+          <section class="scratch-pad" aria-label="Scratch pad">
+            <div class="scratch-pad__header">
+              <div>
+                <p class="scratch-pad__label">Scratch pad</p>
+                <p class="scratch-pad__hint">
+                  @if (scratchMode() === 'draw') {
+                    Draw with a finger, stylus, or mouse.
+                  } @else {
+                    Type any steps you want to remember.
+                  }
+                </p>
+              </div>
+              <div class="scratch-pad__actions">
+                <div class="scratch-mode" aria-label="Scratch mode">
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    [class.active]="scratchMode() === 'type'"
+                    (click)="setScratchMode('type')"
+                  >
+                    Type
+                  </button>
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    [class.active]="scratchMode() === 'draw'"
+                    (click)="setScratchMode('draw')"
+                  >
+                    Draw
+                  </button>
+                </div>
+                <button mat-stroked-button type="button" (click)="clearScratchPad()" [disabled]="!hasScratchContent()">
+                  Clear
                 </button>
               </div>
-              <button mat-stroked-button type="button" (click)="clearScratchPad()" [disabled]="!hasScratchContent()">
-                Clear
-              </button>
             </div>
-          </div>
-          @if (scratchMode() === 'type') {
-            <mat-form-field class="scratch-pad__field" appearance="outline">
-              <mat-label>Working notes</mat-label>
-              <textarea
-                matInput
-                rows="4"
-                [ngModel]="scratchPad()"
-                (ngModelChange)="scratchPad.set($event)"
-                placeholder="Example: 48 x 49 = ..."
-              ></textarea>
-            </mat-form-field>
-          } @else {
-            <canvas
-              #scratchCanvas
-              class="scratch-pad__canvas"
-              width="900"
-              height="360"
-              aria-label="Drawing scratch pad"
-              (pointerdown)="startDrawing($event)"
-              (pointermove)="continueDrawing($event)"
-              (pointerup)="stopDrawing($event)"
-              (pointercancel)="stopDrawing($event)"
-              (pointerleave)="stopDrawing($event)"
-            ></canvas>
-          }
-        </section>
+            @if (scratchMode() === 'type') {
+              <mat-form-field class="scratch-pad__field" appearance="outline">
+                <mat-label>Working notes</mat-label>
+                <textarea
+                  matInput
+                  rows="4"
+                  [ngModel]="scratchPad()"
+                  (ngModelChange)="scratchPad.set($event)"
+                  placeholder="Example: 48 x 49 = ..."
+                ></textarea>
+              </mat-form-field>
+            } @else {
+              <canvas
+                #scratchCanvas
+                class="scratch-pad__canvas"
+                width="900"
+                height="360"
+                aria-label="Drawing scratch pad"
+                (pointerdown)="startDrawing($event)"
+                (pointermove)="continueDrawing($event)"
+                (pointerup)="stopDrawing($event)"
+                (pointercancel)="stopDrawing($event)"
+                (pointerleave)="stopDrawing($event)"
+              ></canvas>
+            }
+          </section>
+        }
       }
 
       @if (isPracticePaused()) {

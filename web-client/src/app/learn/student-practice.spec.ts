@@ -8,6 +8,7 @@ import { StudentPractice } from './student-practice';
 describe('StudentPractice', () => {
   const originalSpeechSynthesis = window.speechSynthesis;
   const originalSpeechSynthesisUtterance = globalThis.SpeechSynthesisUtterance;
+  const originalAudio = globalThis.Audio;
 
   afterEach(() => {
     Object.defineProperty(window, 'speechSynthesis', {
@@ -22,6 +23,10 @@ describe('StudentPractice', () => {
         value: originalSpeechSynthesisUtterance,
       });
     }
+    Object.defineProperty(globalThis, 'Audio', {
+      configurable: true,
+      value: originalAudio,
+    });
   });
 
   async function createFixture() {
@@ -156,7 +161,8 @@ describe('StudentPractice', () => {
           question_type: 'multiple_choice',
           choices: ['A', 'B', 'C', 'D'],
           speech_text: 'A',
-          speech_locale: 'fr-CA',
+          speech_locale: 'fr-FR',
+          audio_url: '/audio/tts/fr/fr-FR-DeniseNeural/alphabet/a.mp3',
         },
       ],
     });
@@ -177,19 +183,75 @@ describe('StudentPractice', () => {
     expect(fixture.nativeElement.textContent).toContain('Nice work. That is correct.');
   });
 
-  it('lets the learner choose a French speech voice', async () => {
+  it('plays a static MP3 when the audio question provides an audio URL', async () => {
+    const play = vi.fn().mockResolvedValue(undefined);
+    const pause = vi.fn();
+    const audioConstructor = vi.fn(function MockAudio(this: { pause: typeof pause; play: typeof play; url: string }, url: string) {
+      this.pause = pause;
+      this.play = play;
+      this.url = url;
+    });
+    Object.defineProperty(globalThis, 'Audio', {
+      configurable: true,
+      value: audioConstructor,
+    });
+    await TestBed.configureTestingModule({
+      imports: [StudentPractice],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: ActivatedRoute,
+          useValue: { paramMap: of(convertToParamMap({ token: 'student-token' })) },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(StudentPractice);
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/student/sessions/student-token').flush({
+      plugin: 'french_alphabet_sounds',
+      status: 'created',
+      requested_locale: 'en-CA',
+      feedback_mode: 'immediate',
+      show_timer: false,
+      timer_status: 'paused',
+      answered_questions: 0,
+      correct_answers: 0,
+      active_elapsed_seconds: 0,
+      questions: [
+        {
+          identifier: 'question-1',
+          position: 1,
+          total_questions: 10,
+          prompt: 'Listen to the French letter name. Which letter do you hear?',
+          question_type: 'multiple_choice',
+          choices: ['A', 'F', 'L', 'R'],
+          speech_text: 'A',
+          speech_locale: 'fr-FR',
+          audio_url: '/audio/tts/fr/fr-FR-DeniseNeural/alphabet/a.mp3',
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Play sound');
+    expect(fixture.nativeElement.textContent).not.toContain('Voice');
+    (fixture.nativeElement.querySelector('.audio-button') as HTMLButtonElement).click();
+
+    expect(audioConstructor).toHaveBeenCalledWith('/audio/tts/fr/fr-FR-DeniseNeural/alphabet/a.mp3');
+    expect(play).toHaveBeenCalled();
+  });
+
+  it('falls back to browser speech when no static audio URL is available', async () => {
     class MockSpeechSynthesisUtterance {
       lang = '';
       pitch = 1;
       rate = 1;
-      voice: SpeechSynthesisVoice | null = null;
 
       constructor(public text: string) {}
     }
-    const voices = [
-      { name: 'Poor French', lang: 'fr-FR', localService: false },
-      { name: 'Microsoft Denise Natural', lang: 'fr-CA', localService: true },
-    ] as SpeechSynthesisVoice[];
     const speak = vi.fn();
     Object.defineProperty(globalThis, 'SpeechSynthesisUtterance', {
       configurable: true,
@@ -199,9 +261,7 @@ describe('StudentPractice', () => {
       configurable: true,
       value: {
         cancel: vi.fn(),
-        getVoices: () => voices,
         speak,
-        onvoiceschanged: null,
       },
     });
     await TestBed.configureTestingModule({
@@ -244,14 +304,62 @@ describe('StudentPractice', () => {
     });
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Voice');
-    (fixture.componentInstance as any).selectedSpeechVoiceId = 'Microsoft Denise Natural|fr-CA';
+    expect(fixture.nativeElement.textContent).not.toContain('Voice');
     (fixture.nativeElement.querySelector('.audio-button') as HTMLButtonElement).click();
 
     expect(speak).toHaveBeenCalled();
     const utterance = speak.mock.calls.at(-1)?.[0] as SpeechSynthesisUtterance;
-    expect(utterance.voice).toBe(voices[1]);
+    expect(utterance.lang).toBe('fr-CA');
     expect(utterance.rate).toBe(0.82);
+  });
+
+  it('hides the scratch pad for language practice', async () => {
+    await TestBed.configureTestingModule({
+      imports: [StudentPractice],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: ActivatedRoute,
+          useValue: { paramMap: of(convertToParamMap({ token: 'student-token' })) },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(StudentPractice);
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/student/sessions/student-token').flush({
+      plugin: 'french_alphabet_sounds',
+      subject: 'French',
+      category: 'Pronunciation',
+      skill: 'French Alphabet Sounds',
+      status: 'created',
+      requested_locale: 'en-CA',
+      feedback_mode: 'immediate',
+      show_timer: false,
+      timer_status: 'paused',
+      answered_questions: 0,
+      correct_answers: 0,
+      active_elapsed_seconds: 0,
+      questions: [
+        {
+          identifier: 'question-1',
+          position: 1,
+          total_questions: 10,
+          prompt: 'Listen to the French letter name. Which letter do you hear?',
+          question_type: 'multiple_choice',
+          choices: ['A', 'F', 'L', 'R'],
+          speech_text: 'A',
+          speech_locale: 'fr-FR',
+          audio_url: '/audio/tts/fr/fr-FR-DeniseNeural/alphabet/a.mp3',
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).not.toContain('Open scratch pad');
+    expect(fixture.nativeElement.querySelector('.scratch-pad')).toBeNull();
   });
 
   it('offers a local scratch pad that can be cleared', async () => {

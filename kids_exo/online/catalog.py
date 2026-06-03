@@ -295,7 +295,7 @@ _FRENCH_ALPHABET_SOUNDS = OnlinePluginDescriptor(
     subject="French",
     category="Pronunciation",
     title="French Alphabet Sounds",
-    description="Listen to French letter names and simple words, then choose what you hear.",
+    description="Listen to French letter names, then choose the matching letter.",
     default_locale="en-CA",
     locale_coverage=(LocaleCoverage("en-CA", ("practice",)),),
     settings=(
@@ -303,11 +303,29 @@ _FRENCH_ALPHABET_SOUNDS = OnlinePluginDescriptor(
             name="strategies",
             label="Question types",
             control="multiple_choice",
-            default=("letter_name_to_letter", "word_sound_to_word"),
+            default=("letter_name_to_letter",),
             options=(
                 SettingOption("letter_name_to_letter", "French letter names"),
-                SettingOption("word_sound_to_word", "Simple French words"),
             ),
+        ),
+    ),
+)
+
+_FRENCH_COMMON_WORD_SOUNDS = OnlinePluginDescriptor(
+    plugin="french_common_word_sounds",
+    subject="French",
+    category="Pronunciation",
+    title="French Common Word Sounds",
+    description="Listen to common French words, then choose the matching word and meaning.",
+    default_locale="en-CA",
+    locale_coverage=(LocaleCoverage("en-CA", ("practice",)),),
+    settings=(
+        PluginSettingSchema(
+            name="strategies",
+            label="Question types",
+            control="multiple_choice",
+            default=("word_sound_to_word",),
+            options=(SettingOption("word_sound_to_word", "Common French words"),),
         ),
     ),
 )
@@ -329,6 +347,7 @@ _ONLINE_CATALOG = OnlineCatalog(
         _NEAR_ROUND_PAIR,
         _DIFFERENCE_OF_SQUARES,
         _FRENCH_ALPHABET_SOUNDS,
+        _FRENCH_COMMON_WORD_SOUNDS,
     ),
 )
 

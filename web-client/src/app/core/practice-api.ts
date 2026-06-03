@@ -53,6 +53,7 @@ export interface StudentQuestion {
   choices?: string[];
   speech_text?: string | null;
   speech_locale?: string | null;
+  audio_url?: string | null;
 }
 
 export interface SavedSession {

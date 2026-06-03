@@ -80,6 +80,7 @@ class StudentQuestionResponse(FromDomainModel):
     choices: tuple[str, ...] = ()
     speech_text: str | None = None
     speech_locale: str | None = None
+    audio_url: str | None = None
 
 
 class PracticePreviewResponse(BaseModel):

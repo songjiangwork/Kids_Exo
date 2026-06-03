@@ -26,6 +26,7 @@ class OnlinePluginCatalogTests(unittest.TestCase):
                 "near_round_pair_multiplication",
                 "difference_of_squares",
                 "french_alphabet_sounds",
+                "french_common_word_sounds",
             ),
         )
 
@@ -93,6 +94,7 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         near_round = get_online_plugin("near_round_pair_multiplication")
         difference = get_online_plugin("difference_of_squares")
         french_alphabet = get_online_plugin("french_alphabet_sounds")
+        french_common_words = get_online_plugin("french_common_word_sounds")
 
         self.assertEqual(distributive.title, "Distributive Property Multiplication")
         self.assertEqual(tuple(setting.name for setting in distributive.settings), ("strategies",))
@@ -129,6 +131,17 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         self.assertEqual(
             tuple(setting.name for setting in french_alphabet.settings),
             ("strategies",),
+        )
+        self.assertEqual(
+            tuple(option.value for option in french_alphabet.settings[0].options),
+            ("letter_name_to_letter",),
+        )
+        self.assertEqual(french_common_words.subject, "French")
+        self.assertEqual(french_common_words.category, "Pronunciation")
+        self.assertEqual(french_common_words.title, "French Common Word Sounds")
+        self.assertEqual(
+            tuple(option.value for option in french_common_words.settings[0].options),
+            ("word_sound_to_word",),
         )
 
 

@@ -59,15 +59,27 @@ FRENCH_WORDS: tuple[FrenchSoundItem, ...] = (
 
 STRATEGY_LABELS = {
     "letter_name_to_letter": "letter names",
+}
+
+WORD_STRATEGY_LABELS = {
     "word_sound_to_word": "simple words",
 }
+
+FRENCH_ALPHABET_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/alphabet"
+SIMILAR_LETTER_GROUPS: tuple[frozenset[str], ...] = (
+    frozenset(("B", "C", "D", "G", "P", "T", "V")),
+    frozenset(("M", "N")),
+    frozenset(("F", "S")),
+    frozenset(("I", "J")),
+    frozenset(("O", "Q", "U")),
+)
 
 
 def create_french_alphabet_session(request) -> PracticeSessionSnapshot:
     descriptor = get_online_plugin(request.plugin)
     strategies = tuple(request.plugin_settings.get("strategies", ()))
     if not strategies:
-        strategies = ("letter_name_to_letter", "word_sound_to_word")
+        strategies = ("letter_name_to_letter",)
     unexpected = set(strategies) - set(STRATEGY_LABELS)
     if unexpected:
         names = ", ".join(sorted(unexpected))
@@ -93,8 +105,46 @@ def create_french_alphabet_session(request) -> PracticeSessionSnapshot:
         presentation=LocalizedPresentation(
             heading=LocalizedText("French Alphabet Sounds", "en-CA", False),
             instructions=(
-                LocalizedText("Listen first, then choose the matching letter or word.", "en-CA", False),
+                LocalizedText("Listen first, then choose the matching French letter.", "en-CA", False),
                 LocalizedText("Use Replay if you want to hear it again.", "en-CA", False),
+            ),
+        ),
+        questions=questions,
+    )
+
+
+def create_french_common_words_session(request) -> PracticeSessionSnapshot:
+    descriptor = get_online_plugin(request.plugin)
+    strategies = tuple(request.plugin_settings.get("strategies", ()))
+    if not strategies:
+        strategies = ("word_sound_to_word",)
+    unexpected = set(strategies) - set(WORD_STRATEGY_LABELS)
+    if unexpected:
+        names = ", ".join(sorted(unexpected))
+        raise ValueError(f"Unsupported French common words strategy: {names}")
+
+    rng = random.Random(request.seed)
+    strategy_plan = [strategies[index % len(strategies)] for index in range(request.question_count)]
+    rng.shuffle(strategy_plan)
+    questions = tuple(
+        _question_for_strategy(strategy, position, rng)
+        for position, strategy in enumerate(strategy_plan, start=1)
+    )
+    return PracticeSessionSnapshot(
+        plugin=request.plugin,
+        subject=descriptor.subject,
+        category=descriptor.category,
+        skill=descriptor.title,
+        plugin_settings={"strategies": list(strategies)},
+        requested_locale=request.requested_locale,
+        feedback_mode=request.feedback_mode,
+        show_timer=request.show_timer,
+        seed=request.seed,
+        presentation=LocalizedPresentation(
+            heading=LocalizedText("French Common Word Sounds", "en-CA", False),
+            instructions=(
+                LocalizedText("Listen to a common French word, then choose its meaning.", "en-CA", False),
+                LocalizedText("Say the word softly after the audio if you want extra practice.", "en-CA", False),
             ),
         ),
         questions=questions,
@@ -108,7 +158,7 @@ def _question_for_strategy(
 ) -> OnlineQuestionSnapshot:
     items = FRENCH_LETTERS if strategy == "letter_name_to_letter" else FRENCH_WORDS
     target = rng.choice(items)
-    distractors = rng.sample([item for item in items if item.text != target.text], 3)
+    distractors = rng.sample(_distractor_pool(strategy, target, items), 3)
     choices = [target, *distractors]
     rng.shuffle(choices)
     expected_answer = choices.index(target) + 1
@@ -130,5 +180,34 @@ def _question_for_strategy(
         question_type="multiple_choice",
         choices=labels,
         speech_text=target.text,
-        speech_locale="fr-CA",
+        speech_locale="fr-FR" if strategy == "letter_name_to_letter" else "fr-CA",
+        audio_url=_audio_url_for_strategy(strategy, target),
     )
+
+
+def _distractor_pool(
+    strategy: str,
+    target: FrenchSoundItem,
+    items: tuple[FrenchSoundItem, ...],
+) -> list[FrenchSoundItem]:
+    if strategy != "letter_name_to_letter":
+        return [item for item in items if item.text != target.text]
+    confusing = _similar_letters(target.text)
+    return [
+        item
+        for item in items
+        if item.text != target.text and item.text not in confusing
+    ]
+
+
+def _similar_letters(letter: str) -> frozenset[str]:
+    for group in SIMILAR_LETTER_GROUPS:
+        if letter in group:
+            return group
+    return frozenset((letter,))
+
+
+def _audio_url_for_strategy(strategy: str, target: FrenchSoundItem) -> str | None:
+    if strategy != "letter_name_to_letter":
+        return None
+    return f"{FRENCH_ALPHABET_AUDIO_BASE_URL}/{target.text.lower()}.mp3"

@@ -9,7 +9,10 @@ from kids_exo.online.catalog import (
     get_online_plugin,
     load_online_plugin_settings,
 )
-from kids_exo.online.french_alphabet import create_french_alphabet_session
+from kids_exo.online.french_alphabet import (
+    create_french_alphabet_session,
+    create_french_common_words_session,
+)
 from kids_exo.online.models import OnlineQuestionSnapshot, PracticeSessionSnapshot
 from kids_exo.plugins.registry import get_plugin_definition
 
@@ -32,6 +35,8 @@ def create_practice_session(request: OnlineSessionRequest) -> PracticeSessionSna
     descriptor = get_online_plugin(request.plugin)
     if request.plugin == "french_alphabet_sounds":
         return create_french_alphabet_session(request)
+    if request.plugin == "french_common_word_sounds":
+        return create_french_common_words_session(request)
     definition = get_plugin_definition(request.plugin)
     settings = load_online_plugin_settings(request.plugin, request.plugin_settings)
     if request.question_count > 30 and hasattr(settings, "allow_duplicates"):

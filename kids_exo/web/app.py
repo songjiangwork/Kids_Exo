@@ -336,6 +336,7 @@ def _student_questions(saved_session) -> tuple[StudentQuestionResponse, ...]:
             choices=tuple(question.choices or ()),
             speech_text=question.speech_text,
             speech_locale=question.speech_locale,
+            audio_url=_question_audio_url(saved_session, question),
         )
         for question in saved_session.questions
     )
@@ -355,6 +356,19 @@ def _saved_session_response(saved_session) -> SavedPracticeSessionResponse:
         localization_fallback_keys=tuple(saved_session.localization_fallback_keys),
         questions=_student_questions(saved_session),
     )
+
+
+def _question_audio_url(saved_session, question) -> str | None:
+    if question.audio_url:
+        return question.audio_url
+    if (
+        saved_session.plugin == "french_alphabet_sounds"
+        and question.strategy == "letter_name_to_letter"
+        and question.speech_text
+        and len(question.speech_text) == 1
+    ):
+        return f"/audio/tts/fr/fr-FR-DeniseNeural/alphabet/{question.speech_text.lower()}.mp3"
+    return None
 
 
 def _elapsed_seconds(saved_session) -> int | None:

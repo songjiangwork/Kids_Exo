@@ -9,19 +9,12 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatSelectModule } from '@angular/material/select';
 import { PracticeApi, PracticeResults, StudentSession } from '../core/practice-api';
 
 type ScratchMode = 'type' | 'draw';
 interface DrawPoint {
   x: number;
   y: number;
-}
-
-interface SpeechVoiceChoice {
-  id: string;
-  label: string;
-  voice: SpeechSynthesisVoice | null;
 }
 
 @Component({
@@ -33,7 +26,6 @@ interface SpeechVoiceChoice {
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatSelectModule,
     MatProgressBarModule,
     MatProgressSpinnerModule,
   ],
@@ -59,8 +51,6 @@ export class StudentPractice implements OnInit, OnDestroy {
   protected readonly scratchPad = signal('');
   protected readonly scratchMode = signal<ScratchMode>('type');
   protected readonly drawStrokes = signal<DrawPoint[][]>([]);
-  protected readonly speechVoices = signal<SpeechVoiceChoice[]>([]);
-  protected selectedSpeechVoiceId = 'auto';
 
   protected readonly question = computed(() => this.session()?.questions[this.index()]);
   protected readonly progress = computed(() => {
@@ -72,7 +62,7 @@ export class StudentPractice implements OnInit, OnDestroy {
   private routeSubscription?: Subscription;
   private timer?: ReturnType<typeof setInterval>;
   private activeStroke: DrawPoint[] | null = null;
-  private speechVoicesLoaded = false;
+  private audioPlayer?: HTMLAudioElement;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -80,7 +70,6 @@ export class StudentPractice implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.loadSpeechVoices();
     this.routeSubscription = this.route.paramMap.subscribe((params) => {
       this.token = params.get('token') ?? '';
       this.api.studentSession(this.token).subscribe({
@@ -106,6 +95,7 @@ export class StudentPractice implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.routeSubscription?.unsubscribe();
     this.stopLocalTimer();
+    this.audioPlayer?.pause();
   }
 
   protected checkAnswer(): void {
@@ -143,23 +133,26 @@ export class StudentPractice implements OnInit, OnDestroy {
 
   protected playQuestionAudio(): void {
     const question = this.question();
+    if (!question) {
+      return;
+    }
+    if (question.audio_url) {
+      window.speechSynthesis?.cancel();
+      this.audioPlayer?.pause();
+      this.audioPlayer = new Audio(question.audio_url);
+      void this.audioPlayer.play();
+      return;
+    }
     if (
-      !question?.speech_text ||
+      !question.speech_text ||
       window.speechSynthesis === undefined ||
       typeof SpeechSynthesisUtterance === 'undefined'
     ) {
       return;
     }
-    this.loadSpeechVoices();
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(question.speech_text);
-    const voice = this.selectedSpeechVoice(question.speech_locale ?? 'fr-CA');
-    if (voice) {
-      utterance.voice = voice;
-      utterance.lang = voice.lang;
-    } else {
-      utterance.lang = question.speech_locale ?? 'fr-CA';
-    }
+    utterance.lang = question.speech_locale ?? 'fr-CA';
     utterance.rate = 0.82;
     utterance.pitch = 1;
     window.speechSynthesis.speak(utterance);
@@ -187,6 +180,10 @@ export class StudentPractice implements OnInit, OnDestroy {
 
   protected isPracticePaused(): boolean {
     return Boolean(this.session()?.show_timer && this.timerPaused());
+  }
+
+  protected isLanguagePractice(): boolean {
+    return this.session()?.subject === 'French';
   }
 
   protected toggleScratchPad(): void {
@@ -342,73 +339,6 @@ export class StudentPractice implements OnInit, OnDestroy {
       clearInterval(this.timer);
       this.timer = undefined;
     }
-  }
-
-  private loadSpeechVoices(): void {
-    if (window.speechSynthesis === undefined) {
-      return;
-    }
-    const updateVoices = () => {
-      const voices = window.speechSynthesis
-        .getVoices()
-        .filter((voice) => voice.lang.toLowerCase().startsWith('fr'))
-        .sort((first, second) => this.voiceScore(second) - this.voiceScore(first));
-      this.speechVoices.set([
-        { id: 'auto', label: 'Best available French voice', voice: null },
-        ...voices.map((voice) => ({
-          id: `${voice.name}|${voice.lang}`,
-          label: `${voice.name} (${voice.lang})`,
-          voice,
-        })),
-      ]);
-      this.speechVoicesLoaded = voices.length > 0;
-    };
-    updateVoices();
-    if (!this.speechVoicesLoaded) {
-      window.speechSynthesis.onvoiceschanged = updateVoices;
-    }
-  }
-
-  private selectedSpeechVoice(preferredLocale: string): SpeechSynthesisVoice | null {
-    const choices = this.speechVoices();
-    if (this.selectedSpeechVoiceId !== 'auto') {
-      return choices.find((choice) => choice.id === this.selectedSpeechVoiceId)?.voice ?? null;
-    }
-    return choices
-      .map((choice) => choice.voice)
-      .filter((voice): voice is SpeechSynthesisVoice => voice !== null)
-      .sort((first, second) => (
-        this.voiceScore(second, preferredLocale) - this.voiceScore(first, preferredLocale)
-      ))[0] ?? null;
-  }
-
-  private voiceScore(voice: SpeechSynthesisVoice, preferredLocale = 'fr-CA'): number {
-    const name = voice.name.toLowerCase();
-    const lang = voice.lang.toLowerCase();
-    const preferred = preferredLocale.toLowerCase();
-    let score = 0;
-    if (lang === preferred) {
-      score += 80;
-    }
-    if (lang === 'fr-ca') {
-      score += 35;
-    }
-    if (lang === 'fr-fr') {
-      score += 30;
-    }
-    if (lang.startsWith('fr')) {
-      score += 20;
-    }
-    if (voice.localService) {
-      score += 12;
-    }
-    if (/(google|microsoft|natural|neural|amelie|amélie|denise|thomas|audrey|sylvie)/i.test(name)) {
-      score += 18;
-    }
-    if (/(compact|eloquence|novelty)/i.test(name)) {
-      score -= 30;
-    }
-    return score;
   }
 
   private clearAllScratchWork(): void {

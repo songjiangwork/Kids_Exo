@@ -120,7 +120,7 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         session = create_practice_session(
             OnlineSessionRequest(
                 plugin="french_alphabet_sounds",
-                plugin_settings={"strategies": ["letter_name_to_letter", "word_sound_to_word"]},
+                plugin_settings={"strategies": ["letter_name_to_letter"]},
                 question_count=10,
                 seed=123,
             )
@@ -132,13 +132,54 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertEqual(session.subject, "French")
         self.assertEqual(session.category, "Pronunciation")
         self.assertEqual(session.skill, "French Alphabet Sounds")
+        self.assertEqual({question.strategy for question in session.questions}, {"letter_name_to_letter"})
         self.assertEqual(first.question_type, "multiple_choice")
         self.assertEqual(len(first.choices), 4)
-        self.assertEqual(first.speech_locale, "fr-CA")
+        self.assertEqual(first.speech_locale, "fr-FR")
         self.assertIsNotNone(first.speech_text)
+        self.assertEqual(
+            first.audio_url,
+            f"/audio/tts/fr/fr-FR-DeniseNeural/alphabet/{first.speech_text.lower()}.mp3",
+        )
+        for question in session.questions:
+            similar = [
+                "B",
+                "C",
+                "D",
+                "G",
+                "P",
+                "T",
+                "V",
+            ]
+            if question.speech_text in similar:
+                self.assertEqual(
+                    len(set(question.choices) & set(similar)),
+                    1,
+                )
         self.assertTrue(session.evaluate_answer(first.identifier, str(first.expected_answer)).is_correct)
         self.assertEqual(student_view.choices, first.choices)
         self.assertEqual(student_view.speech_text, first.speech_text)
+
+    def test_french_common_words_session_generates_word_meaning_choices(self) -> None:
+        session = create_practice_session(
+            OnlineSessionRequest(
+                plugin="french_common_word_sounds",
+                plugin_settings={"strategies": ["word_sound_to_word"]},
+                question_count=10,
+                seed=123,
+            )
+        )
+        first = session.questions[0]
+
+        self.assertEqual(session.plugin, "french_common_word_sounds")
+        self.assertEqual(session.subject, "French")
+        self.assertEqual(session.category, "Pronunciation")
+        self.assertEqual(session.skill, "French Common Word Sounds")
+        self.assertEqual({question.strategy for question in session.questions}, {"word_sound_to_word"})
+        self.assertEqual(first.question_type, "multiple_choice")
+        self.assertTrue(all("(" in choice and ")" in choice for choice in first.choices))
+        self.assertEqual(first.speech_locale, "fr-CA")
+        self.assertIsNotNone(first.speech_text)
 
 
 if __name__ == "__main__":

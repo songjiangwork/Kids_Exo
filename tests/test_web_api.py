@@ -42,6 +42,7 @@ class PracticeWebApiTests(unittest.TestCase):
                 "near_round_pair_multiplication",
                 "difference_of_squares",
                 "french_alphabet_sounds",
+                "french_common_word_sounds",
             ],
         )
         plugin = catalog["plugins"][0]
@@ -311,6 +312,35 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(student.status_code, 200)
         self.assertEqual(first_question["question_type"], "multiple_choice")
         self.assertEqual(len(first_question["choices"]), 4)
+        self.assertEqual(first_question["speech_locale"], "fr-FR")
+        self.assertIsNotNone(first_question["speech_text"])
+        self.assertTrue(first_question["audio_url"].endswith(".mp3"))
+        self.assertNotIn("expected_answer", student.text)
+
+    def test_french_common_words_session_exposes_word_meaning_choices(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        response = self.client.post(
+            f"/api/learners/{learner['id']}/sessions",
+            json={
+                "plugin": "french_common_word_sounds",
+                "plugin_settings": {"strategies": ["word_sound_to_word"]},
+                "question_count": 10,
+                "seed": 23,
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        created = response.json()
+        self.assertEqual(created["subject"], "French")
+        self.assertEqual(created["skill"], "French Common Word Sounds")
+        student = self.client.get(
+            f"/api/student/sessions/{created['student_token']}"
+        )
+        first_question = student.json()["questions"][0]
+
+        self.assertEqual(student.status_code, 200)
+        self.assertEqual(first_question["question_type"], "multiple_choice")
+        self.assertTrue(all("(" in choice and ")" in choice for choice in first_question["choices"]))
         self.assertEqual(first_question["speech_locale"], "fr-CA")
         self.assertIsNotNone(first_question["speech_text"])
         self.assertNotIn("expected_answer", student.text)

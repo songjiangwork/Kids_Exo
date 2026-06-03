@@ -44,6 +44,7 @@ PLUGIN_METADATA = {
     ),
     "difference_of_squares": ("Math", "Mental Multiplication", "Difference of Squares"),
     "french_alphabet_sounds": ("French", "Pronunciation", "French Alphabet Sounds"),
+    "french_common_word_sounds": ("French", "Pronunciation", "French Common Word Sounds"),
 }
 
 

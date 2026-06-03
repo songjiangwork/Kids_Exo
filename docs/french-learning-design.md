@@ -11,8 +11,15 @@ French support starts as a small language-learning track inside the online pract
 - Subject: French
 - Domain: Pronunciation
 - Activity: Alphabet Sounds
-- Student task: listen to a French letter name or simple word, then choose the matching answer.
+- Student task: listen to a French letter name, then choose the matching letter.
 - Audio source: browser text-to-speech, preferring `fr-CA` and falling back to `fr-FR` or any available French voice.
+
+### Phase 1b: Common Word Sounds
+
+- Subject: French
+- Domain: Pronunciation
+- Activity: Common Word Sounds
+- Student task: listen to a common French word, then choose the matching word and English meaning.
 - Examples: simple high-frequency words such as `ami`, `chat`, `lune`, `école`, `maman`, and `papa`.
 
 ### Phase 2: Letter Combinations
@@ -50,5 +57,15 @@ The first implementation stores multiple-choice answers as one-based numeric cho
 
 - Keep the activity short and friendly. The first version should feel like listening practice, not a formal test.
 - Prefer common words and predictable examples.
-- Do not require speech recognition in the first phase.
-- Do not save audio or student voice data in the first phase.
+- Do not require speech recognition in the first pronunciation phases.
+- Do not save audio or student voice data unless the parent explicitly enables a speaking-practice feature later.
+
+## Speaking-Practice Notes
+
+Pronunciation comparison can be added later, but it should be treated as its own feature because it touches microphone permissions, privacy, and scoring quality.
+
+Suggested rollout:
+
+- First add record-and-replay, so learners can compare themselves with the standard audio without automatic grading.
+- Then add browser speech recognition where supported, using the recognized text as a loose pass/fail signal.
+- Later add real pronunciation scoring through a speech assessment service or model if we need reliable phoneme-level feedback.

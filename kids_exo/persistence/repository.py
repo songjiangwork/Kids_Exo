@@ -144,6 +144,7 @@ class PracticeRepository:
                         choices=list(question.choices),
                         speech_text=question.speech_text,
                         speech_locale=question.speech_locale,
+                        audio_url=question.audio_url,
                     )
                     for position, question in enumerate(snapshot.questions, start=1)
                 ],
