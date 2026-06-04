@@ -58,3 +58,7 @@
 - plugin 文案解析按单个 key 回退：优先请求 locale，缺失时使用默认 `en-CA`。若默认英文资源仍缺少必需 key，则应在加载或验证阶段报错，而不是运行时静默丢失教学内容。
 - session/PDF 快照应保存实际向学生展示的解析后文案及其 locale/fallback 元数据，确保历史结果可复查和可重复呈现。
 - 新增多语言能力时应先写测试覆盖默认英文、请求语言命中、局部缺失后英文回退、缺失默认必需 key 报错，以及 session 快照不因后续翻译修改而变化。
+- 语言类在线题目优先通过 `audio_url` 引用版本化静态音频资源，避免依赖浏览器内置 TTS 的不一致发音；`speech_text` 和 `speech_locale` 只作为 fallback 或未来无静态音频内容的临时方案。
+- 静态语音资源应放在前端 public assets 的稳定目录下，例如 `web-client/public/audio/tts/fr/fr-FR-DeniseNeural/...`，题目快照保存相对 URL，Student API 不需要暴露本地文件系统路径。
+- 生成或更新 TTS 音频时应记录使用的 voice、文本来源与资产目录；如果 TTS 依赖只用于资产生成，应作为可选开发依赖而不是运行 API 的必需依赖。
+- 语言类练习默认隐藏 math scratch pad；只有需要拼写草稿、听写或笔记的语言活动才重新评估是否显示 scratch pad。

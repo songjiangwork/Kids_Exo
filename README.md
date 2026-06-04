@@ -218,16 +218,22 @@ python -m venv .venv
 .venv/bin/python -m alembic upgrade head
 ```
 
+如果需要重新生成或补充法语静态语音资源，可额外安装 TTS 开发依赖：
+
+```bash
+.venv/bin/python -m pip install -e '.[tts]'
+```
+
 数据库结构由 `Alembic` 建立和升级，应用启动不会隐式建表；CRUD 通过 `SQLAlchemy 2.0 ORM` repository 完成。原型当前已有 session 结果、近期历史查看和独立 learner 管理页；Parent 认证及 learner 统计详情页仍待后续加入。
 
 ## 可视网页原型
 
-Angular Material 前端位于 `web-client/`，现已提供三条可操作界面：
+Angular Material 前端位于 `web-client/`，现已提供四条可操作界面：
 
-- Parent Studio：选择或创建 learner，从首批在线速算题型中选择专项，配置该 plugin 公开的选项、题量、反馈和计时器，然后创建练习。
+- Parent Studio：选择或创建 learner，先选择 Subject，再选择具体 Skill，配置该 plugin 公开的选项、题量、反馈和计时器，然后创建练习。
 - Learner Management：用表格查看 learner profiles，经由共享 form 新建/编辑，进入 learner detail 页面查看历史摘要，并通过确认框删除 learner。
 - Printable worksheet：从全部现有可打印 preset 中选择练习卷，按次选择是否保留 warm-up，使用页数模式或自定义 practice 题数，设置可选 seed，并直接下载 A4 英文 PDF，从网页替代日常 CLI 打印流程。
-- Student Practice：点击生成的 learner 按钮后，以一题一屏的方式填写答案；即时反馈模式会显示正误，延迟反馈模式只确认答案已保存。
+- Student Practice：点击生成的 learner 按钮后，以一题一屏的方式填写答案；即时反馈模式会显示正误，延迟反馈模式只确认答案已保存。数学题可手动打开 scratch pad，并在 typing/drawing 两种模式间切换；语言题默认隐藏 scratch pad。
 
 安装前端依赖：
 
@@ -249,7 +255,14 @@ scripts/dev-services.sh stop
 
 打开 `http://localhost:4200/manage` 即可试用 Parent 流程，或进入 `http://localhost:4200/manage/worksheets` 下载打印练习卷。前端开发服务器已经配置 `/api` proxy，自动转发到 `http://127.0.0.1:8000` 的 FastAPI 服务。
 
-当前在线答题开放 `Multiply by 11`、`Same Tens, Ones Sum to 10`、`Squares Ending in 5` 与 `Multiply by 9, 99, and 999`；打印页开放 catalog 中全部现有 PDF 练习卷。原型支持 learner CRUD、learner detail 历史摘要、完成成绩、错题复盘、近期 session 历史与 deferred feedback 的完成后回顾。Parent 登录和更完整的统计详情页仍待后续设计与实现。
+当前在线答题按 Subject 分组开放 Math 和 French。Math 已开放现有速算专项 catalog 中的在线题型；French 已开放 `French Alphabet Sounds` 与 `French Common Word Sounds`，其中法语字母和家庭词汇使用预生成 MP3，避免不同浏览器 TTS 发音不一致。打印页开放 catalog 中全部现有 PDF 练习卷。原型支持 learner CRUD、learner detail 历史摘要、完成成绩、错题复盘、从错题生成练习、近期 session 历史、session 短链接重新打开以及 deferred feedback 的完成后回顾。Parent 登录和更完整的统计详情页仍待后续设计与实现。
+
+法语静态音频资源放在 Angular public assets 下，并由题目快照通过 `audio_url` 引用：
+
+```text
+web-client/public/audio/tts/fr/fr-FR-DeniseNeural/alphabet/
+web-client/public/audio/tts/fr/fr-FR-DeniseNeural/common-words/family/
+```
 
 ## 运行测试
 

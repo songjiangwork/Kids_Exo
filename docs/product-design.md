@@ -320,7 +320,7 @@ python -m kids_exo generate --preset-id math.mental_multiplication.difference_of
 1. 已实现：preset catalog 与交互式 CLI，减少日常生成 PDF 的操作成本。
 2. 已实现：加入不含 warm-up 的混合题型 preset，并支持多个 plugin 来源合并、混排到同一显示区域。
 3. 已实现：PDF renderer 支持自动分页、续页标题和页码，并加入 100 题跨页混合专题。
-4. 已开始实施：网页应用原型采用 `FastAPI + Angular + Angular Material (Material 3) + SQLAlchemy 2.0 ORM + Alembic + SQLite`，产品模型预留 `Parent`、`Teacher`、`Student`、`Admin` 四种角色，首个可运行版本实现 Parent 与 Student；Student 使用面向四、五年级孩子的专属主题与练习体验；Parent 与 Student 核心流程均采用 mobile-first 响应式设计；所有 CRUD 与 schema migration 必须通过 ORM/migration 层而不手写 SQL。当前已完成 `multiply_by_11` 的在线 session/domain、服务端判分、locale fallback、公开 settings schema/catalog，以及保存 session 和一次答题提交所需的 ORM/migration/FastAPI 链路。详细设计见 `docs/web-app-design.md`。
+4. 已开始实施：网页应用原型采用 `FastAPI + Angular + Angular Material (Material 3) + SQLAlchemy 2.0 ORM + Alembic + SQLite`，产品模型预留 `Parent`、`Teacher`、`Student`、`Admin` 四种角色，首个可运行版本实现 Parent 与 Student；Student 使用面向四、五年级孩子的专属主题与练习体验；Parent 与 Student 核心流程均采用 mobile-first 响应式设计；所有 CRUD 与 schema migration 必须通过 ORM/migration 层而不手写 SQL。当前在线 catalog 已按 Subject -> Skill 拆分，Math 开放多种速算专项，French 开放字母与家庭词汇听音选择；系统已完成在线 session/domain、服务端判分、locale fallback、静态音频 `audio_url`、公开 settings schema/catalog、learner 管理与详情、错题复盘、网页 PDF 下载，以及保存 session/attempt/timer/audio metadata 所需的 ORM/migration/FastAPI 链路。详细设计见 `docs/web-app-design.md`。
 
 ## 混合专项练习卷
 

@@ -12,7 +12,8 @@ French support starts as a small language-learning track inside the online pract
 - Domain: Pronunciation
 - Activity: Alphabet Sounds
 - Student task: listen to a French letter name, then choose the matching letter.
-- Audio source: browser text-to-speech, preferring `fr-CA` and falling back to `fr-FR` or any available French voice.
+- Audio source: pre-generated MP3 files from Microsoft Edge TTS voice `fr-FR-DeniseNeural`; browser text-to-speech remains only a fallback if a question has no `audio_url`.
+- Current alphabet scope intentionally contains only the 26 regular letters, without French example words.
 
 ### Phase 1b: Common Word Sounds
 
@@ -22,6 +23,7 @@ French support starts as a small language-learning track inside the online pract
 - Student task: listen to a common French word, then choose the matching word and English meaning.
 - First category: family words such as `maman`, `papa`, `parents`, `famille`, `bébé`, `enfant`, `fils`, `fille`, `frère`, `sœur`, `grand-mère`, `grand-père`, `grands-parents`, `oncle`, `tante`, `cousin`, `cousine`, `mari`, and `femme`.
 - Later categories can include animals, school objects, colors, food, nature, and greetings.
+- Current implementation avoids repeating a family word until the available vocabulary pool is exhausted, so a short session should feel varied rather than accidentally drilling the same word several times.
 
 ### Phase 2: Letter Combinations
 
@@ -49,8 +51,16 @@ Language activities need richer question metadata than numeric math drills:
 
 - `question_type`: `numeric` or `multiple_choice`
 - `choices`: answer labels for choice-based questions
+- `audio_url`: static audio asset for consistent playback across browsers
 - `speech_text`: text to speak when the learner presses the audio button
-- `speech_locale`: preferred language for browser TTS
+- `speech_locale`: preferred language for browser TTS fallback
+
+Current static audio assets are served by the Angular dev server from:
+
+```text
+web-client/public/audio/tts/fr/fr-FR-DeniseNeural/alphabet/
+web-client/public/audio/tts/fr/fr-FR-DeniseNeural/common-words/family/
+```
 
 The first implementation stores multiple-choice answers as one-based numeric choice indexes. That keeps scoring compatible with the current persistence model while opening the door for richer language activities. A later version can add text-answer normalization for spelling and accent-aware scoring.
 
@@ -58,6 +68,7 @@ The first implementation stores multiple-choice answers as one-based numeric cho
 
 - Keep the activity short and friendly. The first version should feel like listening practice, not a formal test.
 - Prefer common words and predictable examples.
+- Hide the math scratch pad for language practice unless a future language activity genuinely needs note-taking.
 - Do not require speech recognition in the first pronunciation phases.
 - Do not save audio or student voice data unless the parent explicitly enables a speaking-practice feature later.
 
