@@ -20,7 +20,8 @@ French support starts as a small language-learning track inside the online pract
 - Domain: Pronunciation
 - Activity: Common Word Sounds
 - Student task: listen to a common French word, then choose the matching word and English meaning.
-- Examples: simple high-frequency words such as `ami`, `chat`, `lune`, `école`, `maman`, and `papa`.
+- First category: family words such as `maman`, `papa`, `parents`, `famille`, `bébé`, `enfant`, `fils`, `fille`, `frère`, `sœur`, `grand-mère`, `grand-père`, `grands-parents`, `oncle`, `tante`, `cousin`, `cousine`, `mari`, and `femme`.
+- Later categories can include animals, school objects, colors, food, nature, and greetings.
 
 ### Phase 2: Letter Combinations
 
@@ -69,3 +70,7 @@ Suggested rollout:
 - First add record-and-replay, so learners can compare themselves with the standard audio without automatic grading.
 - Then add browser speech recognition where supported, using the recognized text as a loose pass/fail signal.
 - Later add real pronunciation scoring through a speech assessment service or model if we need reliable phoneme-level feedback.
+
+## Visual Choice Notes
+
+Language multiple-choice questions can later support cartoon image choices. A likely data shape is to add choice-level metadata, such as `image_url` and `alt_text`, instead of only storing plain string labels. This should wait until we have a small illustration style and a reliable asset workflow.

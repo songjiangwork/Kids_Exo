@@ -316,7 +316,7 @@ _FRENCH_COMMON_WORD_SOUNDS = OnlinePluginDescriptor(
     subject="French",
     category="Pronunciation",
     title="French Common Word Sounds",
-    description="Listen to common French words, then choose the matching word and meaning.",
+    description="Listen to French family words, then choose the matching word and meaning.",
     default_locale="en-CA",
     locale_coverage=(LocaleCoverage("en-CA", ("practice",)),),
     settings=(
@@ -324,8 +324,8 @@ _FRENCH_COMMON_WORD_SOUNDS = OnlinePluginDescriptor(
             name="strategies",
             label="Question types",
             control="multiple_choice",
-            default=("word_sound_to_word",),
-            options=(SettingOption("word_sound_to_word", "Common French words"),),
+            default=("family_words",),
+            options=(SettingOption("family_words", "Family words"),),
         ),
     ),
 )

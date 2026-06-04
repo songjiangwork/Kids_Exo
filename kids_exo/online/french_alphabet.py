@@ -11,6 +11,7 @@ class FrenchSoundItem:
     text: str
     label: str
     meaning: str
+    audio_slug: str | None = None
 
 
 FRENCH_LETTERS: tuple[FrenchSoundItem, ...] = (
@@ -42,19 +43,26 @@ FRENCH_LETTERS: tuple[FrenchSoundItem, ...] = (
     FrenchSoundItem("Z", "Z", "letter Z"),
 )
 
-FRENCH_WORDS: tuple[FrenchSoundItem, ...] = (
-    FrenchSoundItem("ami", "ami", "friend"),
-    FrenchSoundItem("chat", "chat", "cat"),
-    FrenchSoundItem("lune", "lune", "moon"),
-    FrenchSoundItem("école", "école", "school"),
-    FrenchSoundItem("maman", "maman", "mom"),
-    FrenchSoundItem("papa", "papa", "dad"),
-    FrenchSoundItem("bonjour", "bonjour", "hello"),
-    FrenchSoundItem("merci", "merci", "thank you"),
-    FrenchSoundItem("livre", "livre", "book"),
-    FrenchSoundItem("rouge", "rouge", "red"),
-    FrenchSoundItem("bleu", "bleu", "blue"),
-    FrenchSoundItem("soleil", "soleil", "sun"),
+FRENCH_FAMILY_WORDS: tuple[FrenchSoundItem, ...] = (
+    FrenchSoundItem("maman", "maman", "mom", "maman"),
+    FrenchSoundItem("papa", "papa", "dad", "papa"),
+    FrenchSoundItem("parents", "parents", "parents", "parents"),
+    FrenchSoundItem("famille", "famille", "family", "famille"),
+    FrenchSoundItem("bébé", "bébé", "baby", "bebe"),
+    FrenchSoundItem("enfant", "enfant", "child", "enfant"),
+    FrenchSoundItem("fils", "fils", "son", "fils"),
+    FrenchSoundItem("fille", "fille", "daughter / girl", "fille"),
+    FrenchSoundItem("frère", "frère", "brother", "frere"),
+    FrenchSoundItem("sœur", "sœur", "sister", "soeur"),
+    FrenchSoundItem("grand-mère", "grand-mère", "grandmother", "grand-mere"),
+    FrenchSoundItem("grand-père", "grand-père", "grandfather", "grand-pere"),
+    FrenchSoundItem("grands-parents", "grands-parents", "grandparents", "grands-parents"),
+    FrenchSoundItem("oncle", "oncle", "uncle", "oncle"),
+    FrenchSoundItem("tante", "tante", "aunt", "tante"),
+    FrenchSoundItem("cousin", "cousin", "male cousin", "cousin"),
+    FrenchSoundItem("cousine", "cousine", "female cousin", "cousine"),
+    FrenchSoundItem("mari", "mari", "husband", "mari"),
+    FrenchSoundItem("femme", "femme", "wife / woman", "femme"),
 )
 
 STRATEGY_LABELS = {
@@ -62,10 +70,11 @@ STRATEGY_LABELS = {
 }
 
 WORD_STRATEGY_LABELS = {
-    "word_sound_to_word": "simple words",
+    "family_words": "family words",
 }
 
 FRENCH_ALPHABET_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/alphabet"
+FRENCH_FAMILY_WORD_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/common-words/family"
 SIMILAR_LETTER_GROUPS: tuple[frozenset[str], ...] = (
     frozenset(("B", "C", "D", "G", "P", "T", "V")),
     frozenset(("M", "N")),
@@ -117,19 +126,14 @@ def create_french_common_words_session(request) -> PracticeSessionSnapshot:
     descriptor = get_online_plugin(request.plugin)
     strategies = tuple(request.plugin_settings.get("strategies", ()))
     if not strategies:
-        strategies = ("word_sound_to_word",)
+        strategies = ("family_words",)
     unexpected = set(strategies) - set(WORD_STRATEGY_LABELS)
     if unexpected:
         names = ", ".join(sorted(unexpected))
         raise ValueError(f"Unsupported French common words strategy: {names}")
 
     rng = random.Random(request.seed)
-    strategy_plan = [strategies[index % len(strategies)] for index in range(request.question_count)]
-    rng.shuffle(strategy_plan)
-    questions = tuple(
-        _question_for_strategy(strategy, position, rng)
-        for position, strategy in enumerate(strategy_plan, start=1)
-    )
+    questions = _family_word_questions(request.question_count, rng)
     return PracticeSessionSnapshot(
         plugin=request.plugin,
         subject=descriptor.subject,
@@ -143,7 +147,7 @@ def create_french_common_words_session(request) -> PracticeSessionSnapshot:
         presentation=LocalizedPresentation(
             heading=LocalizedText("French Common Word Sounds", "en-CA", False),
             instructions=(
-                LocalizedText("Listen to a common French word, then choose its meaning.", "en-CA", False),
+                LocalizedText("Listen to a French family word, then choose its meaning.", "en-CA", False),
                 LocalizedText("Say the word softly after the audio if you want extra practice.", "en-CA", False),
             ),
         ),
@@ -155,9 +159,10 @@ def _question_for_strategy(
     strategy: str,
     position: int,
     rng: random.Random,
+    target: FrenchSoundItem | None = None,
 ) -> OnlineQuestionSnapshot:
-    items = FRENCH_LETTERS if strategy == "letter_name_to_letter" else FRENCH_WORDS
-    target = rng.choice(items)
+    items = FRENCH_LETTERS if strategy == "letter_name_to_letter" else FRENCH_FAMILY_WORDS
+    target = target or rng.choice(items)
     distractors = rng.sample(_distractor_pool(strategy, target, items), 3)
     choices = [target, *distractors]
     rng.shuffle(choices)
@@ -169,19 +174,34 @@ def _question_for_strategy(
     prompt = (
         "Listen to the French letter name. Which letter do you hear?"
         if strategy == "letter_name_to_letter"
-        else "Listen to the French word. Which word do you hear?"
+        else "Listen to the French family word. Which word do you hear?"
     )
     return OnlineQuestionSnapshot(
         identifier=f"question-{position}",
         prompt=prompt,
         strategy=strategy,
         expected_answer=expected_answer,
-        skill_tags=("french", "pronunciation", "alphabet_sounds", strategy),
+        skill_tags=("french", "pronunciation", _skill_tag_for_strategy(strategy), strategy),
         question_type="multiple_choice",
         choices=labels,
         speech_text=target.text,
-        speech_locale="fr-FR" if strategy == "letter_name_to_letter" else "fr-CA",
+        speech_locale="fr-FR",
         audio_url=_audio_url_for_strategy(strategy, target),
+    )
+
+
+def _family_word_questions(
+    question_count: int,
+    rng: random.Random,
+) -> tuple[OnlineQuestionSnapshot, ...]:
+    targets: list[FrenchSoundItem] = []
+    while len(targets) < question_count:
+        shuffled = list(FRENCH_FAMILY_WORDS)
+        rng.shuffle(shuffled)
+        targets.extend(shuffled)
+    return tuple(
+        _question_for_strategy("family_words", position, rng, target)
+        for position, target in enumerate(targets[:question_count], start=1)
     )
 
 
@@ -208,6 +228,12 @@ def _similar_letters(letter: str) -> frozenset[str]:
 
 
 def _audio_url_for_strategy(strategy: str, target: FrenchSoundItem) -> str | None:
-    if strategy != "letter_name_to_letter":
-        return None
-    return f"{FRENCH_ALPHABET_AUDIO_BASE_URL}/{target.text.lower()}.mp3"
+    if strategy == "letter_name_to_letter":
+        return f"{FRENCH_ALPHABET_AUDIO_BASE_URL}/{target.text.lower()}.mp3"
+    if strategy == "family_words" and target.audio_slug:
+        return f"{FRENCH_FAMILY_WORD_AUDIO_BASE_URL}/{target.audio_slug}.mp3"
+    return None
+
+
+def _skill_tag_for_strategy(strategy: str) -> str:
+    return "alphabet_sounds" if strategy == "letter_name_to_letter" else "common_word_sounds"

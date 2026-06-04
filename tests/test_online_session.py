@@ -164,7 +164,7 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         session = create_practice_session(
             OnlineSessionRequest(
                 plugin="french_common_word_sounds",
-                plugin_settings={"strategies": ["word_sound_to_word"]},
+                plugin_settings={"strategies": ["family_words"]},
                 question_count=10,
                 seed=123,
             )
@@ -175,11 +175,14 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertEqual(session.subject, "French")
         self.assertEqual(session.category, "Pronunciation")
         self.assertEqual(session.skill, "French Common Word Sounds")
-        self.assertEqual({question.strategy for question in session.questions}, {"word_sound_to_word"})
+        self.assertEqual({question.strategy for question in session.questions}, {"family_words"})
+        self.assertEqual(len({question.speech_text for question in session.questions}), 10)
         self.assertEqual(first.question_type, "multiple_choice")
         self.assertTrue(all("(" in choice and ")" in choice for choice in first.choices))
-        self.assertEqual(first.speech_locale, "fr-CA")
+        self.assertEqual(first.speech_locale, "fr-FR")
         self.assertIsNotNone(first.speech_text)
+        self.assertTrue(first.audio_url.startswith("/audio/tts/fr/fr-FR-DeniseNeural/common-words/family/"))
+        self.assertTrue(first.audio_url.endswith(".mp3"))
 
 
 if __name__ == "__main__":

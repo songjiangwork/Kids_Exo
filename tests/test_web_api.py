@@ -323,7 +323,7 @@ class PracticeWebApiTests(unittest.TestCase):
             f"/api/learners/{learner['id']}/sessions",
             json={
                 "plugin": "french_common_word_sounds",
-                "plugin_settings": {"strategies": ["word_sound_to_word"]},
+                "plugin_settings": {"strategies": ["family_words"]},
                 "question_count": 10,
                 "seed": 23,
             },
@@ -341,8 +341,13 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(student.status_code, 200)
         self.assertEqual(first_question["question_type"], "multiple_choice")
         self.assertTrue(all("(" in choice and ")" in choice for choice in first_question["choices"]))
-        self.assertEqual(first_question["speech_locale"], "fr-CA")
+        self.assertEqual(first_question["speech_locale"], "fr-FR")
         self.assertIsNotNone(first_question["speech_text"])
+        self.assertTrue(
+            first_question["audio_url"].startswith(
+                "/audio/tts/fr/fr-FR-DeniseNeural/common-words/family/"
+            )
+        )
         self.assertNotIn("expected_answer", student.text)
 
     def test_student_session_reports_resume_progress_without_exposing_answers(self) -> None:

@@ -141,7 +141,7 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         self.assertEqual(french_common_words.title, "French Common Word Sounds")
         self.assertEqual(
             tuple(option.value for option in french_common_words.settings[0].options),
-            ("word_sound_to_word",),
+            ("family_words",),
         )
 
 
