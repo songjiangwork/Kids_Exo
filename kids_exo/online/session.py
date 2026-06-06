@@ -65,6 +65,10 @@ def create_practice_session(request: OnlineSessionRequest) -> PracticeSessionSna
             strategy=question.strategy,
             expected_answer=question.left_operand * question.right_operand,
             skill_tags=("mental_multiplication", request.plugin),
+            renderer_type="numeric_answer",
+            answer_type="integer_exact",
+            evaluation_payload={"expected_value": question.left_operand * question.right_operand},
+            prompt_payload={"display_text": question.display_text},
         )
         for position, question in enumerate(printable_questions, start=1)
     )

@@ -76,6 +76,9 @@ class StudentQuestionResponse(FromDomainModel):
     position: int
     total_questions: int
     prompt: str
+    renderer_type: str = "numeric_answer"
+    prompt_payload: dict[str, Any] = Field(default_factory=dict)
+    public_payload: dict[str, Any] = Field(default_factory=dict)
     question_type: str = "numeric"
     choices: tuple[str, ...] = ()
     speech_text: str | None = None

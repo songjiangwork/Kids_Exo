@@ -1,7 +1,8 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from kids_exo.localization import LocalizedPresentation
+from kids_exo.online.evaluation import evaluate_answer
 
 
 @dataclass(frozen=True)
@@ -10,6 +11,9 @@ class StudentQuestionView:
     position: int
     total_questions: int
     prompt: str
+    renderer_type: str = "numeric_answer"
+    prompt_payload: dict[str, Any] = field(default_factory=dict)
+    public_payload: dict[str, Any] = field(default_factory=dict)
     question_type: str = "numeric"
     choices: tuple[str, ...] = ()
     speech_text: str | None = None
@@ -24,6 +28,11 @@ class OnlineQuestionSnapshot:
     strategy: str
     expected_answer: int
     skill_tags: tuple[str, ...]
+    renderer_type: str = "numeric_answer"
+    answer_type: str = "integer_exact"
+    evaluation_payload: dict[str, Any] = field(default_factory=dict)
+    prompt_payload: dict[str, Any] = field(default_factory=dict)
+    public_payload: dict[str, Any] = field(default_factory=dict)
     question_type: str = "numeric"
     choices: tuple[str, ...] = ()
     speech_text: str | None = None
@@ -34,8 +43,9 @@ class OnlineQuestionSnapshot:
 @dataclass(frozen=True)
 class AnswerEvaluation:
     question_identifier: str
-    normalized_answer: int
+    normalized_answer: int | str | dict[str, Any]
     is_correct: bool
+    detail: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -64,6 +74,9 @@ class PracticeSessionSnapshot:
                 position=position,
                 total_questions=total,
                 prompt=question.prompt,
+                renderer_type=question.renderer_type,
+                prompt_payload=question.prompt_payload,
+                public_payload=question.public_payload,
                 question_type=question.question_type,
                 choices=question.choices,
                 speech_text=question.speech_text,
@@ -75,14 +88,16 @@ class PracticeSessionSnapshot:
 
     def evaluate_answer(self, question_identifier: str, submitted_answer: str) -> AnswerEvaluation:
         question = self._find_question(question_identifier)
-        try:
-            normalized_answer = int(submitted_answer.strip())
-        except ValueError as exc:
-            raise ValueError("Submitted answer must be an integer") from exc
+        result = evaluate_answer(
+            question.answer_type,
+            question.evaluation_payload,
+            submitted_answer,
+        )
         return AnswerEvaluation(
             question_identifier=question_identifier,
-            normalized_answer=normalized_answer,
-            is_correct=normalized_answer == question.expected_answer,
+            normalized_answer=result.normalized_answer,
+            is_correct=result.is_correct,
+            detail=result.detail,
         )
 
     def _find_question(self, identifier: str) -> OnlineQuestionSnapshot:

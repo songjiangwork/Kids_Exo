@@ -52,12 +52,23 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         session = create_practice_session(self._request())
         question = session.questions[0]
 
+        self.assertEqual(question.renderer_type, "numeric_answer")
+        self.assertEqual(question.answer_type, "integer_exact")
+        self.assertEqual(
+            question.evaluation_payload,
+            {"expected_value": question.expected_answer},
+        )
+        self.assertEqual(question.prompt_payload, {"display_text": question.prompt})
         correct = session.evaluate_answer(question.identifier, str(question.expected_answer))
         wrong = session.evaluate_answer(question.identifier, str(question.expected_answer + 1))
 
         self.assertTrue(correct.is_correct)
         self.assertFalse(wrong.is_correct)
         self.assertEqual(correct.normalized_answer, question.expected_answer)
+        self.assertEqual(
+            correct.detail,
+            {"answer_type": "integer_exact", "expected_value": question.expected_answer},
+        )
 
     def test_session_snapshot_records_localization_fallbacks(self) -> None:
         session = create_practice_session(self._request(requested_locale="zh-CN"))
@@ -134,6 +145,11 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertEqual(session.skill, "French Alphabet Sounds")
         self.assertEqual({question.strategy for question in session.questions}, {"letter_name_to_letter"})
         self.assertEqual(first.question_type, "multiple_choice")
+        self.assertEqual(first.renderer_type, "listening_choice")
+        self.assertEqual(first.answer_type, "multiple_choice_index")
+        self.assertEqual(first.evaluation_payload, {"expected_index": first.expected_answer})
+        self.assertEqual(first.prompt_payload["choices"], list(first.choices))
+        self.assertEqual(first.prompt_payload["speech_locale"], "fr-FR")
         self.assertEqual(len(first.choices), 4)
         self.assertEqual(first.speech_locale, "fr-FR")
         self.assertIsNotNone(first.speech_text)
@@ -159,6 +175,8 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertTrue(session.evaluate_answer(first.identifier, str(first.expected_answer)).is_correct)
         self.assertEqual(student_view.choices, first.choices)
         self.assertEqual(student_view.speech_text, first.speech_text)
+        self.assertEqual(student_view.renderer_type, "listening_choice")
+        self.assertEqual(student_view.prompt_payload["choices"], list(first.choices))
 
     def test_french_common_words_session_generates_word_meaning_choices(self) -> None:
         session = create_practice_session(
