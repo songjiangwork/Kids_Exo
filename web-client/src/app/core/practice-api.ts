@@ -3,16 +3,19 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { HttpResponse } from '@angular/common/http';
 
+export type PluginSettingValue = string | number | boolean;
+export type PluginSettingsValue = Record<string, PluginSettingValue[]>;
+
 export interface SettingOption {
-  value: number | string;
+  value: PluginSettingValue;
   label: string;
 }
 
 export interface PluginSetting {
   name: string;
   label: string;
-  control: string;
-  default: Array<number | string>;
+  control: 'single_choice' | 'multiple_choice' | 'boolean' | 'number' | 'text' | string;
+  default: PluginSettingValue[];
   options: SettingOption[];
 }
 
@@ -36,7 +39,7 @@ export interface OnlineCatalog {
 
 export interface PracticeRequest {
   plugin: string;
-  plugin_settings: Record<string, Array<number | string>>;
+  plugin_settings: PluginSettingsValue;
   question_count: number;
   requested_locale: string;
   feedback_mode: string;
