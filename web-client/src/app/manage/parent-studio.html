@@ -69,17 +69,6 @@
               </mat-select>
             </mat-form-field>
 
-            @if (setting('multiplicand_digits')) {
-              <mat-form-field appearance="outline">
-                <mat-label>Number size</mat-label>
-                <mat-select [(ngModel)]="digits">
-                  @for (option of setting('multiplicand_digits')?.options; track option.value) {
-                    <mat-option [value]="option.value">{{ option.label }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-            }
-
             <mat-form-field appearance="outline">
               <mat-label>Feedback</mat-label>
               <mat-select [(ngModel)]="feedbackMode">
@@ -87,19 +76,15 @@
                 <mat-option value="deferred">Review after completion</mat-option>
               </mat-select>
             </mat-form-field>
+
+            <app-plugin-settings-form
+              [settings]="selectedPlugin()?.settings ?? []"
+              [value]="pluginSettings"
+              (valueChange)="updatePluginSettings($event)"
+            />
+
           </div>
 
-          <div class="choice-row">
-            <span class="choice-label">Include</span>
-            @for (option of setting('strategies')?.options; track option.value) {
-              <mat-checkbox
-                [checked]="isSelectedStrategy(option.value.toString())"
-                (change)="toggleStrategy(option.value.toString(), $event.checked)"
-              >
-                {{ option.label }}
-              </mat-checkbox>
-            }
-          </div>
 
           <div class="switch-row">
             <mat-slide-toggle [(ngModel)]="showTimer">Show timer to learner</mat-slide-toggle>

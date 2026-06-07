@@ -4,7 +4,6 @@ import { RouterLink } from '@angular/router';
 import { of, switchMap } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -16,11 +15,12 @@ import {
   Learner,
   OnlineCatalog,
   OnlinePlugin,
-  PluginSetting,
+  PluginSettingsValue,
   PracticeApi,
   PracticeRequest,
   SavedSession,
 } from '../core/practice-api';
+import { PluginSettingsForm } from './plugin-settings-form';
 
 @Component({
   selector: 'app-parent-studio',
@@ -28,7 +28,6 @@ import {
     FormsModule,
     MatButtonModule,
     MatCardModule,
-    MatCheckboxModule,
     MatChipsModule,
     MatFormFieldModule,
     MatIconModule,
@@ -36,6 +35,7 @@ import {
     MatProgressSpinnerModule,
     MatSelectModule,
     MatSlideToggleModule,
+    PluginSettingsForm,
     RouterLink,
   ],
   templateUrl: './parent-studio.html',
@@ -54,8 +54,7 @@ export class ParentStudio implements OnInit {
   protected subject = 'Math';
   protected pluginId = 'multiply_by_11';
   protected questionCount = 10;
-  protected digits = 2;
-  protected selectedStrategies = new Set<string>();
+  protected pluginSettings: PluginSettingsValue = {};
   protected feedbackMode = 'immediate';
   protected showTimer = true;
   protected locale = 'en-CA';
@@ -92,8 +91,7 @@ export class ParentStudio implements OnInit {
   }
 
   protected startPractice(): void {
-    const strategies = [...this.selectedStrategies];
-    if (!this.nickname.trim() || strategies.length === 0) {
+    if (!this.nickname.trim() || this.hasEmptyMultipleChoiceSetting()) {
       this.error.set('Enter a learner name and choose at least one question type.');
       return;
     }
@@ -109,7 +107,7 @@ export class ParentStudio implements OnInit {
         if (!this.learners().some((entry) => entry.id === savedLearner.id)) {
           this.learners.update((entries) => [...entries, savedLearner]);
         }
-        return this.api.createSession(savedLearner.id, this.sessionRequest(strategies));
+        return this.api.createSession(savedLearner.id, this.sessionRequest());
       }),
     ).subscribe({
       next: (session) => {
@@ -141,11 +139,7 @@ export class ParentStudio implements OnInit {
       this.subject = plugin.subject;
       this.locale = plugin.default_locale;
     }
-    const digitDefault = this.setting('multiplicand_digits')?.default[0];
-    this.digits = Number(digitDefault ?? 2);
-    this.selectedStrategies = new Set(
-      (this.setting('strategies')?.default ?? []).map(String),
-    );
+    this.pluginSettings = this.defaultPluginSettings(plugin);
   }
 
   protected selectSubject(subject: string): void {
@@ -176,39 +170,32 @@ export class ParentStudio implements OnInit {
     return this.catalog()?.plugins.find((plugin) => plugin.plugin === this.pluginId);
   }
 
-  protected setting(name: string): PluginSetting | undefined {
-    return this.selectedPlugin()?.settings.find((setting) => setting.name === name);
+  protected updatePluginSettings(settings: PluginSettingsValue): void {
+    this.pluginSettings = settings;
   }
 
-  protected isSelectedStrategy(strategy: string): boolean {
-    return this.selectedStrategies.has(strategy);
-  }
-
-  protected toggleStrategy(strategy: string, checked: boolean): void {
-    const next = new Set(this.selectedStrategies);
-    if (checked) {
-      next.add(strategy);
-    } else {
-      next.delete(strategy);
-    }
-    this.selectedStrategies = next;
-  }
-
-  private sessionRequest(strategies: string[]): PracticeRequest {
-    const pluginSettings: Record<string, Array<number | string>> = {};
-    if (this.setting('multiplicand_digits')) {
-      pluginSettings['multiplicand_digits'] = [this.digits];
-    }
-    if (this.setting('strategies')) {
-      pluginSettings['strategies'] = strategies;
-    }
+  private sessionRequest(): PracticeRequest {
     return {
       plugin: this.pluginId,
-      plugin_settings: pluginSettings,
+      plugin_settings: this.pluginSettings,
       question_count: this.questionCount,
       requested_locale: this.locale,
       feedback_mode: this.feedbackMode,
       show_timer: this.showTimer,
     };
+  }
+
+  private defaultPluginSettings(plugin: OnlinePlugin | undefined): PluginSettingsValue {
+    const settings: PluginSettingsValue = {};
+    for (const setting of plugin?.settings ?? []) {
+      settings[setting.name] = [...setting.default];
+    }
+    return settings;
+  }
+
+  private hasEmptyMultipleChoiceSetting(): boolean {
+    return (this.selectedPlugin()?.settings ?? []).some((setting) => (
+      setting.control === 'multiple_choice' && (this.pluginSettings[setting.name] ?? []).length === 0
+    ));
   }
 }
