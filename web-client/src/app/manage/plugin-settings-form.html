@@ -1,0 +1,65 @@
+@if (settings.length > 0) {
+  <div class="plugin-settings-form">
+    @for (setting of settings; track setting.name) {
+      @switch (setting.control) {
+        @case ('single_choice') {
+          <mat-form-field appearance="outline">
+            <mat-label>{{ setting.label }}</mat-label>
+            <mat-select
+              [ngModel]="selectedValue(setting)"
+              (ngModelChange)="updateSingle(setting, $event)"
+            >
+              @for (option of setting.options; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
+        @case ('multiple_choice') {
+          <div class="choice-row">
+            <span class="choice-label">{{ setting.label }}</span>
+            @for (option of setting.options; track option.value) {
+              <mat-checkbox
+                [checked]="isChecked(setting, option.value)"
+                (change)="updateMultiple(setting, option.value, $event.checked)"
+              >
+                {{ option.label }}
+              </mat-checkbox>
+            }
+          </div>
+        }
+        @case ('boolean') {
+          <div class="switch-row">
+            <mat-checkbox
+              [checked]="booleanValue(setting)"
+              (change)="updateBoolean(setting, $event.checked)"
+            >
+              {{ setting.label }}
+            </mat-checkbox>
+          </div>
+        }
+        @case ('number') {
+          <mat-form-field appearance="outline">
+            <mat-label>{{ setting.label }}</mat-label>
+            <input
+              matInput
+              type="number"
+              [ngModel]="numberValue(setting)"
+              (ngModelChange)="updateNumber(setting, $event)"
+            />
+          </mat-form-field>
+        }
+        @case ('text') {
+          <mat-form-field appearance="outline">
+            <mat-label>{{ setting.label }}</mat-label>
+            <input
+              matInput
+              [ngModel]="textValue(setting)"
+              (ngModelChange)="updateText(setting, $event)"
+            />
+          </mat-form-field>
+        }
+      }
+    }
+  </div>
+}

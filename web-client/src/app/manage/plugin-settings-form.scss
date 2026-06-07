@@ -1,0 +1,27 @@
+.plugin-settings-form {
+  display: contents;
+}
+
+.choice-row {
+  align-items: center;
+  background: var(--surface-soft);
+  border-radius: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  grid-column: 1 / -1;
+  padding: 16px 18px;
+}
+
+.choice-label {
+  color: var(--muted);
+  font-family: "Nunito Sans", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.switch-row {
+  grid-column: 1 / -1;
+}
