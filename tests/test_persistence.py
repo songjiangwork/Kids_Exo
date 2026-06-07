@@ -54,6 +54,41 @@ class PracticeRepositoryTests(unittest.TestCase):
         self.assertEqual(retrieved.localization_fallback_keys, ["heading", "instruction_1"])
         self.assertEqual(len(retrieved.questions), 10)
         self.assertIsInstance(retrieved.questions[0].expected_answer, int)
+        self.assertEqual(retrieved.questions[0].renderer_type, "numeric_answer")
+        self.assertEqual(retrieved.questions[0].answer_type, "integer_exact")
+        self.assertEqual(
+            retrieved.questions[0].evaluation_payload,
+            {"expected_value": retrieved.questions[0].expected_answer},
+        )
+        self.assertEqual(
+            retrieved.questions[0].prompt_payload,
+            {"display_text": retrieved.questions[0].prompt},
+        )
+        self.assertEqual(retrieved.questions[0].public_payload, {})
+
+    def test_saves_french_choice_session_evaluation_metadata(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        snapshot = create_practice_session(
+            OnlineSessionRequest(
+                plugin="french_alphabet_sounds",
+                plugin_settings={"strategies": ["letter_name_to_letter"]},
+                question_count=10,
+                seed=123,
+            )
+        )
+
+        self.repository.create_practice_session(
+            learner.id,
+            snapshot,
+            student_token="french-token",
+        )
+        retrieved = self.repository.get_session_by_student_token("french-token")
+        question = retrieved.questions[0]
+
+        self.assertEqual(question.renderer_type, "listening_choice")
+        self.assertEqual(question.answer_type, "multiple_choice_index")
+        self.assertEqual(question.evaluation_payload, {"expected_index": question.expected_answer})
+        self.assertEqual(question.prompt_payload["choices"], list(question.choices))
 
     def test_records_an_answer_attempt_against_saved_question(self) -> None:
         learner = self.repository.create_learner("Alex")
@@ -73,6 +108,43 @@ class PracticeRepositoryTests(unittest.TestCase):
 
         self.assertTrue(attempt.is_correct)
         self.assertEqual(attempt.normalized_answer, question.expected_answer)
+        self.assertEqual(attempt.submitted_payload, {"raw": str(question.expected_answer)})
+        self.assertEqual(attempt.normalized_payload, {"value": question.expected_answer})
+        self.assertEqual(
+            attempt.evaluation_detail,
+            {"answer_type": "integer_exact", "expected_value": question.expected_answer},
+        )
+
+    def test_records_multiple_choice_attempts_with_generic_evaluation(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        snapshot = create_practice_session(
+            OnlineSessionRequest(
+                plugin="french_alphabet_sounds",
+                plugin_settings={"strategies": ["letter_name_to_letter"]},
+                question_count=10,
+                seed=123,
+            )
+        )
+        self.repository.create_practice_session(
+            learner.id,
+            snapshot,
+            student_token="french-token",
+        )
+        session = self.repository.get_session_by_student_token("french-token")
+        question = session.questions[0]
+
+        attempt = self.repository.submit_answer(
+            "french-token",
+            question.public_identifier,
+            str(question.expected_answer),
+        )
+
+        self.assertTrue(attempt.is_correct)
+        self.assertEqual(attempt.normalized_answer, question.expected_answer)
+        self.assertEqual(
+            attempt.evaluation_detail,
+            {"answer_type": "multiple_choice_index", "expected_index": question.expected_answer},
+        )
 
     def test_tracks_active_elapsed_time_and_settles_stale_timer_on_reopen(self) -> None:
         learner = self.repository.create_learner("Alex")
@@ -339,8 +411,23 @@ class AlembicMigrationTests(unittest.TestCase):
                 ).get_columns("question_instances")
             }
             self.assertTrue(
-                {"question_type", "choices", "speech_text", "speech_locale", "audio_url"}
+                {
+                    "question_type",
+                    "choices",
+                    "speech_text",
+                    "speech_locale",
+                    "audio_url",
+                    "renderer_type",
+                    "answer_type",
+                    "evaluation_payload",
+                    "prompt_payload",
+                    "public_payload",
+                }
                 <= question_columns
+            )
+            self.assertTrue(
+                {"submitted_payload", "normalized_payload", "evaluation_detail"}
+                <= attempt_columns
             )
 
 

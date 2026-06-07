@@ -69,6 +69,11 @@ class QuestionInstanceEntity(Base):
     strategy: Mapped[str] = mapped_column(String(100))
     expected_answer: Mapped[int] = mapped_column(Integer)
     skill_tags: Mapped[list[str]] = mapped_column(JSON)
+    renderer_type: Mapped[str] = mapped_column(String(80), default="numeric_answer")
+    answer_type: Mapped[str] = mapped_column(String(80), default="integer_exact")
+    evaluation_payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    prompt_payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    public_payload: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     question_type: Mapped[str] = mapped_column(String(30), default="numeric")
     choices: Mapped[list[str]] = mapped_column(JSON, default=list)
     speech_text: Mapped[str | None] = mapped_column(String(300), nullable=True)
@@ -90,6 +95,9 @@ class ResponseAttemptEntity(Base):
     attempt_number: Mapped[int] = mapped_column(Integer)
     submitted_answer: Mapped[str] = mapped_column(String(100))
     normalized_answer: Mapped[int] = mapped_column(Integer)
+    submitted_payload: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    normalized_payload: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    evaluation_detail: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     is_correct: Mapped[bool] = mapped_column(Boolean)
     submitted_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

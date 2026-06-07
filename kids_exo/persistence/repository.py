@@ -5,6 +5,7 @@ import secrets
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload, sessionmaker
 
+from kids_exo.online.evaluation import evaluate_answer
 from kids_exo.online.models import PracticeSessionSnapshot
 from kids_exo.persistence.models import (
     LearnerEntity,
@@ -138,8 +139,13 @@ class PracticeRepository:
                         position=position,
                         prompt=question.prompt,
                         strategy=question.strategy,
-                        expected_answer=question.expected_answer,
+                        expected_answer=_legacy_expected_answer(question),
                         skill_tags=list(question.skill_tags),
+                        renderer_type=question.renderer_type,
+                        answer_type=question.answer_type,
+                        evaluation_payload=dict(question.evaluation_payload),
+                        prompt_payload=dict(question.prompt_payload),
+                        public_payload=dict(question.public_payload),
                         question_type=question.question_type,
                         choices=list(question.choices),
                         speech_text=question.speech_text,
@@ -379,10 +385,6 @@ class PracticeRepository:
         question_identifier: str,
         submitted_answer: str,
     ) -> ResponseAttemptEntity:
-        try:
-            normalized_answer = int(submitted_answer.strip())
-        except ValueError as exc:
-            raise ValueError("Submitted answer must be an integer") from exc
         with self._session_factory() as database_session:
             practice_session = database_session.scalars(
                 select(PracticeSessionEntity)
@@ -407,6 +409,12 @@ class PracticeRepository:
                 raise ValueError("Unknown student question")
             if question.attempts:
                 raise ValueError("Question already submitted")
+            evaluation = evaluate_answer(
+                question.answer_type,
+                question.evaluation_payload,
+                submitted_answer,
+            )
+            normalized_answer = _legacy_normalized_answer(evaluation.normalized_answer)
             now = self._now()
             if practice_session.show_timer and practice_session.timer_started_at is not None:
                 self._settle_timer(practice_session, now)
@@ -415,7 +423,10 @@ class PracticeRepository:
                 attempt_number=len(question.attempts) + 1,
                 submitted_answer=submitted_answer,
                 normalized_answer=normalized_answer,
-                is_correct=normalized_answer == question.expected_answer,
+                submitted_payload={"raw": submitted_answer},
+                normalized_payload={"value": evaluation.normalized_answer},
+                evaluation_detail=evaluation.detail,
+                is_correct=evaluation.is_correct,
                 submitted_at=now,
             )
             database_session.add(attempt)
@@ -526,3 +537,17 @@ class PracticeRepository:
             )
             if existing is None:
                 return token
+
+
+def _legacy_expected_answer(question) -> int:
+    if question.answer_type == "integer_exact":
+        return int(question.evaluation_payload["expected_value"])
+    if question.answer_type == "multiple_choice_index":
+        return int(question.evaluation_payload["expected_index"])
+    return int(question.expected_answer)
+
+
+def _legacy_normalized_answer(normalized_answer) -> int:
+    if isinstance(normalized_answer, bool) or not isinstance(normalized_answer, int):
+        raise ValueError("Current persistence schema requires an integer normalized answer")
+    return normalized_answer
