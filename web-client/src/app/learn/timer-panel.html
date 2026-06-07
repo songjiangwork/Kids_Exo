@@ -1,0 +1,10 @@
+<div class="timer-panel">
+  <div class="timer">{{ timerText() }}</div>
+  @if (!complete) {
+    @if (paused) {
+      <button mat-stroked-button (click)="resumeTimer.emit()" [disabled]="updating">Resume</button>
+    } @else {
+      <button mat-stroked-button (click)="pauseTimer.emit()" [disabled]="updating">Pause</button>
+    }
+  }
+</div>

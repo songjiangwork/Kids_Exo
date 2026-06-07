@@ -1,0 +1,7 @@
+@if (hasAudio()) {
+  <section class="audio-panel" aria-label="Audio controls">
+    <button mat-stroked-button class="audio-button" type="button" (click)="playAudio.emit()">
+      Play sound
+    </button>
+  </section>
+}

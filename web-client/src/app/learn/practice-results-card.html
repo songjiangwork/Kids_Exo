@@ -1,0 +1,24 @@
+<mat-card class="finish-card">
+  <div class="burst">+</div>
+  <p class="eyebrow">Practice complete</p>
+  <h1>Strong work!</h1>
+  <p class="score">{{ results.correct_answers }} / {{ results.total_questions }} correct</p>
+  @if (showTimer && results.elapsed_seconds !== null) {
+    <p class="time">Time: {{ resultTimeText() }}</p>
+  }
+  @if (results.incorrect_questions.length) {
+    <section class="review">
+      <h2>Review these questions</h2>
+      @for (missed of results.incorrect_questions; track missed.prompt) {
+        <div class="missed-question">
+          <strong>{{ missed.prompt }}</strong>
+          <span>Your answer: {{ missed.submitted_answer }}</span>
+          <span>Answer: {{ missed.expected_answer }}</span>
+        </div>
+      }
+    </section>
+  } @else {
+    <p class="perfect">Every answer was correct.</p>
+  }
+  <a mat-flat-button href="/manage">Back to Parent Studio</a>
+</mat-card>

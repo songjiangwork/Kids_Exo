@@ -3,31 +3,8 @@
     <div class="loading"><mat-spinner diameter="38" /> Opening your practice...</div>
   } @else if (error()) {
     <mat-card class="message-card"><p>{{ error() }}</p></mat-card>
-  } @else if (complete()) {
-    <mat-card class="finish-card">
-      <div class="burst">+</div>
-      <p class="eyebrow">Practice complete</p>
-      <h1>Strong work!</h1>
-      <p class="score">{{ results()?.correct_answers }} / {{ results()?.total_questions }} correct</p>
-      @if (session()?.show_timer && results()?.elapsed_seconds !== null) {
-        <p class="time">Time: {{ resultTimeText() }}</p>
-      }
-      @if (results()?.incorrect_questions?.length) {
-        <section class="review">
-          <h2>Review these questions</h2>
-          @for (missed of results()?.incorrect_questions; track missed.prompt) {
-            <div class="missed-question">
-              <strong>{{ missed.prompt }}</strong>
-              <span>Your answer: {{ missed.submitted_answer }}</span>
-              <span>Answer: {{ missed.expected_answer }}</span>
-            </div>
-          }
-        </section>
-      } @else {
-        <p class="perfect">Every answer was correct.</p>
-      }
-      <a mat-flat-button href="/manage">Back to Parent Studio</a>
-    </mat-card>
+  } @else if (complete() && results(); as finalResults) {
+    <app-practice-results-card [results]="finalResults" [showTimer]="session()?.show_timer ?? false" />
   } @else if (question(); as activeQuestion) {
     <div class="practice-header">
       <div>
@@ -35,16 +12,14 @@
         <p class="counter">Question {{ activeQuestion.position }} of {{ activeQuestion.total_questions }}</p>
       </div>
       @if (session()?.show_timer) {
-        <div class="timer-panel">
-          <div class="timer">{{ timerText() }}</div>
-          @if (!complete()) {
-            @if (timerPaused()) {
-              <button mat-stroked-button (click)="resumeTimer()" [disabled]="timerUpdating()">Resume</button>
-            } @else {
-              <button mat-stroked-button (click)="pauseTimer()" [disabled]="timerUpdating()">Pause</button>
-            }
-          }
-        </div>
+        <app-timer-panel
+          [elapsedSeconds]="elapsedSeconds()"
+          [paused]="timerPaused()"
+          [updating]="timerUpdating()"
+          [complete]="complete()"
+          (pauseTimer)="pauseTimer()"
+          (resumeTimer)="resumeTimer()"
+        />
       }
     </div>
 
@@ -52,13 +27,11 @@
 
     <mat-card class="question-card">
       <p class="prompt">{{ activeQuestion.prompt }}</p>
-      @if (activeQuestion.audio_url || activeQuestion.speech_text) {
-        <section class="audio-panel" aria-label="Audio controls">
-          <button mat-stroked-button class="audio-button" type="button" (click)="playQuestionAudio()">
-            Play sound
-          </button>
-        </section>
-      }
+      <app-audio-prompt
+        [audioUrl]="activeQuestion.audio_url"
+        [speechText]="activeQuestion.speech_text"
+        (playAudio)="playQuestionAudio()"
+      />
 
       @if ((activeQuestion.choices?.length ?? 0) > 0) {
         <div class="choice-grid" aria-label="Answer choices">

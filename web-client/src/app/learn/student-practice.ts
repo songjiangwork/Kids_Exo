@@ -10,6 +10,9 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { PracticeApi, PracticeResults, StudentSession } from '../core/practice-api';
+import { AudioPrompt } from './audio-prompt';
+import { PracticeResultsCard } from './practice-results-card';
+import { TimerPanel } from './timer-panel';
 
 type ScratchMode = 'type' | 'draw';
 interface DrawPoint {
@@ -20,6 +23,7 @@ interface DrawPoint {
 @Component({
   selector: 'app-student-practice',
   imports: [
+    AudioPrompt,
     FormsModule,
     MatButtonModule,
     MatCardModule,
@@ -28,6 +32,8 @@ interface DrawPoint {
     MatInputModule,
     MatProgressBarModule,
     MatProgressSpinnerModule,
+    PracticeResultsCard,
+    TimerPanel,
   ],
   templateUrl: './student-practice.html',
   styleUrl: './student-practice.scss',
@@ -170,14 +176,6 @@ export class StudentPractice implements OnInit, OnDestroy {
     this.clearAllScratchWork();
   }
 
-  protected timerText(): string {
-    return this.formatSeconds(this.elapsedSeconds());
-  }
-
-  protected resultTimeText(): string {
-    return this.formatSeconds(this.results()?.elapsed_seconds ?? 0);
-  }
-
   protected isPracticePaused(): boolean {
     return Boolean(this.session()?.show_timer && this.timerPaused());
   }
@@ -310,11 +308,6 @@ export class StudentPractice implements OnInit, OnDestroy {
         this.submitting.set(false);
       },
     });
-  }
-
-  private formatSeconds(seconds: number): string {
-    const minutes = Math.floor(seconds / 60);
-    return `${minutes}:${String(seconds % 60).padStart(2, '0')}`;
   }
 
   private shouldRunLocalTimer(session: StudentSession): boolean {

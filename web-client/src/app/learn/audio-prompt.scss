@@ -1,0 +1,18 @@
+.audio-panel {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  max-width: 560px;
+  width: 100%;
+}
+
+.audio-button {
+  border-color: var(--teal);
+  border-radius: 999px;
+  color: var(--teal);
+  font-weight: 800;
+  min-height: 48px;
+  padding-inline: 28px;
+}
