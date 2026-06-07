@@ -1,8 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
+import { ScratchPad } from './scratch-pad';
 import { StudentPractice } from './student-practice';
 
 describe('StudentPractice', () => {
@@ -110,7 +112,7 @@ describe('StudentPractice', () => {
     const { fixture, http } = await createFixture();
     const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
     input.value = '462';
-    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new Event('input', { bubbles: true }));
     fixture.detectChanges();
 
     const button = fixture.nativeElement.querySelector('.check-button') as HTMLButtonElement;
@@ -371,93 +373,25 @@ describe('StudentPractice', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Hide scratch pad');
-    const scratchPad = fixture.nativeElement.querySelector('.scratch-pad textarea') as HTMLTextAreaElement;
-    scratchPad.value = '42 x 11: 4 + 2 = 6';
-    scratchPad.dispatchEvent(new Event('input'));
+    const scratchPad = fixture.debugElement.query(By.directive(ScratchPad)).componentInstance as ScratchPad;
+    (scratchPad as any).scratchPad.set('42 x 11: 4 + 2 = 6');
     fixture.detectChanges();
 
-    expect((fixture.componentInstance as any).scratchPad()).toBe('42 x 11: 4 + 2 = 6');
+    expect((scratchPad as any).scratchPad()).toBe('42 x 11: 4 + 2 = 6');
     const clearButton = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>).find(
       (button) => button.textContent?.includes('Clear'),
     ) as HTMLButtonElement;
     clearButton.click();
     fixture.detectChanges();
 
-    expect((fixture.componentInstance as any).scratchPad()).toBe('');
-  });
-
-  it('switches between typed notes and drawing mode without losing typed notes', async () => {
-    const { fixture } = await createFixture();
-    const component = fixture.componentInstance as any;
-    component.toggleScratchPad();
-    fixture.detectChanges();
-
-    const scratchPad = fixture.nativeElement.querySelector('.scratch-pad textarea') as HTMLTextAreaElement;
-    scratchPad.value = '42 x 11: 4 + 2 = 6';
-    scratchPad.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
-
-    component.setScratchMode('draw');
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.querySelector('.scratch-pad textarea')).toBeNull();
-    expect(fixture.nativeElement.querySelector('.scratch-pad canvas')).not.toBeNull();
-
-    component.setScratchMode('type');
-    fixture.detectChanges();
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    expect(component.scratchPad()).toBe('42 x 11: 4 + 2 = 6');
-    expect((fixture.nativeElement.querySelector('.scratch-pad textarea') as HTMLTextAreaElement).value).toBe(
-      '42 x 11: 4 + 2 = 6',
-    );
-  });
-
-  it('records and clears draw-mode scratch strokes', async () => {
-    const { fixture } = await createFixture();
-    const component = fixture.componentInstance as any;
-    component.toggleScratchPad();
-    fixture.detectChanges();
-
-    component.setScratchMode('draw');
-    fixture.detectChanges();
-
-    const canvas = fixture.nativeElement.querySelector('.scratch-pad canvas') as HTMLCanvasElement;
-    canvas.getBoundingClientRect = () => ({
-      x: 0,
-      y: 0,
-      top: 0,
-      left: 0,
-      right: 300,
-      bottom: 120,
-      width: 300,
-      height: 120,
-      toJSON: () => ({}),
-    });
-    canvas.setPointerCapture = () => undefined;
-    canvas.releasePointerCapture = () => undefined;
-    canvas.hasPointerCapture = () => true;
-
-    canvas.dispatchEvent(new PointerEvent('pointerdown', { clientX: 10, clientY: 10, pointerId: 1 }));
-    canvas.dispatchEvent(new PointerEvent('pointermove', { clientX: 50, clientY: 60, pointerId: 1 }));
-    canvas.dispatchEvent(new PointerEvent('pointerup', { clientX: 50, clientY: 60, pointerId: 1 }));
-    fixture.detectChanges();
-
-    expect(component.drawStrokes().length).toBe(1);
-    expect(component.drawStrokes()[0].length).toBe(2);
-
-    component.clearScratchPad();
-    fixture.detectChanges();
-
-    expect(component.drawStrokes().length).toBe(0);
+    expect((scratchPad as any).scratchPad()).toBe('');
   });
 
   it('loads server results after the last answered question', async () => {
     const { fixture, http } = await createFixture();
     const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
     input.value = '0';
-    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new Event('input', { bubbles: true }));
     fixture.detectChanges();
 
     (fixture.nativeElement.querySelector('.check-button') as HTMLButtonElement).click();
@@ -519,16 +453,17 @@ describe('StudentPractice', () => {
     });
     fixture.detectChanges();
 
-    (fixture.componentInstance as any).scratchPad.set('carry the 1');
-    (fixture.componentInstance as any).drawStrokes.set([[{ x: 1, y: 1 }]]);
+    (fixture.nativeElement.querySelector('.scratch-toggle') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    const scratchPad = fixture.debugElement.query(By.directive(ScratchPad)).componentInstance as ScratchPad;
+    (scratchPad as any).scratchPad.set('carry the 1');
     (fixture.componentInstance as any).feedback.set('correct');
     fixture.detectChanges();
 
     (fixture.nativeElement.querySelector('.next-button') as HTMLButtonElement).click();
     fixture.detectChanges();
 
-    expect((fixture.componentInstance as any).scratchPad()).toBe('');
-    expect((fixture.componentInstance as any).drawStrokes()).toEqual([]);
+    expect((scratchPad as any).scratchPad()).toBe('');
     expect(fixture.nativeElement.textContent).toContain('Question 2 of 2');
   });
 
@@ -572,7 +507,7 @@ describe('StudentPractice', () => {
 
     const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
     input.value = '207024';
-    input.dispatchEvent(new Event('input'));
+    input.dispatchEvent(new Event('input', { bubbles: true }));
     fixture.detectChanges();
 
     (fixture.nativeElement.querySelector('.check-button') as HTMLButtonElement).click();

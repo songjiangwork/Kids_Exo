@@ -1,0 +1,101 @@
+.scratch-pad {
+  background: #fff8df;
+  border: 1px solid #ead9c5;
+  border-radius: 22px;
+  max-width: 520px;
+  padding: 18px;
+  width: 100%;
+}
+
+.scratch-pad__header,
+.scratch-pad__actions,
+.scratch-mode {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+}
+
+.scratch-pad__header {
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.scratch-pad__actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.scratch-pad__header button,
+.scratch-mode button {
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.scratch-mode {
+  background: rgba(255, 253, 246, 0.86);
+  border: 1px solid #ead9c5;
+  border-radius: 999px;
+  gap: 4px;
+  padding: 4px;
+}
+
+.scratch-mode button {
+  border-color: transparent;
+  min-width: 72px;
+}
+
+.scratch-mode button.active {
+  background: var(--teal);
+  color: #fafff6;
+}
+
+.scratch-pad__label {
+  color: var(--ink);
+  font-family: var(--display-font);
+  font-size: 1.22rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  margin: 0;
+}
+
+.scratch-pad__hint {
+  color: var(--muted);
+  font-size: 0.94rem;
+  margin: 3px 0 0;
+}
+
+.scratch-pad__field {
+  width: 100%;
+}
+
+.scratch-pad__field textarea {
+  font-size: 1.05rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.scratch-pad__canvas {
+  background:
+    linear-gradient(rgba(31, 52, 49, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31, 52, 49, 0.06) 1px, transparent 1px),
+    #fffdf8;
+  background-size: 28px 28px;
+  border: 1px solid #d9c8ad;
+  border-radius: 18px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  display: block;
+  min-height: 190px;
+  touch-action: none;
+  width: 100%;
+}
+
+@media (max-width: 620px) {
+  .scratch-pad__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .scratch-pad__actions {
+    justify-content: flex-start;
+  }
+}

@@ -1,0 +1,62 @@
+<section class="scratch-pad" aria-label="Scratch pad">
+  <div class="scratch-pad__header">
+    <div>
+      <p class="scratch-pad__label">Scratch pad</p>
+      <p class="scratch-pad__hint">
+        @if (scratchMode() === 'draw') {
+          Draw with a finger, stylus, or mouse.
+        } @else {
+          Type any steps you want to remember.
+        }
+      </p>
+    </div>
+    <div class="scratch-pad__actions">
+      <div class="scratch-mode" aria-label="Scratch mode">
+        <button
+          mat-stroked-button
+          type="button"
+          [class.active]="scratchMode() === 'type'"
+          (click)="setScratchMode('type')"
+        >
+          Type
+        </button>
+        <button
+          mat-stroked-button
+          type="button"
+          [class.active]="scratchMode() === 'draw'"
+          (click)="setScratchMode('draw')"
+        >
+          Draw
+        </button>
+      </div>
+      <button mat-stroked-button type="button" (click)="clearScratchPad()" [disabled]="!hasScratchContent()">
+        Clear
+      </button>
+    </div>
+  </div>
+  @if (scratchMode() === 'type') {
+    <mat-form-field class="scratch-pad__field" appearance="outline">
+      <mat-label>Working notes</mat-label>
+      <textarea
+        matInput
+        rows="4"
+        [ngModel]="scratchPad()"
+        (ngModelChange)="scratchPad.set($event)"
+        placeholder="Example: 48 x 49 = ..."
+      ></textarea>
+    </mat-form-field>
+  } @else {
+    <canvas
+      #scratchCanvas
+      class="scratch-pad__canvas"
+      width="900"
+      height="360"
+      aria-label="Drawing scratch pad"
+      (pointerdown)="startDrawing($event)"
+      (pointermove)="continueDrawing($event)"
+      (pointerup)="stopDrawing($event)"
+      (pointercancel)="stopDrawing($event)"
+      (pointerleave)="stopDrawing($event)"
+    ></canvas>
+  }
+</section>
