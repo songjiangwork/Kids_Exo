@@ -136,6 +136,7 @@ class OnlinePluginCatalogTests(unittest.TestCase):
             tuple(option.value for option in french_alphabet.settings[0].options),
             ("letter_name_to_letter",),
         )
+        self.assertEqual(french_alphabet.answer_types, ("multiple_choice_index",))
         self.assertEqual(french_common_words.subject, "French")
         self.assertEqual(french_common_words.category, "Pronunciation")
         self.assertEqual(french_common_words.title, "French Common Word Sounds")
@@ -143,6 +144,7 @@ class OnlinePluginCatalogTests(unittest.TestCase):
             tuple(option.value for option in french_common_words.settings[0].options),
             ("family_words",),
         )
+        self.assertEqual(french_common_words.answer_types, ("multiple_choice_index",))
 
 
 if __name__ == "__main__":

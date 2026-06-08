@@ -269,7 +269,7 @@ FRENCH_ALPHABET_SOUNDS = PluginMetadata(
         ),
     ),
     supported_delivery_modes=("web_practice",),
-    answer_types=("multiple_choice",),
+    answer_types=("multiple_choice_index",),
 )
 
 FRENCH_COMMON_WORD_SOUNDS = PluginMetadata(
@@ -290,7 +290,7 @@ FRENCH_COMMON_WORD_SOUNDS = PluginMetadata(
         ),
     ),
     supported_delivery_modes=("web_practice",),
-    answer_types=("multiple_choice",),
+    answer_types=("multiple_choice_index",),
 )
 
 ENABLED_ONLINE_PLUGIN_METADATA: tuple[PluginMetadata, ...] = (
