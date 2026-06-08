@@ -1,0 +1,16 @@
+<mat-form-field class="answer-field" appearance="outline">
+  <mat-label>Your answer</mat-label>
+  <input
+    matInput
+    type="number"
+    inputmode="numeric"
+    [ngModel]="answer"
+    (ngModelChange)="answerChange.emit($event)"
+    [disabled]="disabled"
+    (keyup.enter)="submitAnswer.emit()"
+  />
+</mat-form-field>
+
+<button mat-flat-button class="check-button" (click)="submitAnswer.emit()" [disabled]="submitting || disabled">
+  @if (submitting) { Checking... } @else { Check answer }
+</button>

@@ -34,31 +34,18 @@
       />
 
       @if ((activeQuestion.choices?.length ?? 0) > 0) {
-        <div class="choice-grid" aria-label="Answer choices">
-          @for (choice of activeQuestion.choices ?? []; track choice; let index = $index) {
-            <button
-              mat-stroked-button
-              type="button"
-              class="choice-button"
-              (click)="submitChoice(index + 1)"
-              [disabled]="feedback() !== null || isPracticePaused() || submitting()"
-            >
-              {{ choice }}
-            </button>
-          }
-        </div>
+        <app-choice-answer-renderer
+          [choices]="activeQuestion.choices ?? []"
+          [disabled]="feedback() !== null || isPracticePaused() || submitting()"
+          (submitChoice)="submitChoice($event)"
+        />
       } @else {
-        <mat-form-field class="answer-field" appearance="outline">
-          <mat-label>Your answer</mat-label>
-          <input
-            matInput
-            type="number"
-            inputmode="numeric"
-            [(ngModel)]="answer"
-            [disabled]="feedback() !== null || isPracticePaused()"
-            (keyup.enter)="checkAnswer()"
-          />
-        </mat-form-field>
+        <app-numeric-answer-renderer
+          [(answer)]="answer"
+          [disabled]="feedback() !== null || isPracticePaused()"
+          [submitting]="submitting()"
+          (submitAnswer)="checkAnswer()"
+        />
       }
 
       @if (!isLanguagePractice()) {
@@ -75,11 +62,7 @@
         <p class="paused-note">Timer paused. Resume when you are ready to keep practicing.</p>
       }
 
-      @if (feedback() === null && (activeQuestion.choices?.length ?? 0) === 0) {
-        <button mat-flat-button class="check-button" (click)="checkAnswer()" [disabled]="submitting() || isPracticePaused()">
-          @if (submitting()) { Checking... } @else { Check answer }
-        </button>
-      } @else if (feedback() !== null) {
+      @if (feedback() !== null) {
         <div class="feedback" [class.good]="feedback() === 'correct'" [class.calm]="feedback() === 'saved'">
           @if (feedback() === 'correct') { Nice work. That is correct. }
           @if (feedback() === 'incorrect') { Not correct. Keep going. }

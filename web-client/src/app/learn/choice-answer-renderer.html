@@ -1,0 +1,13 @@
+<div class="choice-grid" aria-label="Answer choices">
+  @for (choice of choices; track choice; let index = $index) {
+    <button
+      mat-stroked-button
+      type="button"
+      class="choice-button"
+      (click)="submitChoice.emit(index + 1)"
+      [disabled]="disabled"
+    >
+      {{ choice }}
+    </button>
+  }
+</div>

@@ -1,16 +1,15 @@
 import { Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { PracticeApi, PracticeResults, StudentSession } from '../core/practice-api';
 import { AudioPrompt } from './audio-prompt';
+import { ChoiceAnswerRenderer } from './choice-answer-renderer';
+import { NumericAnswerRenderer } from './numeric-answer-renderer';
 import { PracticeResultsCard } from './practice-results-card';
 import { ScratchPad } from './scratch-pad';
 import { TimerPanel } from './timer-panel';
@@ -19,14 +18,13 @@ import { TimerPanel } from './timer-panel';
   selector: 'app-student-practice',
   imports: [
     AudioPrompt,
-    FormsModule,
+    ChoiceAnswerRenderer,
     MatButtonModule,
     MatCardModule,
-    MatFormFieldModule,
     MatIconModule,
-    MatInputModule,
     MatProgressBarModule,
     MatProgressSpinnerModule,
+    NumericAnswerRenderer,
     PracticeResultsCard,
     ScratchPad,
     TimerPanel,

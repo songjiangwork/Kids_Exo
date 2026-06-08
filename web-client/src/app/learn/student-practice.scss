@@ -58,41 +58,6 @@ mat-progress-bar {
   text-align: center;
 }
 
-.answer-field {
-  font-size: 1.28rem;
-  max-width: 300px;
-  width: 100%;
-}
-
-.answer-field input {
-  font-size: 1.55rem;
-  font-weight: 700;
-  text-align: center;
-}
-
-.choice-grid {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  max-width: 560px;
-  width: 100%;
-}
-
-.choice-button {
-  background: #fffdf8;
-  border-color: #d9c8ad;
-  border-radius: 18px;
-  color: var(--ink);
-  font-size: 1.05rem;
-  font-weight: 750;
-  min-height: 58px;
-  white-space: normal;
-}
-
-.choice-button:hover {
-  border-color: var(--teal);
-}
-
 .scratch-toggle {
   border-color: var(--teal);
   border-radius: 999px;
@@ -102,7 +67,6 @@ mat-progress-bar {
   padding-inline: 24px;
 }
 
-.check-button,
 .next-button {
   background: var(--teal);
   border-radius: 999px;
@@ -166,9 +130,5 @@ mat-progress-bar {
   .practice-header {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .choice-grid {
-    grid-template-columns: 1fr;
   }
 }

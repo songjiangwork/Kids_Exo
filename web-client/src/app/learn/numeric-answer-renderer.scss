@@ -1,0 +1,29 @@
+:host {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.answer-field {
+  font-size: 1.28rem;
+  max-width: 300px;
+  width: 100%;
+}
+
+.answer-field input {
+  font-size: 1.55rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.check-button {
+  background: var(--teal);
+  border-radius: 999px;
+  color: #fafff6;
+  font-size: 1.02rem;
+  font-weight: 700;
+  min-height: 55px;
+  padding-inline: 36px;
+}
