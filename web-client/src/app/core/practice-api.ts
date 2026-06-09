@@ -6,6 +6,7 @@ import { HttpResponse } from '@angular/common/http';
 export type PluginSettingValue = string | number | boolean;
 export type PluginSettingsValue = Record<string, PluginSettingValue[]>;
 export type JsonObject = Record<string, unknown>;
+export type AnswerValue = number | string | JsonObject | null;
 
 export interface SettingOption {
   value: PluginSettingValue;
@@ -98,8 +99,11 @@ export interface LearnerMistakeEntry {
   plugin: string;
   title: string;
   prompt: string;
-  expected_answer: number;
-  last_submitted_answer: number;
+  expected_answer: AnswerValue;
+  last_submitted_answer: AnswerValue;
+  expected_display?: string | null;
+  last_submitted_display?: string | null;
+  answer_type?: string | null;
   times_missed: number;
   last_seen_at: string;
 }
@@ -134,8 +138,11 @@ export interface SessionSummary {
 
 export interface IncorrectQuestion {
   prompt: string;
-  submitted_answer: number;
-  expected_answer: number;
+  submitted_answer: AnswerValue;
+  expected_answer: AnswerValue;
+  submitted_display?: string | null;
+  expected_display?: string | null;
+  answer_type?: string | null;
 }
 
 export interface PracticeResults {
@@ -176,7 +183,7 @@ export interface TimerStatus {
 }
 
 export interface AnswerResult {
-  normalized_answer: number;
+  normalized_answer: AnswerValue;
   is_correct: boolean | null;
 }
 

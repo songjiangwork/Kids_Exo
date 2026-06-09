@@ -12,8 +12,8 @@
       @for (missed of results.incorrect_questions; track missed.prompt) {
         <div class="missed-question">
           <strong>{{ missed.prompt }}</strong>
-          <span>Your answer: {{ missed.submitted_answer }}</span>
-          <span>Answer: {{ missed.expected_answer }}</span>
+          <span>Your answer: {{ missed.submitted_display ?? missed.submitted_answer }}</span>
+          <span>Answer: {{ missed.expected_display ?? missed.expected_answer }}</span>
         </div>
       }
     </section>

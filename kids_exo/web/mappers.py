@@ -107,13 +107,66 @@ def practice_results_response(saved_session) -> PracticeResultsResponse:
         incorrect_questions=tuple(
             IncorrectQuestionResponse(
                 prompt=question.prompt,
-                submitted_answer=attempt.normalized_answer,
-                expected_answer=question.expected_answer,
+                submitted_answer=submitted_answer_value(attempt),
+                expected_answer=expected_answer_value(question),
+                submitted_display=submitted_answer_display(attempt, question),
+                expected_display=expected_answer_display(question),
+                answer_type=question.answer_type,
             )
             for question, attempt in attempts
             if not attempt.is_correct
         ),
     )
+
+
+def submitted_answer_value(attempt):
+    payload = getattr(attempt, "normalized_payload", None) or {}
+    if "value" in payload:
+        return payload["value"]
+    return getattr(attempt, "normalized_answer", None)
+
+
+def expected_answer_value(question):
+    payload = getattr(question, "evaluation_payload", None) or {}
+    answer_type = getattr(question, "answer_type", None)
+    if answer_type == "integer_exact" and "expected_value" in payload:
+        return payload["expected_value"]
+    if answer_type == "multiple_choice_index" and "expected_index" in payload:
+        return payload["expected_index"]
+    return getattr(question, "expected_answer", None)
+
+
+def submitted_answer_display(attempt, question=None) -> str | None:
+    value = submitted_answer_value(attempt)
+    if question is not None and getattr(question, "answer_type", None) == "multiple_choice_index":
+        choice = _choice_label(question, value)
+        if choice is not None:
+            return choice
+    return _display_answer(value)
+
+
+def expected_answer_display(question) -> str | None:
+    value = expected_answer_value(question)
+    if getattr(question, "answer_type", None) == "multiple_choice_index":
+        choice = _choice_label(question, value)
+        if choice is not None:
+            return choice
+    return _display_answer(value)
+
+
+def _choice_label(question, value) -> str | None:
+    choices = tuple(getattr(question, "choices", ()) or ())
+    if isinstance(value, int) and 1 <= value <= len(choices):
+        return choices[value - 1]
+    return None
+
+
+def _display_answer(value) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        return str(value)
+    return str(value)
 
 
 def timer_status_response(saved_session) -> TimerStatusResponse:
@@ -187,6 +240,9 @@ def learner_analytics_response(analytics) -> LearnerAnalyticsResponse:
                 prompt=item.prompt,
                 expected_answer=item.expected_answer,
                 last_submitted_answer=item.last_submitted_answer,
+                expected_display=item.expected_display,
+                last_submitted_display=item.last_submitted_display,
+                answer_type=item.answer_type,
                 times_missed=item.times_missed,
                 last_seen_at=item.last_seen_at,
             )

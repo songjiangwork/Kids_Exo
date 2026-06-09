@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -32,8 +33,11 @@ class LearnerMistakeEntryResponse(BaseModel):
     plugin: str
     title: str
     prompt: str
-    expected_answer: int
-    last_submitted_answer: int
+    expected_answer: int | str | dict[str, Any] | None
+    last_submitted_answer: int | str | dict[str, Any] | None
+    expected_display: str | None = None
+    last_submitted_display: str | None = None
+    answer_type: str | None = None
     times_missed: int
     last_seen_at: datetime
 

@@ -1,6 +1,7 @@
 from dataclasses import asdict, dataclass, is_dataclass
 from datetime import datetime, timezone
 import secrets
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload, sessionmaker
@@ -27,8 +28,11 @@ class LearnerSkillBreakdown:
 class LearnerMistakeEntry:
     plugin: str
     prompt: str
-    expected_answer: int
-    last_submitted_answer: int
+    expected_answer: int | str | dict[str, Any] | None
+    last_submitted_answer: int | str | dict[str, Any] | None
+    expected_display: str | None
+    last_submitted_display: str | None
+    answer_type: str | None
     times_missed: int
     last_seen_at: datetime
 
@@ -287,7 +291,7 @@ class PracticeRepository:
         ]
 
         skill_totals: dict[str, dict[str, int]] = {}
-        mistakes: dict[tuple[str, str, int], LearnerMistakeEntry] = {}
+        mistakes: dict[tuple[str, str, str | None], LearnerMistakeEntry] = {}
         for saved_session in completed_sessions:
             completed_at = saved_session.completed_at or saved_session.created_at
             for question in saved_session.questions:
@@ -300,29 +304,41 @@ class PracticeRepository:
                 totals["correct_answers"] += int(attempt.is_correct)
                 if attempt.is_correct:
                     continue
-                key = (saved_session.plugin, question.prompt, question.expected_answer)
+                expected_answer = _expected_answer_value(question)
+                expected_display = _expected_answer_display(question)
+                submitted_answer = _submitted_answer_value(attempt)
+                submitted_display = _answer_display(submitted_answer)
+                key = (saved_session.plugin, question.prompt, expected_display)
                 previous = mistakes.get(key)
                 if previous is None:
                     mistakes[key] = LearnerMistakeEntry(
                         plugin=saved_session.plugin,
                         prompt=question.prompt,
-                        expected_answer=question.expected_answer,
-                        last_submitted_answer=attempt.normalized_answer,
+                        expected_answer=expected_answer,
+                        last_submitted_answer=submitted_answer,
+                        expected_display=expected_display,
+                        last_submitted_display=submitted_display,
+                        answer_type=question.answer_type,
                         times_missed=1,
                         last_seen_at=completed_at,
                     )
                     continue
                 if completed_at >= previous.last_seen_at:
-                    last_submitted_answer = attempt.normalized_answer
+                    last_submitted_answer = submitted_answer
+                    last_submitted_display = submitted_display
                     last_seen_at = completed_at
                 else:
                     last_submitted_answer = previous.last_submitted_answer
+                    last_submitted_display = previous.last_submitted_display
                     last_seen_at = previous.last_seen_at
                 mistakes[key] = LearnerMistakeEntry(
                     plugin=previous.plugin,
                     prompt=previous.prompt,
                     expected_answer=previous.expected_answer,
                     last_submitted_answer=last_submitted_answer,
+                    expected_display=previous.expected_display,
+                    last_submitted_display=last_submitted_display,
+                    answer_type=previous.answer_type,
                     times_missed=previous.times_missed + 1,
                     last_seen_at=last_seen_at,
                 )
@@ -539,15 +555,48 @@ class PracticeRepository:
                 return token
 
 
-def _legacy_expected_answer(question) -> int:
-    if question.answer_type == "integer_exact":
-        return int(question.evaluation_payload["expected_value"])
-    if question.answer_type == "multiple_choice_index":
-        return int(question.evaluation_payload["expected_index"])
-    return int(question.expected_answer)
+def _legacy_expected_answer(question) -> int | None:
+    value = _expected_answer_value(question)
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value
 
 
-def _legacy_normalized_answer(normalized_answer) -> int:
+def _legacy_normalized_answer(normalized_answer) -> int | None:
     if isinstance(normalized_answer, bool) or not isinstance(normalized_answer, int):
-        raise ValueError("Current persistence schema requires an integer normalized answer")
+        return None
     return normalized_answer
+
+
+def _expected_answer_value(question) -> int | str | dict[str, Any] | None:
+    payload = getattr(question, "evaluation_payload", None) or {}
+    answer_type = getattr(question, "answer_type", None)
+    if answer_type == "integer_exact" and "expected_value" in payload:
+        return payload["expected_value"]
+    if answer_type == "multiple_choice_index" and "expected_index" in payload:
+        return payload["expected_index"]
+    return getattr(question, "expected_answer", None)
+
+
+def _submitted_answer_value(attempt) -> int | str | dict[str, Any] | None:
+    payload = getattr(attempt, "normalized_payload", None) or {}
+    if "value" in payload:
+        return payload["value"]
+    return getattr(attempt, "normalized_answer", None)
+
+
+def _expected_answer_display(question) -> str | None:
+    value = _expected_answer_value(question)
+    if getattr(question, "answer_type", None) == "multiple_choice_index":
+        choices = tuple(getattr(question, "choices", ()) or ())
+        if isinstance(value, int) and 1 <= value <= len(choices):
+            return choices[value - 1]
+    return _answer_display(value)
+
+
+def _answer_display(value: int | str | dict[str, Any] | None) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        return str(value)
+    return str(value)

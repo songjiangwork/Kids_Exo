@@ -26,8 +26,8 @@ class OnlineQuestionSnapshot:
     identifier: str
     prompt: str
     strategy: str
-    expected_answer: int
     skill_tags: tuple[str, ...]
+    expected_answer: int | None = None
     renderer_type: str = "numeric_answer"
     answer_type: str = "integer_exact"
     evaluation_payload: dict[str, Any] = field(default_factory=dict)

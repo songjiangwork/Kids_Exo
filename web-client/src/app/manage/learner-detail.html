@@ -52,8 +52,8 @@
               <div class="mistake-row">
                 <strong>{{ mistake.prompt }}</strong>
                 <span>{{ mistake.title }}</span>
-                <span>Correct answer {{ mistake.expected_answer }}</span>
-                <span>Last answer {{ mistake.last_submitted_answer }}</span>
+                <span>Correct answer {{ mistake.expected_display ?? mistake.expected_answer }}</span>
+                <span>Last answer {{ mistake.last_submitted_display ?? mistake.last_submitted_answer }}</span>
                 <span>Missed {{ mistake.times_missed }} times</span>
                 <span>Last seen {{ formatDate(mistake.last_seen_at) }}</span>
                 <div class="mistake-actions">
@@ -137,7 +137,7 @@
             @for (missed of results.incorrect_questions; track missed.prompt) {
               <div class="review-row">
                 <strong>{{ missed.prompt }}</strong>
-                <span>Answered {{ missed.submitted_answer }}; correct answer {{ missed.expected_answer }}</span>
+                <span>Answered {{ missed.submitted_display ?? missed.submitted_answer }}; correct answer {{ missed.expected_display ?? missed.expected_answer }}</span>
               </div>
             }
           }

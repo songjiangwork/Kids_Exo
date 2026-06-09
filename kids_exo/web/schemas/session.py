@@ -61,8 +61,11 @@ class SessionSummaryResponse(BaseModel):
 
 class IncorrectQuestionResponse(BaseModel):
     prompt: str
-    submitted_answer: int
-    expected_answer: int
+    submitted_answer: int | str | dict[str, Any] | None
+    expected_answer: int | str | dict[str, Any] | None
+    submitted_display: str | None = None
+    expected_display: str | None = None
+    answer_type: str | None = None
 
 
 class PracticeResultsResponse(BaseModel):

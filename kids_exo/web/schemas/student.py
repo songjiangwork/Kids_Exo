@@ -1,3 +1,5 @@
+from typing import Any
+
 from pydantic import BaseModel
 
 from kids_exo.web.schemas.base import FromDomainModel
@@ -30,5 +32,5 @@ class AnswerSubmissionRequest(BaseModel):
 
 
 class AnswerSubmissionResponse(FromDomainModel):
-    normalized_answer: int
+    normalized_answer: int | str | dict[str, Any] | None
     is_correct: bool | None

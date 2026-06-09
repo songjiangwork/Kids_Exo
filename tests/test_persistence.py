@@ -403,19 +403,23 @@ class AlembicMigrationTests(unittest.TestCase):
                 }
                 <= session_columns
             )
-            attempt_columns = {
-                column["name"]
+            attempt_column_details = {
+                column["name"]: column
                 for column in inspect(
                     build_engine(f"sqlite+pysqlite:///{database_path}")
                 ).get_columns("response_attempts")
             }
+            attempt_columns = set(attempt_column_details)
             self.assertIn("submitted_at", attempt_columns)
-            question_columns = {
-                column["name"]
+            self.assertTrue(attempt_column_details["normalized_answer"]["nullable"])
+            question_column_details = {
+                column["name"]: column
                 for column in inspect(
                     build_engine(f"sqlite+pysqlite:///{database_path}")
                 ).get_columns("question_instances")
             }
+            question_columns = set(question_column_details)
+            self.assertTrue(question_column_details["expected_answer"]["nullable"])
             self.assertTrue(
                 {
                     "question_type",

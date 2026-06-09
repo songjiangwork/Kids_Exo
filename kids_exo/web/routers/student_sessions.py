@@ -5,6 +5,7 @@ from kids_exo.web.dependencies import require_repository
 from kids_exo.web.mappers import (
     practice_results_response,
     student_session_response,
+    submitted_answer_value,
     timer_status_response,
 )
 from kids_exo.web.schemas import (
@@ -85,7 +86,7 @@ def create_router(repository: PracticeRepository | None) -> APIRouter:
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return AnswerSubmissionResponse(
-            normalized_answer=attempt.normalized_answer,
+            normalized_answer=submitted_answer_value(attempt),
             is_correct=(
                 attempt.is_correct
                 if saved_session.feedback_mode == "immediate"
