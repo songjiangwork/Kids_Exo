@@ -145,6 +145,8 @@ class PracticeRepositoryTests(unittest.TestCase):
 
         self.assertTrue(attempt.is_correct)
         self.assertEqual(attempt.normalized_answer, question.expected_answer)
+        self.assertEqual(attempt.submitted_payload, {"raw": str(question.expected_answer)})
+        self.assertEqual(attempt.normalized_payload, {"value": question.expected_answer})
         self.assertEqual(
             attempt.evaluation_detail,
             {"answer_type": "multiple_choice_index", "expected_index": question.expected_answer},

@@ -67,6 +67,19 @@ describe('PluginSettingsForm', () => {
     expect((checkboxes[1].nativeElement as HTMLInputElement).checked).toBe(false);
   });
 
+  it('emits updated single choice values', async () => {
+    const fixture = await createFixture();
+    const form = fixture.debugElement.query(By.directive(PluginSettingsForm)).componentInstance as PluginSettingsForm;
+
+    (form as any).updateSingle(fixture.componentInstance.settings[0], 3);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.value).toEqual({
+      multiplicand_digits: [3],
+      strategies: ['no_carrying'],
+    });
+  });
+
   it('emits updated multiple choice values', async () => {
     const fixture = await createFixture();
     const checkbox = fixture.debugElement.queryAll(By.css('mat-checkbox input'))[1];
