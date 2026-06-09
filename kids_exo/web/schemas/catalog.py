@@ -29,6 +29,9 @@ class OnlinePluginResponse(FromDomainModel):
     default_locale: str
     locale_coverage: tuple[LocaleCoverageResponse, ...]
     settings: tuple[PluginSettingSchemaResponse, ...]
+    supported_delivery_modes: tuple[str, ...] = ()
+    answer_types: tuple[str, ...] = ()
+    release_stage: str = "published"
 
 
 class OnlineCatalogResponse(FromDomainModel):

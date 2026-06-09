@@ -28,6 +28,9 @@ export interface OnlinePlugin {
   description: string;
   default_locale: string;
   settings: PluginSetting[];
+  supported_delivery_modes?: string[];
+  answer_types?: string[];
+  release_stage?: string;
 }
 
 export interface OnlineCatalog {

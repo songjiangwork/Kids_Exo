@@ -47,10 +47,19 @@ class PracticeWebApiTests(unittest.TestCase):
         )
         plugin = catalog["plugins"][0]
         self.assertEqual(plugin["plugin"], "multiply_by_11")
+        self.assertEqual(plugin["supported_delivery_modes"], ["web_practice", "pdf_printable"])
+        self.assertEqual(plugin["answer_types"], ["integer_exact"])
+        self.assertEqual(plugin["release_stage"], "published")
         self.assertEqual(
             [setting["name"] for setting in plugin["settings"]],
             ["multiplicand_digits", "strategies"],
         )
+        french_plugin = next(
+            item for item in catalog["plugins"] if item["plugin"] == "french_alphabet_sounds"
+        )
+        self.assertEqual(french_plugin["supported_delivery_modes"], ["web_practice"])
+        self.assertEqual(french_plugin["answer_types"], ["multiple_choice_index"])
+        self.assertEqual(french_plugin["release_stage"], "published")
 
     def test_printable_catalog_exposes_all_existing_pdf_presets(self) -> None:
         response = self.client.get("/api/printable-worksheets")
