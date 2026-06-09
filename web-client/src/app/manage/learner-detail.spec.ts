@@ -5,7 +5,7 @@ import { provideRouter } from '@angular/router';
 import { LearnerDetail } from './learner-detail';
 
 describe('LearnerDetail', () => {
-  it('shows learner summary and practice history', async () => {
+  it('shows learner dashboard tabs and overview summaries', async () => {
     await TestBed.configureTestingModule({
       imports: [LearnerDetail],
       providers: [
@@ -112,15 +112,21 @@ describe('LearnerDetail', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Alex');
+    expect(fixture.nativeElement.textContent).toContain('Overview');
+    expect(fixture.nativeElement.textContent).toContain('Practice History');
+    expect(fixture.nativeElement.textContent).toContain('Mistakes');
+    expect(fixture.nativeElement.textContent).toContain('Skills');
+    expect(fixture.nativeElement.textContent).toContain('Statistics');
+    expect(fixture.nativeElement.textContent).toContain('Badges');
     expect(fixture.nativeElement.textContent).toContain('8 / 10 correct');
     expect(fixture.nativeElement.textContent).toContain('Average time');
     expect(fixture.nativeElement.textContent).toContain('Multiply by 11');
     expect(fixture.nativeElement.textContent).toContain('34 x 11 = ____');
-    expect(fixture.nativeElement.textContent).toContain('Missed 2 times');
-    expect(fixture.nativeElement.textContent).toContain('Review results');
-    expect(fixture.nativeElement.textContent).toContain('Open practice');
+    expect(fixture.nativeElement.textContent).toContain('missed 2 times');
+    expect(fixture.nativeElement.textContent).toContain('Review');
+    expect(fixture.nativeElement.textContent).toContain('Open');
     const practiceLink = Array.from(fixture.nativeElement.querySelectorAll('a') as NodeListOf<HTMLAnchorElement>).find(
-      (link) => link.textContent?.includes('Open practice'),
+      (link) => link.textContent?.includes('Open'),
     ) as HTMLAnchorElement;
     expect(practiceLink.getAttribute('href')).toBe('/s/s9-abcd2345');
   });
@@ -327,7 +333,7 @@ describe('LearnerDetail', () => {
     fixture.detectChanges();
 
     const reviewButton = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>).find(
-      (button) => button.textContent?.includes('Review results'),
+      (button) => button.textContent?.includes('Review'),
     ) as HTMLButtonElement;
     reviewButton.click();
 

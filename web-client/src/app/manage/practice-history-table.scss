@@ -1,0 +1,42 @@
+.table-shell {
+  background: rgba(255, 253, 248, 0.94);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  overflow: auto;
+  padding: 18px;
+}
+
+.table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+table {
+  min-width: 920px;
+  width: 100%;
+}
+
+.primary-action {
+  background: var(--ink);
+  color: #fff8eb;
+  font-weight: 700;
+}
+
+.status-pill {
+  background: #e2f0dc;
+  border-radius: 999px;
+  color: var(--teal);
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  padding: 6px 9px;
+  text-transform: uppercase;
+}
+
+.empty-state {
+  color: var(--muted);
+  padding: 16px 0;
+}

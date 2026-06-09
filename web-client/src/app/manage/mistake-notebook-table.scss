@@ -1,0 +1,24 @@
+.table-shell {
+  background: rgba(255, 253, 248, 0.94);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  overflow: auto;
+  padding: 18px;
+}
+
+.table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+table {
+  min-width: 920px;
+  width: 100%;
+}
+
+.empty-state {
+  color: var(--muted);
+  padding: 16px 0;
+}

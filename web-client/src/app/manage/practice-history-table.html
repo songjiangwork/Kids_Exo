@@ -1,0 +1,90 @@
+<section class="table-shell">
+  <div class="table-toolbar">
+    <mat-form-field appearance="outline">
+      <mat-label>Search skill</mat-label>
+      <input matInput (input)="setSearch($any($event.target).value)" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Status</mat-label>
+      <mat-select (selectionChange)="setStatus($event.value)" value="">
+        <mat-option value="">All statuses</mat-option>
+        @for (status of statusOptions; track status) {
+          <mat-option [value]="status">{{ status }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Subject</mat-label>
+      <mat-select (selectionChange)="setSubject($event.value)" value="">
+        <mat-option value="">All subjects</mat-option>
+        @for (subject of subjects(); track subject) {
+          <mat-option [value]="subject">{{ subject }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <table mat-table [dataSource]="dataSource" matSort>
+    <ng-container matColumnDef="date">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+      <td mat-cell *matCellDef="let session">{{ formatDate(session.created_at ?? session.completed_at) }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="skill">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Skill</th>
+      <td mat-cell *matCellDef="let session"><strong>{{ session.skill }}</strong></td>
+    </ng-container>
+
+    <ng-container matColumnDef="subject">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Subject</th>
+      <td mat-cell *matCellDef="let session">{{ session.subject }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="category">
+      <th mat-header-cell *matHeaderCellDef>Category</th>
+      <td mat-cell *matCellDef="let session">{{ session.category }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+      <td mat-cell *matCellDef="let session"><span class="status-pill">{{ session.status }}</span></td>
+    </ng-container>
+
+    <ng-container matColumnDef="score">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Score</th>
+      <td mat-cell *matCellDef="let session">{{ session.correct_answers }} / {{ session.total_questions }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="accuracy">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Accuracy</th>
+      <td mat-cell *matCellDef="let session">{{ formatPercent(accuracy(session)) }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="time">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Time</th>
+      <td mat-cell *matCellDef="let session">{{ formatTime(session.elapsed_seconds) }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Actions</th>
+      <td mat-cell *matCellDef="let session">
+        @if (session.status === 'completed') {
+          <button mat-stroked-button (click)="reviewResults.emit(session)">Review results</button>
+        } @else {
+          <a mat-flat-button class="primary-action" [routerLink]="['/s', session.student_token]">Open practice</a>
+        }
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+  </table>
+
+  @if (dataSource.filteredData.length === 0) {
+    <p class="empty-state">No practice sessions match these filters.</p>
+  }
+
+  <mat-paginator [pageSize]="10" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons />
+</section>

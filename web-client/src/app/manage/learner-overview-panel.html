@@ -1,0 +1,89 @@
+<section class="summary-grid" aria-label="Learner summary">
+  @for (card of summaryCards; track card.label) {
+    <mat-card appearance="outlined">
+      <mat-card-content>
+        <p class="eyebrow">{{ card.label }}</p>
+        <h2>{{ card.value }}</h2>
+        <p class="card-note">{{ card.note }}</p>
+      </mat-card-content>
+    </mat-card>
+  }
+</section>
+
+<section class="overview-grid">
+  <mat-card appearance="outlined">
+    <mat-card-content>
+      <p class="eyebrow">Recent practice</p>
+      @for (session of recentSessions; track session.id) {
+        <div class="compact-row">
+          <div>
+            <strong>{{ session.skill }}</strong>
+            <p>{{ session.status }} · {{ session.correct_answers }} / {{ session.total_questions }} correct · {{ formatTime(session.elapsed_seconds) }}</p>
+          </div>
+          @if (canReview(session)) {
+            <button mat-button (click)="reviewResults.emit(session)">Review</button>
+          } @else {
+            <a mat-button [routerLink]="['/s', session.student_token]">Open</a>
+          }
+        </div>
+      } @empty {
+        <p>No practice sessions yet.</p>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card appearance="outlined">
+    <mat-card-content>
+      <p class="eyebrow">Weakest skills</p>
+      @for (skill of weakestSkills; track skill.plugin) {
+        <div class="compact-row">
+          <div>
+            <strong>{{ skill.title }}</strong>
+            <p>{{ skill.correct_answers }} / {{ skill.total_questions }} correct</p>
+          </div>
+          <span class="status-pill">{{ formatPercent(skill.accuracy) }}</span>
+        </div>
+      } @empty {
+        <p>No completed sessions yet.</p>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card appearance="outlined">
+    <mat-card-content>
+      <p class="eyebrow">Frequent mistakes</p>
+      @for (mistake of topMistakes; track mistake.plugin + mistake.prompt) {
+        <div class="compact-row">
+          <div>
+            <strong>{{ mistake.prompt }}</strong>
+            <p>
+              {{ mistake.title }} · missed {{ mistake.times_missed }} times · answer
+              {{ formatAnswer(mistake.expected_display ?? mistake.expected_answer) }}
+            </p>
+          </div>
+          <button
+            mat-button
+            (click)="createPracticeFromPlugin.emit(mistake.plugin)"
+            [disabled]="isCreating(mistake.plugin)"
+          >
+            @if (isCreating(mistake.plugin)) {
+              Creating...
+            } @else {
+              Practice
+            }
+          </button>
+        </div>
+      } @empty {
+        <p>No mistakes recorded yet.</p>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="badge-preview" appearance="outlined">
+    <mat-card-content>
+      <p class="eyebrow">Badges</p>
+      <h2>Badge board coming later</h2>
+      <p class="card-note">Perfect sessions, parent-defined goals, upgrades, and progress will live here.</p>
+    </mat-card-content>
+  </mat-card>
+</section>

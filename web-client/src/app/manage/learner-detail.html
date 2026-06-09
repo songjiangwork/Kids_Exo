@@ -3,7 +3,7 @@
     <div class="loading"><mat-spinner diameter="32" /> Loading learner details...</div>
   } @else if (learner(); as profile) {
     <header class="hero">
-      <p class="eyebrow">Learner Detail</p>
+      <p class="eyebrow">Learner Dashboard</p>
       <h1>{{ profile.nickname }}</h1>
       <p class="lede">
         Status: @if (profile.active) { active } @else { inactive }
@@ -13,70 +13,6 @@
         <a mat-flat-button class="primary-action" routerLink="/manage">Start practice</a>
       </div>
     </header>
-
-    <section class="summary-grid">
-      @for (card of summaryCards(); track card.label) {
-        <mat-card appearance="outlined">
-          <mat-card-content>
-            <p class="eyebrow">{{ card.label }}</p>
-            <h2>{{ card.value }}</h2>
-            <p class="card-note">{{ card.note }}</p>
-          </mat-card-content>
-        </mat-card>
-      }
-    </section>
-
-    @if (analytics(); as summary) {
-      <section class="insight-grid">
-        <mat-card class="skill-card" appearance="outlined">
-          <mat-card-content>
-            <p class="eyebrow">Skill breakdown</p>
-            @for (skill of summary.skill_breakdown; track skill.plugin) {
-              <div class="skill-row">
-                <div>
-                  <strong>{{ skill.title }}</strong>
-                  <p>{{ skill.correct_answers }} / {{ skill.total_questions }} correct</p>
-                </div>
-                <span class="status-pill">{{ formatPercent(skill.accuracy) }}</span>
-              </div>
-            } @empty {
-              <p>No completed sessions yet.</p>
-            }
-          </mat-card-content>
-        </mat-card>
-
-        <mat-card class="mistake-card" appearance="outlined">
-          <mat-card-content>
-            <p class="eyebrow">Mistake notebook</p>
-            @for (mistake of summary.mistake_notebook; track mistake.plugin + mistake.prompt) {
-              <div class="mistake-row">
-                <strong>{{ mistake.prompt }}</strong>
-                <span>{{ mistake.title }}</span>
-                <span>Correct answer {{ mistake.expected_display ?? mistake.expected_answer }}</span>
-                <span>Last answer {{ mistake.last_submitted_display ?? mistake.last_submitted_answer }}</span>
-                <span>Missed {{ mistake.times_missed }} times</span>
-                <span>Last seen {{ formatDate(mistake.last_seen_at) }}</span>
-                <div class="mistake-actions">
-                  <button
-                    mat-stroked-button
-                    (click)="createPracticeFromPlugin(mistake.plugin)"
-                    [disabled]="isCreatingPractice(mistake.plugin)"
-                  >
-                    @if (isCreatingPractice(mistake.plugin)) {
-                      Creating...
-                    } @else {
-                      Create practice from mistakes
-                    }
-                  </button>
-                </div>
-              </div>
-            } @empty {
-              <p>No mistakes recorded yet.</p>
-            }
-          </mat-card-content>
-        </mat-card>
-      </section>
-    }
 
     @if (createdSession(); as session) {
       <mat-card class="handoff" appearance="outlined">
@@ -96,36 +32,6 @@
       </mat-card>
     }
 
-    <section class="history">
-      <p class="eyebrow">Practice history</p>
-      @for (session of sessions(); track session.id) {
-        <mat-card class="history-card" appearance="outlined">
-          <mat-card-content>
-            <div class="history-main">
-              <strong>{{ pluginTitle(session.plugin) }}</strong>
-              <small>{{ session.subject }} / {{ session.category }}</small>
-              <span class="status-pill">{{ session.status }}</span>
-              <span>{{ session.correct_answers }} / {{ session.total_questions }} correct</span>
-              @if (session.elapsed_seconds !== null) {
-                <span>Time {{ formatTime(session.elapsed_seconds) }}</span>
-              }
-            </div>
-            <div class="history-actions">
-              @if (session.status === 'completed') {
-                <button mat-stroked-button (click)="reviewResults(session)">Review results</button>
-              } @else {
-                <a mat-flat-button class="primary-action" [routerLink]="['/s', session.student_token]">
-                  Open practice
-                </a>
-              }
-            </div>
-          </mat-card-content>
-        </mat-card>
-      } @empty {
-        <p>No practice sessions yet.</p>
-      }
-    </section>
-
     @if (selectedResults(); as results) {
       <mat-card class="review-card" appearance="outlined">
         <mat-card-content>
@@ -144,6 +50,47 @@
         </mat-card-content>
       </mat-card>
     }
+
+    <mat-tab-group class="dashboard-tabs" animationDuration="150ms">
+      <mat-tab label="Overview">
+        <app-learner-overview-panel
+          [summaryCards]="summaryCards()"
+          [recentSessions]="recentSessionsTop3()"
+          [weakestSkills]="weakestSkillsTop3()"
+          [topMistakes]="topMistakesTop3()"
+          [creatingPracticePlugin]="creatingPracticePlugin()"
+          (createPracticeFromPlugin)="createPracticeFromPlugin($event)"
+          (reviewResults)="reviewResults($event)"
+        />
+      </mat-tab>
+
+      <mat-tab label="Practice History">
+        <app-practice-history-table
+          [sessions]="sessions()"
+          (reviewResults)="reviewResults($event)"
+        />
+      </mat-tab>
+
+      <mat-tab label="Mistakes">
+        <app-mistake-notebook-table
+          [mistakes]="analytics()?.mistake_notebook ?? []"
+          [creatingPracticePlugin]="creatingPracticePlugin()"
+          (createPracticeFromPlugin)="createPracticeFromPlugin($event)"
+        />
+      </mat-tab>
+
+      <mat-tab label="Skills">
+        <app-skill-breakdown-table [skills]="analytics()?.skill_breakdown ?? []" />
+      </mat-tab>
+
+      <mat-tab label="Statistics">
+        <app-learner-statistics-panel />
+      </mat-tab>
+
+      <mat-tab label="Badges">
+        <app-badge-board-placeholder />
+      </mat-tab>
+    </mat-tab-group>
   }
 
   @if (error()) {

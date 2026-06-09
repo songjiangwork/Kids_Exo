@@ -1,0 +1,81 @@
+<section class="table-shell">
+  <div class="table-toolbar">
+    <mat-form-field appearance="outline">
+      <mat-label>Search prompt</mat-label>
+      <input matInput (input)="setSearch($any($event.target).value)" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Skill</mat-label>
+      <mat-select (selectionChange)="setPlugin($event.value)" value="">
+        <mat-option value="">All skills</mat-option>
+        @for (skill of skills(); track skill.plugin) {
+          <mat-option [value]="skill.plugin">{{ skill.title }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Minimum missed</mat-label>
+      <input matInput type="number" min="0" value="0" (input)="setMinMissed($any($event.target).value)" />
+    </mat-form-field>
+  </div>
+
+  <table mat-table [dataSource]="dataSource" matSort>
+    <ng-container matColumnDef="skill">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Skill</th>
+      <td mat-cell *matCellDef="let mistake"><strong>{{ mistake.title }}</strong></td>
+    </ng-container>
+
+    <ng-container matColumnDef="prompt">
+      <th mat-header-cell *matHeaderCellDef>Prompt</th>
+      <td mat-cell *matCellDef="let mistake">{{ mistake.prompt }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="expected">
+      <th mat-header-cell *matHeaderCellDef>Correct Answer</th>
+      <td mat-cell *matCellDef="let mistake">{{ answerText(mistake.expected_display ?? mistake.expected_answer) }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="last">
+      <th mat-header-cell *matHeaderCellDef>Last Answer</th>
+      <td mat-cell *matCellDef="let mistake">{{ answerText(mistake.last_submitted_display ?? mistake.last_submitted_answer) }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="times">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Times Missed</th>
+      <td mat-cell *matCellDef="let mistake">{{ mistake.times_missed }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="lastSeen">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Last Seen</th>
+      <td mat-cell *matCellDef="let mistake">{{ formatDate(mistake.last_seen_at) }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Actions</th>
+      <td mat-cell *matCellDef="let mistake">
+        <button
+          mat-stroked-button
+          (click)="createPracticeFromPlugin.emit(mistake.plugin)"
+          [disabled]="isCreating(mistake.plugin)"
+        >
+          @if (isCreating(mistake.plugin)) {
+            Creating...
+          } @else {
+            Create practice from mistakes
+          }
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+  </table>
+
+  @if (dataSource.filteredData.length === 0) {
+    <p class="empty-state">No mistakes match these filters.</p>
+  }
+
+  <mat-paginator [pageSize]="10" [pageSizeOptions]="[5, 10, 20]" showFirstLastButtons />
+</section>

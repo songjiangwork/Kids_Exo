@@ -4,6 +4,13 @@ import { forkJoin } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTabsModule } from '@angular/material/tabs';
+import { BadgeBoardPlaceholder } from './badge-board-placeholder';
+import { LearnerOverviewPanel } from './learner-overview-panel';
+import { LearnerStatisticsPanel } from './learner-statistics-panel';
+import { MistakeNotebookTable } from './mistake-notebook-table';
+import { PracticeHistoryTable } from './practice-history-table';
+import { SkillBreakdownTable } from './skill-breakdown-table';
 import {
   Learner,
   LearnerAnalytics,
@@ -17,7 +24,19 @@ import {
 
 @Component({
   selector: 'app-learner-detail',
-  imports: [MatButtonModule, MatCardModule, MatProgressSpinnerModule, RouterLink],
+  imports: [
+    BadgeBoardPlaceholder,
+    LearnerOverviewPanel,
+    LearnerStatisticsPanel,
+    MatButtonModule,
+    MatCardModule,
+    MatProgressSpinnerModule,
+    MatTabsModule,
+    MistakeNotebookTable,
+    PracticeHistoryTable,
+    RouterLink,
+    SkillBreakdownTable,
+  ],
   templateUrl: './learner-detail.html',
   styleUrl: './learner-detail.scss',
 })
@@ -58,6 +77,17 @@ export class LearnerDetail implements OnInit {
       },
     ];
   });
+  protected readonly recentSessionsTop3 = computed(() => this.sessions().slice(0, 3));
+  protected readonly weakestSkillsTop3 = computed(() =>
+    [...(this.analytics()?.skill_breakdown ?? [])]
+      .sort((left, right) => left.accuracy - right.accuracy || right.total_questions - left.total_questions)
+      .slice(0, 3),
+  );
+  protected readonly topMistakesTop3 = computed(() =>
+    [...(this.analytics()?.mistake_notebook ?? [])]
+      .sort((left, right) => right.times_missed - left.times_missed || Date.parse(right.last_seen_at) - Date.parse(left.last_seen_at))
+      .slice(0, 3),
+  );
 
   constructor(
     private readonly api: PracticeApi,

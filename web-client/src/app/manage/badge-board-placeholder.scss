@@ -1,0 +1,22 @@
+mat-card {
+  background: #ecf4df;
+  border-color: #d2dfb9;
+  border-radius: 22px;
+}
+
+.eyebrow {
+  color: var(--coral);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+}
+
+h2 {
+  color: var(--ink);
+  font-family: var(--display-font);
+  font-size: 1.8rem;
+  letter-spacing: -0.04em;
+  margin: 0 0 10px;
+}

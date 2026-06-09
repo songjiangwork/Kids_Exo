@@ -1,0 +1,74 @@
+.summary-grid,
+.overview-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 22px;
+}
+
+.overview-grid {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+mat-card {
+  background: rgba(255, 253, 248, 0.94);
+  border-color: var(--line);
+  border-radius: 22px;
+}
+
+.eyebrow {
+  color: var(--coral);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  margin: 0 0 12px;
+  text-transform: uppercase;
+}
+
+h2 {
+  color: var(--ink);
+  font-family: var(--display-font);
+  font-size: 1.8rem;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+
+.card-note,
+.compact-row p {
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 8px 0 0;
+}
+
+.compact-row {
+  align-items: center;
+  border-top: 1px solid #eadbc7;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 13px 0;
+}
+
+.compact-row:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.status-pill {
+  background: #e2f0dc;
+  border-radius: 999px;
+  color: var(--teal);
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  padding: 7px 11px;
+  text-transform: uppercase;
+}
+
+.badge-preview {
+  background: #ecf4df;
+}
