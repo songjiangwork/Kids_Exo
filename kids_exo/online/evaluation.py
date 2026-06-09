@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 from typing import Any
 
+from kids_exo.online.answer_display import AnswerValue
+
 
 @dataclass(frozen=True)
 class EvaluationResult:
-    normalized_answer: int | str | dict[str, Any]
+    normalized_answer: AnswerValue
     is_correct: bool
     detail: dict[str, Any]
 
@@ -29,6 +31,26 @@ def evaluate_answer(
             normalized_answer=normalized_answer,
             is_correct=normalized_answer == expected_index,
             detail={"answer_type": answer_type, "expected_index": expected_index},
+        )
+    if answer_type == "text_exact":
+        expected_text = str(evaluation_payload["expected_text"])
+        normalized_answer = submitted_answer.strip()
+        return EvaluationResult(
+            normalized_answer=normalized_answer,
+            is_correct=normalized_answer == expected_text,
+            detail={"answer_type": answer_type, "expected_text": expected_text},
+        )
+    if answer_type == "text_case_insensitive":
+        expected_text = str(evaluation_payload["expected_text"])
+        normalized_answer = submitted_answer.strip()
+        return EvaluationResult(
+            normalized_answer=normalized_answer,
+            is_correct=normalized_answer.casefold() == expected_text.casefold(),
+            detail={
+                "answer_type": answer_type,
+                "expected_text": expected_text,
+                "comparison_text": expected_text.casefold(),
+            },
         )
     raise ValueError(f"Unsupported answer_type: {answer_type}")
 

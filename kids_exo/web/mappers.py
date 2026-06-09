@@ -1,3 +1,10 @@
+from kids_exo.online.answer_display import (
+    AnswerValue,
+    answer_display,
+    choice_label,
+    expected_answer_value_for_question,
+    submitted_answer_value_for_attempt,
+)
 from kids_exo.online.catalog import get_online_catalog
 from kids_exo.persistence.repository import PracticeRepository
 from kids_exo.web.schemas import (
@@ -119,21 +126,12 @@ def practice_results_response(saved_session) -> PracticeResultsResponse:
     )
 
 
-def submitted_answer_value(attempt):
-    payload = getattr(attempt, "normalized_payload", None) or {}
-    if "value" in payload:
-        return payload["value"]
-    return getattr(attempt, "normalized_answer", None)
+def submitted_answer_value(attempt) -> AnswerValue:
+    return submitted_answer_value_for_attempt(attempt)
 
 
-def expected_answer_value(question):
-    payload = getattr(question, "evaluation_payload", None) or {}
-    answer_type = getattr(question, "answer_type", None)
-    if answer_type == "integer_exact" and "expected_value" in payload:
-        return payload["expected_value"]
-    if answer_type == "multiple_choice_index" and "expected_index" in payload:
-        return payload["expected_index"]
-    return getattr(question, "expected_answer", None)
+def expected_answer_value(question) -> AnswerValue:
+    return expected_answer_value_for_question(question)
 
 
 def submitted_answer_display(attempt, question=None) -> str | None:
@@ -154,19 +152,13 @@ def expected_answer_display(question) -> str | None:
     return _display_answer(value)
 
 
-def _choice_label(question, value) -> str | None:
+def _choice_label(question, value: AnswerValue) -> str | None:
     choices = tuple(getattr(question, "choices", ()) or ())
-    if isinstance(value, int) and 1 <= value <= len(choices):
-        return choices[value - 1]
-    return None
+    return choice_label(value, choices)
 
 
-def _display_answer(value) -> str | None:
-    if value is None:
-        return None
-    if isinstance(value, dict):
-        return str(value)
-    return str(value)
+def _display_answer(value: AnswerValue) -> str | None:
+    return answer_display(value)
 
 
 def timer_status_response(saved_session) -> TimerStatusResponse:

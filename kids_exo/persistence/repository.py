@@ -1,11 +1,17 @@
 from dataclasses import asdict, dataclass, is_dataclass
 from datetime import datetime, timezone
 import secrets
-from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload, sessionmaker
 
+from kids_exo.online.answer_display import (
+    AnswerValue,
+    answer_display,
+    expected_answer_value_for_question,
+    submitted_answer_value_for_attempt,
+    value_for_legacy_integer_column,
+)
 from kids_exo.online.evaluation import evaluate_answer
 from kids_exo.online.models import PracticeSessionSnapshot
 from kids_exo.persistence.models import (
@@ -28,8 +34,8 @@ class LearnerSkillBreakdown:
 class LearnerMistakeEntry:
     plugin: str
     prompt: str
-    expected_answer: int | str | dict[str, Any] | None
-    last_submitted_answer: int | str | dict[str, Any] | None
+    expected_answer: AnswerValue
+    last_submitted_answer: AnswerValue
     expected_display: str | None
     last_submitted_display: str | None
     answer_type: str | None
@@ -143,7 +149,7 @@ class PracticeRepository:
                         position=position,
                         prompt=question.prompt,
                         strategy=question.strategy,
-                        expected_answer=_legacy_expected_answer(question),
+                        expected_answer=_expected_answer_for_legacy_integer_column(question),
                         skill_tags=list(question.skill_tags),
                         renderer_type=question.renderer_type,
                         answer_type=question.answer_type,
@@ -304,10 +310,10 @@ class PracticeRepository:
                 totals["correct_answers"] += int(attempt.is_correct)
                 if attempt.is_correct:
                     continue
-                expected_answer = _expected_answer_value(question)
+                expected_answer = expected_answer_value_for_question(question)
                 expected_display = _expected_answer_display(question)
-                submitted_answer = _submitted_answer_value(attempt)
-                submitted_display = _answer_display(submitted_answer)
+                submitted_answer = submitted_answer_value_for_attempt(attempt)
+                submitted_display = answer_display(submitted_answer)
                 key = (saved_session.plugin, question.prompt, expected_display)
                 previous = mistakes.get(key)
                 if previous is None:
@@ -430,7 +436,9 @@ class PracticeRepository:
                 question.evaluation_payload,
                 submitted_answer,
             )
-            normalized_answer = _legacy_normalized_answer(evaluation.normalized_answer)
+            normalized_answer = _normalized_answer_for_legacy_integer_column(
+                evaluation.normalized_answer
+            )
             now = self._now()
             if practice_session.show_timer and practice_session.timer_started_at is not None:
                 self._settle_timer(practice_session, now)
@@ -555,48 +563,21 @@ class PracticeRepository:
                 return token
 
 
-def _legacy_expected_answer(question) -> int | None:
-    value = _expected_answer_value(question)
-    if isinstance(value, bool) or not isinstance(value, int):
-        return None
-    return value
+def _expected_answer_for_legacy_integer_column(question) -> int | None:
+    # Compatibility value for the legacy integer column.
+    # Generic answer data is stored in evaluation_payload.
+    return value_for_legacy_integer_column(expected_answer_value_for_question(question))
 
 
-def _legacy_normalized_answer(normalized_answer) -> int | None:
-    if isinstance(normalized_answer, bool) or not isinstance(normalized_answer, int):
-        return None
-    return normalized_answer
-
-
-def _expected_answer_value(question) -> int | str | dict[str, Any] | None:
-    payload = getattr(question, "evaluation_payload", None) or {}
-    answer_type = getattr(question, "answer_type", None)
-    if answer_type == "integer_exact" and "expected_value" in payload:
-        return payload["expected_value"]
-    if answer_type == "multiple_choice_index" and "expected_index" in payload:
-        return payload["expected_index"]
-    return getattr(question, "expected_answer", None)
-
-
-def _submitted_answer_value(attempt) -> int | str | dict[str, Any] | None:
-    payload = getattr(attempt, "normalized_payload", None) or {}
-    if "value" in payload:
-        return payload["value"]
-    return getattr(attempt, "normalized_answer", None)
+def _normalized_answer_for_legacy_integer_column(normalized_answer: AnswerValue) -> int | None:
+    # Compatibility value for the legacy integer column.
+    # Generic answer data is stored in normalized_payload/evaluation_detail.
+    return value_for_legacy_integer_column(normalized_answer)
 
 
 def _expected_answer_display(question) -> str | None:
-    value = _expected_answer_value(question)
-    if getattr(question, "answer_type", None) == "multiple_choice_index":
-        choices = tuple(getattr(question, "choices", ()) or ())
-        if isinstance(value, int) and 1 <= value <= len(choices):
-            return choices[value - 1]
-    return _answer_display(value)
-
-
-def _answer_display(value: int | str | dict[str, Any] | None) -> str | None:
-    if value is None:
-        return None
-    if isinstance(value, dict):
-        return str(value)
-    return str(value)
+    return answer_display(
+        expected_answer_value_for_question(question),
+        choices=tuple(getattr(question, "choices", ()) or ()),
+        answer_type=getattr(question, "answer_type", None),
+    )

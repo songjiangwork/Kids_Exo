@@ -7,6 +7,8 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy import inspect
 
+from kids_exo.localization import LocalizedPresentation, LocalizedText
+from kids_exo.online.models import OnlineQuestionSnapshot, PracticeSessionSnapshot
 from kids_exo.online.session import OnlineSessionRequest, create_practice_session
 from kids_exo.persistence.database import build_engine, build_session_factory
 from kids_exo.persistence.models import Base, PracticeSessionEntity
@@ -34,6 +36,36 @@ class PracticeRepositoryTests(unittest.TestCase):
                 show_timer=True,
                 seed=1122,
             )
+        )
+
+    def _text_answer_snapshot(self) -> PracticeSessionSnapshot:
+        return PracticeSessionSnapshot(
+            plugin="test_text_plugin",
+            subject="English",
+            category="Spelling",
+            skill="Text answer smoke test",
+            plugin_settings={},
+            requested_locale="en-CA",
+            feedback_mode="immediate",
+            show_timer=False,
+            seed=None,
+            presentation=LocalizedPresentation(
+                heading=LocalizedText("Text answer smoke test", "en-CA"),
+                instructions=(),
+            ),
+            questions=(
+                OnlineQuestionSnapshot(
+                    identifier="question-1",
+                    prompt="Spell the word for mother in French.",
+                    strategy="text_case_insensitive",
+                    skill_tags=("text", "spelling"),
+                    renderer_type="text_answer",
+                    answer_type="text_case_insensitive",
+                    evaluation_payload={"expected_text": "maman"},
+                    prompt_payload={"display_text": "Spell the word for mother in French."},
+                    public_payload={"tools": {"scratch_pad": False, "audio": False}},
+                ),
+            ),
         )
 
     def test_saves_learner_session_and_private_question_answers(self) -> None:
@@ -151,6 +183,38 @@ class PracticeRepositoryTests(unittest.TestCase):
             attempt.evaluation_detail,
             {"answer_type": "multiple_choice_index", "expected_index": question.expected_answer},
         )
+
+    def test_persists_non_integer_answer_in_generic_payload(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        self.repository.create_practice_session(
+            learner.id,
+            self._text_answer_snapshot(),
+            student_token="text-token",
+        )
+        session = self.repository.get_session_by_student_token("text-token")
+        question = session.questions[0]
+
+        attempt = self.repository.submit_answer(
+            "text-token",
+            question.public_identifier,
+            "MAMAN",
+        )
+
+        self.assertTrue(attempt.is_correct)
+        self.assertIsNone(question.expected_answer)
+        self.assertIsNone(attempt.normalized_answer)
+        self.assertEqual(attempt.submitted_payload, {"raw": "MAMAN"})
+        self.assertEqual(attempt.normalized_payload, {"value": "MAMAN"})
+        self.assertEqual(
+            attempt.evaluation_detail,
+            {
+                "answer_type": "text_case_insensitive",
+                "expected_text": "maman",
+                "comparison_text": "maman",
+            },
+        )
+        completed = self.repository.get_completed_results_by_student_token("text-token")
+        self.assertEqual(completed.status, "completed")
 
     def test_tracks_active_elapsed_time_and_settles_stale_timer_on_reopen(self) -> None:
         learner = self.repository.create_learner("Alex")

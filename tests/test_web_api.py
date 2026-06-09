@@ -3,10 +3,13 @@ import unittest
 from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
 
+from kids_exo.localization import LocalizedPresentation, LocalizedText
+from kids_exo.online.models import OnlineQuestionSnapshot, PracticeSessionSnapshot
 from kids_exo.persistence.database import build_engine, build_session_factory
 from kids_exo.persistence.models import Base
 from kids_exo.persistence.repository import PracticeRepository
 from kids_exo.web.app import create_app
+from kids_exo.web.mappers import practice_results_response
 
 
 class PracticeWebApiTests(unittest.TestCase):
@@ -17,8 +20,37 @@ class PracticeWebApiTests(unittest.TestCase):
             poolclass=StaticPool,
         )
         Base.metadata.create_all(engine)
-        self.client = TestClient(
-            create_app(PracticeRepository(build_session_factory(engine)))
+        self.repository = PracticeRepository(build_session_factory(engine))
+        self.client = TestClient(create_app(self.repository))
+
+    def _text_answer_snapshot(self) -> PracticeSessionSnapshot:
+        return PracticeSessionSnapshot(
+            plugin="test_text_plugin",
+            subject="English",
+            category="Spelling",
+            skill="Text answer smoke test",
+            plugin_settings={},
+            requested_locale="en-CA",
+            feedback_mode="immediate",
+            show_timer=False,
+            seed=None,
+            presentation=LocalizedPresentation(
+                heading=LocalizedText("Text answer smoke test", "en-CA"),
+                instructions=(),
+            ),
+            questions=(
+                OnlineQuestionSnapshot(
+                    identifier="question-1",
+                    prompt="Spell the word for mother in French.",
+                    strategy="text_case_insensitive",
+                    skill_tags=("text", "spelling"),
+                    renderer_type="text_answer",
+                    answer_type="text_case_insensitive",
+                    evaluation_payload={"expected_text": "maman"},
+                    prompt_payload={"display_text": "Spell the word for mother in French."},
+                    public_payload={"tools": {"scratch_pad": False, "audio": False}},
+                ),
+            ),
         )
 
     def test_catalog_endpoint_returns_ui_driven_plugin_schema(self) -> None:
@@ -591,6 +623,35 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(parent_results.json(), results)
         self.assertEqual(history[0]["status"], "completed")
         self.assertEqual(history[0]["correct_answers"], 9)
+
+    def test_result_review_displays_non_integer_wrong_answers(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        self.repository.create_practice_session(
+            learner.id,
+            self._text_answer_snapshot(),
+            student_token="text-token",
+        )
+        session = self.repository.get_session_by_student_token("text-token")
+        question = session.questions[0]
+
+        self.repository.submit_answer(
+            "text-token",
+            question.public_identifier,
+            "mama",
+        )
+        completed = self.repository.get_completed_results_by_student_token("text-token")
+
+        results = practice_results_response(completed)
+
+        self.assertEqual(results.correct_answers, 0)
+        self.assertEqual(len(results.incorrect_questions), 1)
+        missed = results.incorrect_questions[0]
+        self.assertEqual(missed.prompt, "Spell the word for mother in French.")
+        self.assertEqual(missed.submitted_answer, "mama")
+        self.assertEqual(missed.expected_answer, "maman")
+        self.assertEqual(missed.submitted_display, "mama")
+        self.assertEqual(missed.expected_display, "maman")
+        self.assertEqual(missed.answer_type, "text_case_insensitive")
 
 
 if __name__ == "__main__":

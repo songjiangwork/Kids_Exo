@@ -64,6 +64,58 @@ class OnlineEvaluationTests(unittest.TestCase):
             {"answer_type": "multiple_choice_index", "expected_index": 3},
         )
 
+    def test_text_exact_accepts_matching_trimmed_text(self) -> None:
+        result = evaluate_answer(
+            "text_exact",
+            {"expected_text": "maman"},
+            " maman ",
+        )
+
+        self.assertTrue(result.is_correct)
+        self.assertEqual(result.normalized_answer, "maman")
+        self.assertEqual(
+            result.detail,
+            {"answer_type": "text_exact", "expected_text": "maman"},
+        )
+
+    def test_text_exact_keeps_case_sensitive_comparison(self) -> None:
+        result = evaluate_answer(
+            "text_exact",
+            {"expected_text": "maman"},
+            "Maman",
+        )
+
+        self.assertFalse(result.is_correct)
+        self.assertEqual(result.normalized_answer, "Maman")
+
+    def test_text_case_insensitive_accepts_different_case_and_trims(self) -> None:
+        result = evaluate_answer(
+            "text_case_insensitive",
+            {"expected_text": "maman"},
+            " MAMAN ",
+        )
+
+        self.assertTrue(result.is_correct)
+        self.assertEqual(result.normalized_answer, "MAMAN")
+        self.assertEqual(
+            result.detail,
+            {
+                "answer_type": "text_case_insensitive",
+                "expected_text": "maman",
+                "comparison_text": "maman",
+            },
+        )
+
+    def test_text_case_insensitive_marks_wrong_text_incorrect(self) -> None:
+        result = evaluate_answer(
+            "text_case_insensitive",
+            {"expected_text": "maman"},
+            "mama",
+        )
+
+        self.assertFalse(result.is_correct)
+        self.assertEqual(result.normalized_answer, "mama")
+
     def test_unknown_answer_type_is_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "Unsupported answer_type"):
             evaluate_answer("spelling", {"expected_text": "maman"}, "maman")
