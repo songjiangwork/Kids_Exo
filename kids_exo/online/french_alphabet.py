@@ -191,6 +191,7 @@ def _question_for_strategy(
             "speech_text": target.text,
             "speech_locale": "fr-FR",
         },
+        public_payload={"tools": {"scratch_pad": False, "audio": True}},
         question_type="multiple_choice",
         choices=labels,
         speech_text=target.text,

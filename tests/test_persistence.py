@@ -64,7 +64,10 @@ class PracticeRepositoryTests(unittest.TestCase):
             retrieved.questions[0].prompt_payload,
             {"display_text": retrieved.questions[0].prompt},
         )
-        self.assertEqual(retrieved.questions[0].public_payload, {})
+        self.assertEqual(
+            retrieved.questions[0].public_payload,
+            {"tools": {"scratch_pad": True, "audio": False}},
+        )
 
     def test_saves_french_choice_session_evaluation_metadata(self) -> None:
         learner = self.repository.create_learner("Alex")
@@ -89,6 +92,7 @@ class PracticeRepositoryTests(unittest.TestCase):
         self.assertEqual(question.answer_type, "multiple_choice_index")
         self.assertEqual(question.evaluation_payload, {"expected_index": question.expected_answer})
         self.assertEqual(question.prompt_payload["choices"], list(question.choices))
+        self.assertEqual(question.public_payload, {"tools": {"scratch_pad": False, "audio": True}})
 
     def test_records_an_answer_attempt_against_saved_question(self) -> None:
         learner = self.repository.create_learner("Alex")

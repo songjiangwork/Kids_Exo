@@ -46,6 +46,10 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertEqual(student_views[0].position, 1)
         self.assertEqual(student_views[0].total_questions, 10)
         self.assertIn("= __________", student_views[0].prompt)
+        self.assertEqual(
+            student_views[0].public_payload,
+            {"tools": {"scratch_pad": True, "audio": False}},
+        )
         self.assertNotIn("expected_answer", asdict(student_views[0]))
 
     def test_session_evaluates_an_integer_submission_server_side(self) -> None:
@@ -177,6 +181,10 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertEqual(student_view.speech_text, first.speech_text)
         self.assertEqual(student_view.renderer_type, "listening_choice")
         self.assertEqual(student_view.prompt_payload["choices"], list(first.choices))
+        self.assertEqual(
+            student_view.public_payload,
+            {"tools": {"scratch_pad": False, "audio": True}},
+        )
 
     def test_french_common_words_session_generates_word_meaning_choices(self) -> None:
         session = create_practice_session(

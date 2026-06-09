@@ -58,7 +58,7 @@ describe('StudentPractice', () => {
       correct_answers: 0,
       active_elapsed_seconds: 0,
       questions: [
-        { identifier: 'question-1', position: 1, total_questions: 10, prompt: '42 x 11 = __________' },
+        { identifier: 'question-1', position: 1, total_questions: 10, prompt: '42 x 11 = __________', public_payload: { tools: { scratch_pad: true, audio: false } } },
       ],
     });
     fixture.detectChanges();
@@ -165,6 +165,7 @@ describe('StudentPractice', () => {
           speech_text: 'A',
           speech_locale: 'fr-FR',
           audio_url: '/audio/tts/fr/fr-FR-DeniseNeural/alphabet/a.mp3',
+          public_payload: { tools: { scratch_pad: false, audio: true } },
         },
       ],
     });
@@ -315,7 +316,7 @@ describe('StudentPractice', () => {
     expect(utterance.rate).toBe(0.82);
   });
 
-  it('hides the scratch pad for language practice', async () => {
+  it('hides the scratch pad when question tools disable it', async () => {
     await TestBed.configureTestingModule({
       imports: [StudentPractice],
       providers: [
@@ -362,6 +363,12 @@ describe('StudentPractice', () => {
 
     expect(fixture.nativeElement.textContent).not.toContain('Open scratch pad');
     expect(fixture.nativeElement.querySelector('.scratch-pad')).toBeNull();
+  });
+
+  it('shows the scratch pad when question tools enable it', async () => {
+    const { fixture } = await createFixture();
+
+    expect(fixture.nativeElement.textContent).toContain('Open scratch pad');
   });
 
   it('offers a local scratch pad that can be cleared', async () => {

@@ -167,8 +167,14 @@ export class StudentPractice implements OnInit, OnDestroy {
     return Boolean(this.session()?.show_timer && this.timerPaused());
   }
 
-  protected isLanguagePractice(): boolean {
-    return this.session()?.subject === 'French';
+  protected scratchPadEnabled(): boolean {
+    const question = this.question();
+    const tools = question?.public_payload?.['tools'];
+    if (tools && typeof tools === 'object' && 'scratch_pad' in tools) {
+      return Boolean((tools as Record<string, unknown>)['scratch_pad']);
+    }
+
+    return this.session()?.subject !== 'French';
   }
 
   protected toggleScratchPad(): void {

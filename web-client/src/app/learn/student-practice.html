@@ -42,7 +42,7 @@
         (submitChoice)="submitChoice($event)"
       />
 
-      @if (!isLanguagePractice()) {
+      @if (scratchPadEnabled()) {
         <button mat-stroked-button class="scratch-toggle" type="button" (click)="toggleScratchPad()">
           @if (scratchPadOpen()) { Hide scratch pad } @else { Open scratch pad }
         </button>
