@@ -6,3 +6,4 @@ output/
 .pytest_cache/
 *.db
 .dev-services/
+.codex/docs
