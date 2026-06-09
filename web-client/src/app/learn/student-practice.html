@@ -33,20 +33,14 @@
         (playAudio)="playQuestionAudio()"
       />
 
-      @if ((activeQuestion.choices?.length ?? 0) > 0) {
-        <app-choice-answer-renderer
-          [choices]="activeQuestion.choices ?? []"
-          [disabled]="feedback() !== null || isPracticePaused() || submitting()"
-          (submitChoice)="submitChoice($event)"
-        />
-      } @else {
-        <app-numeric-answer-renderer
-          [(answer)]="answer"
-          [disabled]="feedback() !== null || isPracticePaused()"
-          [submitting]="submitting()"
-          (submitAnswer)="checkAnswer()"
-        />
-      }
+      <app-question-renderer-host
+        [question]="activeQuestion"
+        [(answer)]="answer"
+        [disabled]="feedback() !== null || isPracticePaused()"
+        [submitting]="submitting()"
+        (submitAnswer)="checkAnswer()"
+        (submitChoice)="submitChoice($event)"
+      />
 
       @if (!isLanguagePractice()) {
         <button mat-stroked-button class="scratch-toggle" type="button" (click)="toggleScratchPad()">

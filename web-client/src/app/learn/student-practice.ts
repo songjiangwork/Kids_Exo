@@ -8,9 +8,8 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { PracticeApi, PracticeResults, StudentSession } from '../core/practice-api';
 import { AudioPrompt } from './audio-prompt';
-import { ChoiceAnswerRenderer } from './choice-answer-renderer';
-import { NumericAnswerRenderer } from './numeric-answer-renderer';
 import { PracticeResultsCard } from './practice-results-card';
+import { QuestionRendererHost } from './question-renderer-host';
 import { ScratchPad } from './scratch-pad';
 import { TimerPanel } from './timer-panel';
 
@@ -18,14 +17,13 @@ import { TimerPanel } from './timer-panel';
   selector: 'app-student-practice',
   imports: [
     AudioPrompt,
-    ChoiceAnswerRenderer,
     MatButtonModule,
     MatCardModule,
     MatIconModule,
     MatProgressBarModule,
     MatProgressSpinnerModule,
-    NumericAnswerRenderer,
     PracticeResultsCard,
+    QuestionRendererHost,
     ScratchPad,
     TimerPanel,
   ],

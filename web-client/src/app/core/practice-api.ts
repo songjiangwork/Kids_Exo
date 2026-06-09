@@ -5,6 +5,7 @@ import { HttpResponse } from '@angular/common/http';
 
 export type PluginSettingValue = string | number | boolean;
 export type PluginSettingsValue = Record<string, PluginSettingValue[]>;
+export type JsonObject = Record<string, unknown>;
 
 export interface SettingOption {
   value: PluginSettingValue;
@@ -52,6 +53,9 @@ export interface StudentQuestion {
   position: number;
   total_questions: number;
   prompt: string;
+  renderer_type?: string;
+  prompt_payload?: JsonObject;
+  public_payload?: JsonObject;
   question_type?: string;
   choices?: string[];
   speech_text?: string | null;
