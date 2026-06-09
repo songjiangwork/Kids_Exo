@@ -68,6 +68,27 @@ describe('LearnerDetail', () => {
           total_questions: 10,
           accuracy: 0.8,
         },
+        {
+          plugin: 'french_alphabet_sounds',
+          title: 'French Alphabet Sounds',
+          correct_answers: 6,
+          total_questions: 10,
+          accuracy: 0.6,
+        },
+        {
+          plugin: 'same_tens_ones_sum_to_ten',
+          title: 'Same Tens, Ones Sum to 10',
+          correct_answers: 7,
+          total_questions: 10,
+          accuracy: 0.7,
+        },
+        {
+          plugin: 'hidden_skill',
+          title: 'Hidden Fourth Skill',
+          correct_answers: 9,
+          total_questions: 10,
+          accuracy: 0.9,
+        },
       ],
       mistake_notebook: [
         {
@@ -78,6 +99,33 @@ describe('LearnerDetail', () => {
           last_submitted_answer: 344,
           times_missed: 2,
           last_seen_at: '2026-05-29T17:00:00Z',
+        },
+        {
+          plugin: 'french_alphabet_sounds',
+          title: 'French Alphabet Sounds',
+          prompt: 'Choose the letter B',
+          expected_answer: 1,
+          last_submitted_answer: 2,
+          times_missed: 5,
+          last_seen_at: '2026-05-30T17:00:00Z',
+        },
+        {
+          plugin: 'same_tens_ones_sum_to_ten',
+          title: 'Same Tens, Ones Sum to 10',
+          prompt: '43 x 47 = ____',
+          expected_answer: 2021,
+          last_submitted_answer: 2011,
+          times_missed: 3,
+          last_seen_at: '2026-05-31T17:00:00Z',
+        },
+        {
+          plugin: 'hidden_mistake',
+          title: 'Hidden Mistake Skill',
+          prompt: 'Hidden fourth mistake',
+          expected_answer: 1,
+          last_submitted_answer: 0,
+          times_missed: 1,
+          last_seen_at: '2026-06-01T17:00:00Z',
         },
       ],
     });
@@ -108,6 +156,32 @@ describe('LearnerDetail', () => {
         correct_answers: 0,
         elapsed_seconds: null,
       },
+      {
+        id: 10,
+        student_token: 's10-abcd2345',
+        plugin: 'french_alphabet_sounds',
+        subject: 'French',
+        category: 'Pronunciation',
+        skill: 'French Alphabet Sounds',
+        status: 'completed',
+        total_questions: 10,
+        answered_questions: 10,
+        correct_answers: 7,
+        elapsed_seconds: 100,
+      },
+      {
+        id: 11,
+        student_token: 's11-abcd2345',
+        plugin: 'hidden_session',
+        subject: 'Math',
+        category: 'Mental Multiplication',
+        skill: 'Hidden Fourth Session',
+        status: 'completed',
+        total_questions: 10,
+        answered_questions: 10,
+        correct_answers: 10,
+        elapsed_seconds: 120,
+      },
     ]);
     fixture.detectChanges();
 
@@ -118,6 +192,8 @@ describe('LearnerDetail', () => {
     expect(fixture.nativeElement.textContent).toContain('Skills');
     expect(fixture.nativeElement.textContent).toContain('Statistics');
     expect(fixture.nativeElement.textContent).toContain('Badges');
+    expect(fixture.nativeElement.textContent).toContain('Badge board coming later');
+    expect(fixture.nativeElement.textContent).toContain('Statistics coming later');
     expect(fixture.nativeElement.textContent).toContain('8 / 10 correct');
     expect(fixture.nativeElement.textContent).toContain('Average time');
     expect(fixture.nativeElement.textContent).toContain('Multiply by 11');
@@ -125,6 +201,13 @@ describe('LearnerDetail', () => {
     expect(fixture.nativeElement.textContent).toContain('missed 2 times');
     expect(fixture.nativeElement.textContent).toContain('Review');
     expect(fixture.nativeElement.textContent).toContain('Open');
+    expect(fixture.nativeElement.textContent).toContain('French Alphabet Sounds');
+    expect(fixture.nativeElement.textContent).toContain('Same Tens, Ones Sum to 10');
+    expect(fixture.nativeElement.textContent).toContain('Choose the letter B');
+    expect(fixture.nativeElement.textContent).toContain('43 x 47 = ____');
+    expect(fixture.nativeElement.textContent).not.toContain('Hidden Fourth Session');
+    expect(fixture.nativeElement.textContent).not.toContain('Hidden Fourth Skill');
+    expect(fixture.nativeElement.textContent).not.toContain('Hidden fourth mistake');
     const practiceLink = Array.from(fixture.nativeElement.querySelectorAll('a') as NodeListOf<HTMLAnchorElement>).find(
       (link) => link.textContent?.includes('Open'),
     ) as HTMLAnchorElement;
