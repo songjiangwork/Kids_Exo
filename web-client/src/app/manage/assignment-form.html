@@ -34,6 +34,13 @@
           }
         </mat-select>
       </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Due date (optional)</mat-label>
+        <input matInput [matDatepicker]="dueDatePicker" [(ngModel)]="dueDate" />
+        <mat-datepicker-toggle matIconSuffix [for]="dueDatePicker" />
+        <mat-datepicker #dueDatePicker />
+      </mat-form-field>
     </div>
 
     <mat-form-field appearance="outline" class="full-width">

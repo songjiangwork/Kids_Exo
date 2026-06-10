@@ -46,6 +46,7 @@ describe('AssignmentForm', () => {
 
   it('renders shared description notes copy', () => {
     expect(fixture.nativeElement.textContent).toContain('Description / notes (optional)');
+    expect(fixture.nativeElement.textContent).toContain('Due date (optional)');
   });
 
   it('validates title and emits homework request payload', () => {
@@ -79,5 +80,17 @@ describe('AssignmentForm', () => {
         },
       ],
     });
+  });
+
+  it('emits an optional due date when selected', () => {
+    const emitted: unknown[] = [];
+    fixture.componentInstance.createAssignment.subscribe((value) => emitted.push(value));
+
+    (fixture.componentInstance as any).title = 'Due homework';
+    (fixture.componentInstance as any).dueDate = new Date(2026, 5, 15);
+    (fixture.componentInstance as any).submit();
+
+    expect(emitted.length).toBe(1);
+    expect((emitted[0] as any).due_at).toBe(new Date(2026, 5, 15, 12, 0, 0, 0).toISOString());
   });
 });

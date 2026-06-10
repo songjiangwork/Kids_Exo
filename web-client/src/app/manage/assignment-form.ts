@@ -3,6 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { provideNativeDateAdapter } from '@angular/material/core';
+import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -21,11 +23,13 @@ import { PluginSettingsForm } from './plugin-settings-form';
     MatButtonModule,
     MatCardModule,
     MatCheckboxModule,
+    MatDatepickerModule,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
     PluginSettingsForm,
   ],
+  providers: [provideNativeDateAdapter()],
   templateUrl: './assignment-form.html',
   styleUrl: './assignment-form.scss',
 })
@@ -42,6 +46,7 @@ export class AssignmentForm implements OnChanges {
   protected selectedPluginId = '';
   protected questionCount = 10;
   protected feedbackMode = 'immediate';
+  protected dueDate: Date | null = null;
   protected showTimer = true;
   protected pluginSettings: PluginSettingsValue = {};
 
@@ -88,7 +93,7 @@ export class AssignmentForm implements OnChanges {
       title: this.title.trim(),
       description: this.description.trim(),
       source_type: this.sourceType,
-      due_at: null,
+      due_at: this.formatDueDate(),
       created_by_role: this.createdByRole,
       items: [
         {
@@ -102,5 +107,21 @@ export class AssignmentForm implements OnChanges {
         },
       ],
     });
+  }
+
+  private formatDueDate(): string | null {
+    if (this.dueDate === null) {
+      return null;
+    }
+    const dueAt = new Date(
+      this.dueDate.getFullYear(),
+      this.dueDate.getMonth(),
+      this.dueDate.getDate(),
+      12,
+      0,
+      0,
+      0,
+    );
+    return dueAt.toISOString();
   }
 }
