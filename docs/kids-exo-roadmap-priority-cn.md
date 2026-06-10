@@ -224,6 +224,8 @@ Assignment
 - learner_id
 - title
 - description
+  - parent / teacher / learner 都可以填写的 homework 说明或 notes
+  - 后续应新增独立 `learner_note` / `reflection` 字段，用于学生完成前后的自我记录，不和 assignment description 混用
 - status
   - assigned
   - in_progress
@@ -266,7 +268,8 @@ AssignmentItem
 第一版只支持：
 
 ```text
-家长给 learner 添加一个 practice assignment
+家长/老师从 Parent/Teacher dashboard 给指定 learner 添加一个 practice assignment
+learner 从自己的 dashboard 给自己添加一个 practice assignment
 学生打开 assignment 并开始 practice
 practice 完成后 assignment item 标记完成
 assignment 全部 item 完成后 assignment 标记 completed
@@ -303,7 +306,8 @@ Homework / 作业本
 
 ### 可验证结果
 
-- 家长可以从 learner 页面创建 assignment；
+- 家长可以从 Parent dashboard 创建 assignment，并选择 learner；
+- learner 可以从自己的 Learner Dashboard 创建 assignment；
 - assignment 可以包含一个现有 practice plugin；
 - 学生可以从作业本打开 practice；
 - 学生完成 practice 后 assignment item 状态更新；

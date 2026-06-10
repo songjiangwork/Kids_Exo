@@ -1,0 +1,97 @@
+.assignment-notebook {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.assignment-table-wrap {
+  border-color: rgba(36, 52, 49, 0.14);
+  border-radius: 24px;
+}
+
+.status-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.status-card {
+  background: rgba(245, 235, 210, 0.72);
+  border-radius: 18px;
+  padding: 1rem;
+}
+
+.status-card span {
+  color: #5f6c68;
+  display: block;
+  font-size: 0.8rem;
+}
+
+.status-card strong {
+  color: #08797a;
+  font-size: 1.7rem;
+}
+
+.assignment-table-wrap {
+  background: rgba(255, 252, 245, 0.86);
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  min-width: 860px;
+  width: 100%;
+}
+
+th,
+td {
+  border-bottom: 1px solid rgba(36, 52, 49, 0.12);
+  padding: 1rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  color: #5f6c68;
+  font-size: 0.76rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+td strong {
+  color: #243431;
+}
+
+td p {
+  color: #5f6c68;
+  margin: 0.3rem 0 0;
+}
+
+.status-pill {
+  background: #dff1dc;
+  border-radius: 999px;
+  color: #08797a;
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 0.35rem 0.7rem;
+}
+
+.actions {
+  white-space: nowrap;
+}
+
+.danger {
+  color: #9d2e19;
+}
+
+.empty-state {
+  color: #5f6c68;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+}

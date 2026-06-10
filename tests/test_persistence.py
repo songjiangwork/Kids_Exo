@@ -429,6 +429,80 @@ class PracticeRepositoryTests(unittest.TestCase):
         self.assertEqual(analytics.mistake_notebook[0].times_missed, 2)
         self.assertEqual(analytics.mistake_notebook[0].expected_answer, first_question.expected_answer)
 
+    def test_creates_lists_starts_and_completes_assignment_item(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        assignment = self.repository.create_assignment(
+            learner.id,
+            title="Multiply by 11 practice",
+            description="Finish 10 questions",
+            items=[
+                {
+                    "plugin": "multiply_by_11",
+                    "plugin_settings": {
+                        "multiplicand_digits": [2],
+                        "strategies": ["no_carrying"],
+                    },
+                    "question_count": 10,
+                    "feedback_mode": "immediate",
+                    "show_timer": True,
+                    "required": True,
+                }
+            ],
+        )
+
+        listed = self.repository.list_assignments_for_learner(learner.id)
+        self.assertEqual(len(listed), 1)
+        self.assertEqual(listed[0].status, "assigned")
+        self.assertEqual(listed[0].items[0].status, "assigned")
+
+        started = self.repository.start_assignment_item(
+            assignment.id,
+            assignment.items[0].id,
+            self._snapshot(),
+        )
+
+        self.assertEqual(started.assignment.status, "in_progress")
+        self.assertEqual(started.item.status, "in_progress")
+        self.assertIsNotNone(started.item.linked_session_id)
+        self.assertTrue(started.practice_session.student_token.startswith("s"))
+
+        session = self.repository.get_session_by_student_token(started.practice_session.student_token)
+        for question in session.questions:
+            self.repository.submit_answer(
+                session.student_token,
+                question.public_identifier,
+                str(question.expected_answer),
+            )
+
+        completed = self.repository.get_assignment(assignment.id)
+        self.assertEqual(completed.status, "completed")
+        self.assertIsNotNone(completed.completed_at)
+        self.assertEqual(completed.items[0].status, "completed")
+        self.assertIsNotNone(completed.items[0].completed_at)
+
+    def test_archived_assignment_is_hidden_from_active_list_unless_requested(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        assignment = self.repository.create_assignment(
+            learner.id,
+            title="Archive me",
+            items=[{"plugin": "multiply_by_11", "question_count": 10}],
+        )
+
+        self.repository.archive_assignment(assignment.id)
+
+        self.assertEqual(self.repository.list_assignments_for_learner(learner.id), [])
+        archived = self.repository.list_assignments_for_learner(learner.id, status="archived")
+        self.assertEqual(len(archived), 1)
+        self.assertEqual(archived[0].status, "archived")
+
+    def test_assignment_rejects_unknown_learner(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Unknown learner"):
+            self.repository.create_assignment(
+                999,
+                title="Missing learner",
+                items=[{"plugin": "multiply_by_11", "question_count": 10}],
+            )
+
 
 class AlembicMigrationTests(unittest.TestCase):
     def test_initial_migration_creates_online_practice_tables(self) -> None:
@@ -444,7 +518,14 @@ class AlembicMigrationTests(unittest.TestCase):
 
             tables = set(inspect(build_engine(f"sqlite+pysqlite:///{database_path}")).get_table_names())
             self.assertTrue(
-                {"learners", "practice_sessions", "question_instances", "response_attempts"}
+                {
+                    "learners",
+                    "practice_sessions",
+                    "question_instances",
+                    "response_attempts",
+                    "assignments",
+                    "assignment_items",
+                }
                 <= tables
             )
             session_columns = {

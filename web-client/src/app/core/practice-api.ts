@@ -52,6 +52,25 @@ export interface PracticeRequest {
   seed?: number;
 }
 
+export interface AssignmentItemCreateRequest {
+  item_type?: string;
+  plugin: string;
+  plugin_settings: PluginSettingsValue;
+  question_count: number;
+  feedback_mode: string;
+  show_timer: boolean;
+  required?: boolean;
+}
+
+export interface AssignmentCreateRequest {
+  title: string;
+  description: string;
+  source_type?: string;
+  due_at?: string | null;
+  created_by_role?: string;
+  items: AssignmentItemCreateRequest[];
+}
+
 export interface StudentQuestion {
   identifier: string;
   position: number;
@@ -182,6 +201,48 @@ export interface TimerStatus {
   active_elapsed_seconds: number;
 }
 
+export interface AssignmentItem {
+  id: number;
+  item_type: string;
+  plugin: string;
+  plugin_settings: PluginSettingsValue;
+  question_count: number;
+  feedback_mode: string;
+  show_timer: boolean;
+  order_index: number;
+  required: boolean;
+  status: string;
+  linked_session_id: number | null;
+  student_token?: string | null;
+  skill?: string | null;
+  subject?: string | null;
+  category?: string | null;
+  created_at: string;
+  completed_at?: string | null;
+}
+
+export interface Assignment {
+  id: number;
+  learner_id: number;
+  title: string;
+  description: string;
+  status: string;
+  source_type: string;
+  due_at?: string | null;
+  created_by_role: string;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string | null;
+  items: AssignmentItem[];
+}
+
+export interface AssignmentStartResponse {
+  assignment: Assignment;
+  item: AssignmentItem;
+  student_token: string;
+  student_url: string;
+}
+
 export interface AnswerResult {
   normalized_answer: AnswerValue;
   is_correct: boolean | null;
@@ -240,6 +301,24 @@ export class PracticeApi {
 
   learnerAnalytics(learnerId: number): Observable<LearnerAnalytics> {
     return this.http.get<LearnerAnalytics>(`/api/learners/${learnerId}/analytics`);
+  }
+
+  learnerAssignments(learnerId: number, status: string = 'all'): Observable<Assignment[]> {
+    return this.http.get<Assignment[]>('/api/learners/' + learnerId + '/assignments', {
+      params: { status },
+    });
+  }
+
+  createAssignment(learnerId: number, request: AssignmentCreateRequest): Observable<Assignment> {
+    return this.http.post<Assignment>('/api/learners/' + learnerId + '/assignments', request);
+  }
+
+  startAssignmentItem(assignmentId: number, itemId: number): Observable<AssignmentStartResponse> {
+    return this.http.post<AssignmentStartResponse>('/api/assignments/' + assignmentId + '/items/' + itemId + '/start', {});
+  }
+
+  archiveAssignment(assignmentId: number): Observable<Assignment> {
+    return this.http.post<Assignment>('/api/assignments/' + assignmentId + '/archive', {});
   }
 
   parentResults(learnerId: number, sessionId: number): Observable<PracticeResults> {

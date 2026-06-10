@@ -1,0 +1,44 @@
+.assignment-form {
+  border-color: rgba(36, 52, 49, 0.14);
+  border-radius: 24px;
+}
+
+.eyebrow {
+  color: #d85f45;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  margin: 0 0 0.4rem;
+  text-transform: uppercase;
+}
+
+h2 {
+  color: #243431;
+  font-size: 1.6rem;
+  margin: 0 0 1rem;
+}
+
+.form-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.full-width {
+  width: 100%;
+}
+
+.form-actions {
+  margin-top: 1rem;
+}
+
+.primary-action {
+  background: #213531;
+  color: #fff6df;
+}
+
+@media (max-width: 760px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}

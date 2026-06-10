@@ -1,0 +1,60 @@
+<mat-card class="assignment-form" appearance="outlined">
+  <mat-card-content>
+    <p class="eyebrow">Create homework</p>
+    <h2>Assign focused practice</h2>
+    <div class="form-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Title</mat-label>
+        <input matInput [(ngModel)]="title" required />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Skill</mat-label>
+        <mat-select [ngModel]="selectedPluginId" (ngModelChange)="selectPlugin($event)">
+          @for (plugin of webPracticePlugins; track plugin.plugin) {
+            <mat-option [value]="plugin.plugin">{{ plugin.title }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Questions</mat-label>
+        <mat-select [(ngModel)]="questionCount">
+          @for (count of catalog?.question_counts ?? [10, 20, 30]; track count) {
+            <mat-option [value]="count">{{ count }} questions</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Feedback</mat-label>
+        <mat-select [(ngModel)]="feedbackMode">
+          @for (mode of catalog?.feedback_modes ?? ["immediate"]; track mode) {
+            <mat-option [value]="mode">{{ mode }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Description / notes (optional)</mat-label>
+      <textarea matInput rows="2" [(ngModel)]="description"></textarea>
+    </mat-form-field>
+
+    @if (selectedPlugin; as plugin) {
+      <app-plugin-settings-form
+        [settings]="plugin.settings"
+        [value]="pluginSettings"
+        (valueChange)="updatePluginSettings($event)"
+      />
+    }
+
+    <mat-checkbox [(ngModel)]="showTimer">Show timer</mat-checkbox>
+
+    <div class="form-actions">
+      <button mat-flat-button class="primary-action" (click)="submit()" [disabled]="saving || !title.trim() || selectedPlugin === undefined">
+        {{ saving ? 'Saving...' : submitLabel }}
+      </button>
+    </div>
+  </mat-card-content>
+</mat-card>

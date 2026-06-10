@@ -1,0 +1,67 @@
+<section class="assignment-notebook">
+  <app-assignment-form
+    [catalog]="catalog"
+    [saving]="saving"
+    sourceType="learner_added"
+    createdByRole="learner"
+    submitLabel="Create my homework"
+    (createAssignment)="createAssignment.emit($event)"
+  />
+
+  <div class="status-grid">
+    @for (count of statusCounts; track count.label) {
+      <div class="status-card">
+        <span>{{ count.label }}</span>
+        <strong>{{ count.value }}</strong>
+      </div>
+    }
+  </div>
+
+  <div class="assignment-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Status</th>
+          <th>Items</th>
+          <th>Due Date</th>
+          <th>Created</th>
+          <th>Completed</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (assignment of assignments; track assignment.id) {
+          <tr>
+            <td>
+              <strong>{{ assignment.title }}</strong>
+              @if (assignment.description) {
+                <p>{{ assignment.description }}</p>
+              }
+            </td>
+            <td><span class="status-pill">{{ statusLabel(assignment.status) }}</span></td>
+            <td>{{ itemSummary(assignment) }}</td>
+            <td>{{ formatDate(assignment.due_at) }}</td>
+            <td>{{ formatDate(assignment.created_at) }}</td>
+            <td>{{ formatDate(assignment.completed_at) }}</td>
+            <td class="actions">
+              @if (canStart(assignment)) {
+                <button mat-button (click)="start(assignment)">Start / Continue</button>
+              }
+              @if (firstItem(assignment)?.student_token; as token) {
+                <a mat-button [routerLink]="['/s', token]">View</a>
+              }
+              @if (canArchive(assignment)) {
+                <button mat-button class="danger" (click)="archiveAssignment.emit(assignment)">Archive</button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="empty-state">No assignments yet.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

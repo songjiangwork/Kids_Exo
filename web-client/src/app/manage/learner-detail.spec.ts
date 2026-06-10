@@ -4,6 +4,10 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { LearnerDetail } from './learner-detail';
 
+function flushAssignmentRequests(http: HttpTestingController, body: unknown[] = []): void {
+  http.match("/api/learners/0/assignments?status=all").forEach((request) => request.flush(body));
+}
+
 describe('LearnerDetail', () => {
   it('shows learner dashboard tabs and overview summaries', async () => {
     await TestBed.configureTestingModule({
@@ -183,6 +187,7 @@ describe('LearnerDetail', () => {
         elapsed_seconds: 120,
       },
     ]);
+    flushAssignmentRequests(http);
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Alex');
@@ -283,6 +288,7 @@ describe('LearnerDetail', () => {
       ],
     });
     http.expectOne('/api/learners/0/sessions').flush([]);
+    flushAssignmentRequests(http);
     fixture.detectChanges();
 
     (fixture.componentInstance as any).createPracticeFromPlugin('multiply_by_11');
@@ -349,6 +355,7 @@ describe('LearnerDetail', () => {
         elapsed_seconds: null,
       },
     ]);
+    flushAssignmentRequests(http);
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('New practice ready');
@@ -413,6 +420,7 @@ describe('LearnerDetail', () => {
         elapsed_seconds: 90,
       },
     ]);
+    flushAssignmentRequests(http);
     fixture.detectChanges();
 
     const reviewButton = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>).find(
@@ -434,6 +442,7 @@ describe('LearnerDetail', () => {
         },
       ],
     });
+    flushAssignmentRequests(http);
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Session review');

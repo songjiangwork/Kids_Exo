@@ -1,3 +1,10 @@
+from kids_exo.web.schemas.assignment import (
+    AssignmentCreateRequest,
+    AssignmentItemCreateRequest,
+    AssignmentItemResponse,
+    AssignmentItemStartResponse,
+    AssignmentResponse,
+)
 from kids_exo.web.schemas.base import FromDomainModel
 from kids_exo.web.schemas.catalog import (
     LocaleCoverageResponse,
@@ -33,6 +40,11 @@ from kids_exo.web.schemas.student import (
 
 __all__ = [
     "AnswerSubmissionRequest",
+    "AssignmentCreateRequest",
+    "AssignmentItemCreateRequest",
+    "AssignmentItemResponse",
+    "AssignmentItemStartResponse",
+    "AssignmentResponse",
     "AnswerSubmissionResponse",
     "FromDomainModel",
     "IncorrectQuestionResponse",

@@ -1,10 +1,9 @@
 <section class="manage-shell">
   <header class="hero">
     <p class="eyebrow">Parent Studio</p>
-    <h1>Create a practice session</h1>
+    <h1>Assign homework</h1>
     <p class="lede">
-      Set up a focused mental-math sprint, then hand the learner link to your child.
-      Choose from the full online mental-multiplication library and tune each session for the learner.
+      Choose a learner, set up focused practice, and leave homework that the learner can start from their dashboard.
     </p>
     <a mat-stroked-button class="print-link" routerLink="/manage/worksheets">
       Generate a printable PDF
@@ -20,11 +19,11 @@
     <div class="workspace">
       <mat-card class="composer" appearance="outlined">
         <mat-card-header>
-          <mat-card-title>Session setup</mat-card-title>
-          <mat-card-subtitle>{{ selectedPlugin()?.subject }} / {{ selectedPlugin()?.category }}</mat-card-subtitle>
+          <mat-card-title>Who is this homework for?</mat-card-title>
+          <mat-card-subtitle>Select an existing learner or create a new learner first.</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
-          <div class="form-grid">
+          <div class="form-grid learner-grid">
             <mat-form-field appearance="outline">
               <mat-label>Learner</mat-label>
               <mat-select [(ngModel)]="learnerId" (ngModelChange)="selectLearner($event)">
@@ -41,68 +40,18 @@
                 <input matInput [(ngModel)]="nickname" />
               </mat-form-field>
             }
-
-            <mat-form-field appearance="outline">
-              <mat-label>Subject</mat-label>
-              <mat-select [(ngModel)]="subject" (ngModelChange)="selectSubject($event)">
-                @for (subjectName of subjects(); track subjectName) {
-                  <mat-option [value]="subjectName">{{ subjectName }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Skill</mat-label>
-              <mat-select [(ngModel)]="pluginId" (ngModelChange)="selectPlugin($event)">
-                @for (plugin of pluginsForSubject(); track plugin.plugin) {
-                  <mat-option [value]="plugin.plugin">{{ plugin.title }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Questions</mat-label>
-              <mat-select [(ngModel)]="questionCount">
-                @for (count of catalog()?.question_counts; track count) {
-                  <mat-option [value]="count">{{ count }} questions</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Feedback</mat-label>
-              <mat-select [(ngModel)]="feedbackMode">
-                <mat-option value="immediate">Tell after each answer</mat-option>
-                <mat-option value="deferred">Review after completion</mat-option>
-              </mat-select>
-            </mat-form-field>
-
-            <app-plugin-settings-form
-              [settings]="selectedPlugin()?.settings ?? []"
-              [value]="pluginSettings"
-              (valueChange)="updatePluginSettings($event)"
-            />
-
-          </div>
-
-
-          <div class="switch-row">
-            <mat-slide-toggle [(ngModel)]="showTimer">Show timer to learner</mat-slide-toggle>
           </div>
         </mat-card-content>
-        <mat-card-actions align="end">
-          <button mat-flat-button class="start-button" (click)="startPractice()" [disabled]="saving()">
-            @if (saving()) { Creating... } @else { Start practice }
-          </button>
-        </mat-card-actions>
       </mat-card>
 
-      <aside class="preview">
-        <p class="eyebrow">Today&apos;s focus</p>
-        <h2>{{ selectedPlugin()?.title || 'Multiply by 11' }}</h2>
-        <p>{{ selectedPlugin()?.description }}</p>
-        <p class="tip">Build fluency one focused set at a time, then review mistakes together.</p>
-      </aside>
+      <app-assignment-form
+        [catalog]="catalog()"
+        [saving]="saving()"
+        sourceType="parent_assigned"
+        createdByRole="parent"
+        submitLabel="Assign homework"
+        (createAssignment)="assignHomework($event)"
+      />
     </div>
   }
 
@@ -110,21 +59,15 @@
     <p class="error">{{ error() }}</p>
   }
 
-  @if (createdSession(); as session) {
+  @if (createdAssignment(); as assignment) {
     <mat-card class="handoff">
       <mat-card-content>
-        <p class="eyebrow">Ready for your learner</p>
-        <h2>{{ nickname }}&apos;s practice is ready</h2>
-        <p>{{ session.questions.length }} questions. Open the learner view on this device or share its link.</p>
-        @if (session.localization_fallback_keys.length > 0) {
-          <p class="language-note">Some teaching content is displayed in English for this skill.</p>
-        }
-        <a mat-flat-button class="open-button" [routerLink]="['/s', session.student_token]">
-          Open learner practice
-        </a>
+        <p class="eyebrow">Homework assigned</p>
+        <h2>{{ nickname }}&apos;s homework is ready</h2>
+        <p>{{ assignment.title }} is now available in the learner dashboard.</p>
         @if (learnerId !== null) {
-          <a mat-button class="detail-link" [routerLink]="['/manage/learners', learnerId]">
-            View learner details
+          <a mat-flat-button class="open-button" [routerLink]="['/manage/learners', learnerId]">
+            Open learner dashboard
           </a>
         }
       </mat-card-content>

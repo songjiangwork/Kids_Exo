@@ -32,6 +32,7 @@ describe('ParentStudio', () => {
           category: 'Mental Multiplication',
           default_locale: 'en-CA',
           locale_coverage: [],
+          supported_delivery_modes: ['web_practice'],
           settings: [
             {
               name: 'multiplicand_digits',
@@ -57,6 +58,7 @@ describe('ParentStudio', () => {
           category: 'Mental Multiplication',
           default_locale: 'en-CA',
           locale_coverage: [],
+          supported_delivery_modes: ['web_practice'],
           settings: [
             {
               name: 'strategies',
@@ -75,6 +77,7 @@ describe('ParentStudio', () => {
           category: 'Mental Multiplication',
           default_locale: 'en-CA',
           locale_coverage: [],
+          supported_delivery_modes: ['web_practice'],
           settings: [
             {
               name: 'strategies',
@@ -93,6 +96,7 @@ describe('ParentStudio', () => {
           category: 'Pronunciation',
           default_locale: 'en-CA',
           locale_coverage: [],
+          supported_delivery_modes: ['web_practice'],
           settings: [
             {
               name: 'strategies',
@@ -112,13 +116,13 @@ describe('ParentStudio', () => {
     return { fixture, http };
   }
 
-  it('loads the online catalog and presents session controls', async () => {
+  it('loads the online catalog and presents homework controls', async () => {
     const { fixture } = await createFixture();
 
-    expect(fixture.nativeElement.textContent).toContain('Create a practice session');
-    expect(fixture.nativeElement.textContent).toContain('Multiply by 11');
-    expect(fixture.nativeElement.textContent).toContain('full online mental-multiplication library');
-    expect(fixture.nativeElement.textContent).toContain('Start practice');
+    expect(fixture.nativeElement.textContent).toContain('Assign homework');
+    expect(fixture.nativeElement.textContent).toContain('Who is this homework for?');
+    expect(fixture.nativeElement.textContent).toContain('Skill');
+    expect(fixture.nativeElement.textContent).toContain('Description / notes (optional)');
     expect((fixture.componentInstance as any).catalog().plugins.map((plugin: any) => plugin.plugin)).toContain(
       'difference_of_squares',
     );
@@ -132,36 +136,55 @@ describe('ParentStudio', () => {
     ]);
   });
 
-  it('filters skills after choosing a subject', async () => {
-    const { fixture } = await createFixture();
-    const component = fixture.componentInstance as any;
-
-    expect(component.subjects()).toEqual(['Math', 'French']);
-
-    component.selectSubject('French');
-    fixture.detectChanges();
-
-    expect(component.pluginId).toBe('french_alphabet_sounds');
-    expect(component.pluginsForSubject().map((plugin: any) => plugin.plugin)).toEqual([
-      'french_alphabet_sounds',
-    ]);
-    expect(fixture.nativeElement.textContent).toContain('French Alphabet Sounds');
-    expect(fixture.nativeElement.textContent).toContain('French / Pronunciation');
-  });
-
-  it('submits only settings exposed by a newly selected plugin', async () => {
+  it('assigns homework to the selected learner', async () => {
     const { fixture, http } = await createFixture();
     const component = fixture.componentInstance as any;
-    component.selectPlugin('square_ending_in_5');
-    component.startPractice();
-
-    const request = http.expectOne('/api/learners/1/sessions');
-    expect(request.request.body.plugin).toBe('square_ending_in_5');
-    expect(request.request.body.show_timer).toBe(true);
-    expect(request.request.body.plugin_settings).toEqual({
-      strategies: ['ending_in_5_square'],
+    component.assignHomework({
+      title: 'Multiply by 11 homework',
+      description: 'Practice before dinner.',
+      source_type: 'learner_added',
+      due_at: null,
+      created_by_role: 'learner',
+      items: [
+        {
+          item_type: 'practice_plugin',
+          plugin: 'multiply_by_11',
+          plugin_settings: {
+            multiplicand_digits: [2],
+            strategies: ['no_carrying'],
+          },
+          question_count: 10,
+          feedback_mode: 'immediate',
+          show_timer: true,
+          required: true,
+        },
+      ],
     });
-    expect(request.request.body.plugin_settings.multiplicand_digits).toBeUndefined();
+
+    const request = http.expectOne('/api/learners/1/assignments');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body.source_type).toBe('parent_assigned');
+    expect(request.request.body.created_by_role).toBe('parent');
+    expect(request.request.body.description).toBe('Practice before dinner.');
+    expect(request.request.body.items[0].plugin).toBe('multiply_by_11');
+    request.flush({
+      id: 12,
+      learner_id: 1,
+      title: 'Multiply by 11 homework',
+      description: 'Practice before dinner.',
+      status: 'assigned',
+      source_type: 'parent_assigned',
+      due_at: null,
+      created_by_role: 'parent',
+      created_at: '2026-06-09T10:00:00Z',
+      updated_at: '2026-06-09T10:00:00Z',
+      completed_at: null,
+      items: [],
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Homework assigned');
+    expect(fixture.nativeElement.textContent).toContain('Open learner dashboard');
   });
 
   it('keeps learner history on the learner detail page instead of the setup page', async () => {
@@ -171,28 +194,46 @@ describe('ParentStudio', () => {
     expect(fixture.nativeElement.textContent).not.toContain("Alex's sessions");
   });
 
-  it('offers a learner detail link after creating a session', async () => {
+  it('creates a learner before assigning homework to a new learner', async () => {
     const { fixture, http } = await createFixture();
     const component = fixture.componentInstance as any;
+    component.selectLearner(null);
+    component.nickname = 'Linsey';
 
-    component.startPractice();
+    component.assignHomework({
+      title: 'New learner homework',
+      description: '',
+      items: [
+        {
+          plugin: 'multiply_by_11',
+          plugin_settings: { multiplicand_digits: [2] },
+          question_count: 10,
+          feedback_mode: 'immediate',
+          show_timer: true,
+        },
+      ],
+    });
 
-    const request = http.expectOne('/api/learners/1/sessions');
-    request.flush({
-      id: 8,
-      student_token: 'student-token',
-      plugin: 'multiply_by_11',
-      subject: 'Math',
-      category: 'Mental Multiplication',
-      skill: 'Multiply by 11',
-      requested_locale: 'en-CA',
-      feedback_mode: 'immediate',
-      show_timer: false,
-      localization_fallback_keys: [],
-      questions: [{ identifier: 'q1', position: 1, total_questions: 10, prompt: '34 x 11 = ____' }],
+    http.expectOne('/api/learners').flush({ id: 4, nickname: 'Linsey', active: true });
+    const assignment = http.expectOne('/api/learners/4/assignments');
+    expect(assignment.request.body.created_by_role).toBe('parent');
+    assignment.flush({
+      id: 18,
+      learner_id: 4,
+      title: 'New learner homework',
+      description: '',
+      status: 'assigned',
+      source_type: 'parent_assigned',
+      due_at: null,
+      created_by_role: 'parent',
+      created_at: '2026-06-09T10:00:00Z',
+      updated_at: '2026-06-09T10:00:00Z',
+      completed_at: null,
+      items: [],
     });
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('View learner details');
+    expect(component.learnerId).toBe(4);
+    expect(fixture.nativeElement.textContent).toContain('Linsey');
   });
 });

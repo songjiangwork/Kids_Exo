@@ -1,10 +1,11 @@
 import { Component, OnInit, computed, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTabsModule } from '@angular/material/tabs';
+import { AssignmentNotebook } from './assignment-notebook';
 import { BadgeBoardPlaceholder } from './badge-board-placeholder';
 import { LearnerOverviewPanel } from './learner-overview-panel';
 import { LearnerStatisticsPanel } from './learner-statistics-panel';
@@ -12,6 +13,9 @@ import { MistakeNotebookTable } from './mistake-notebook-table';
 import { PracticeHistoryTable } from './practice-history-table';
 import { SkillBreakdownTable } from './skill-breakdown-table';
 import {
+  Assignment,
+  AssignmentCreateRequest,
+  AssignmentItem,
   Learner,
   LearnerAnalytics,
   OnlineCatalog,
@@ -25,6 +29,7 @@ import {
 @Component({
   selector: 'app-learner-detail',
   imports: [
+    AssignmentNotebook,
     BadgeBoardPlaceholder,
     LearnerOverviewPanel,
     LearnerStatisticsPanel,
@@ -45,10 +50,12 @@ export class LearnerDetail implements OnInit {
   protected readonly catalog = signal<OnlineCatalog | null>(null);
   protected readonly analytics = signal<LearnerAnalytics | null>(null);
   protected readonly sessions = signal<SessionSummary[]>([]);
+  protected readonly assignments = signal<Assignment[]>([]);
   protected readonly createdSession = signal<SavedSession | null>(null);
   protected readonly selectedResults = signal<PracticeResults | null>(null);
   protected readonly loading = signal(true);
   protected readonly creatingPracticePlugin = signal<string | null>(null);
+  protected readonly creatingAssignment = signal(false);
   protected readonly error = signal('');
   protected learnerId = 0;
   protected readonly summaryCards = computed(() => {
@@ -92,6 +99,7 @@ export class LearnerDetail implements OnInit {
   constructor(
     private readonly api: PracticeApi,
     private readonly route: ActivatedRoute,
+    private readonly router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -158,6 +166,40 @@ export class LearnerDetail implements OnInit {
     });
   }
 
+
+  protected createAssignment(request: AssignmentCreateRequest): void {
+    this.error.set('');
+    this.creatingAssignment.set(true);
+    this.api.createAssignment(this.learnerId, request).subscribe({
+      next: () => {
+        this.creatingAssignment.set(false);
+        this.refreshLearnerInsights();
+      },
+      error: () => {
+        this.error.set('Could not create this assignment.');
+        this.creatingAssignment.set(false);
+      },
+    });
+  }
+
+  protected startAssignmentItem(event: { assignment: Assignment; item: AssignmentItem }): void {
+    this.error.set('');
+    this.api.startAssignmentItem(event.assignment.id, event.item.id).subscribe({
+      next: (started) => {
+        this.router.navigate(['/s', started.student_token]);
+      },
+      error: () => this.error.set('Could not start this assignment.'),
+    });
+  }
+
+  protected archiveAssignment(assignment: Assignment): void {
+    this.error.set('');
+    this.api.archiveAssignment(assignment.id).subscribe({
+      next: () => this.refreshLearnerInsights(),
+      error: () => this.error.set('Could not archive this assignment.'),
+    });
+  }
+
   protected reviewResults(session: SessionSummary): void {
     if (session.status !== 'completed') {
       return;
@@ -194,10 +236,12 @@ export class LearnerDetail implements OnInit {
     forkJoin({
       analytics: this.api.learnerAnalytics(this.learnerId),
       sessions: this.api.learnerSessions(this.learnerId),
+      assignments: this.api.learnerAssignments(this.learnerId, 'all'),
     }).subscribe({
-      next: ({ analytics, sessions }) => {
+      next: ({ analytics, sessions, assignments }) => {
         this.analytics.set(analytics);
         this.sessions.set(sessions);
+        this.assignments.set(assignments);
         this.loading.set(false);
       },
       error: () => {

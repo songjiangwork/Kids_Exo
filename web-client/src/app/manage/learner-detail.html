@@ -64,6 +64,17 @@
         />
       </mat-tab>
 
+      <mat-tab label="Homework">
+        <app-assignment-notebook
+          [assignments]="assignments()"
+          [catalog]="catalog()"
+          [saving]="creatingAssignment()"
+          (createAssignment)="createAssignment($event)"
+          (startAssignmentItem)="startAssignmentItem($event)"
+          (archiveAssignment)="archiveAssignment($event)"
+        />
+      </mat-tab>
+
       <mat-tab label="Practice History">
         <app-practice-history-table
           [sessions]="sessions()"

@@ -653,6 +653,100 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(missed.expected_display, "maman")
         self.assertEqual(missed.answer_type, "text_case_insensitive")
 
+    def test_parent_can_create_list_start_and_complete_assignment(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        create_response = self.client.post(
+            f"/api/learners/{learner['id']}/assignments",
+            json={
+                "title": "Multiply by 11 practice",
+                "description": "Finish 10 questions",
+                "items": [
+                    {
+                        "plugin": "multiply_by_11",
+                        "plugin_settings": {"multiplicand_digits": [2]},
+                        "question_count": 10,
+                        "feedback_mode": "immediate",
+                        "show_timer": True,
+                    }
+                ],
+            },
+        )
+        self.assertEqual(create_response.status_code, 201)
+        assignment = create_response.json()
+        self.assertEqual(assignment["status"], "assigned")
+        self.assertEqual(assignment["items"][0]["status"], "assigned")
+
+        listed = self.client.get(f"/api/learners/{learner['id']}/assignments")
+        self.assertEqual(listed.status_code, 200)
+        self.assertEqual(len(listed.json()), 1)
+
+        item_id = assignment["items"][0]["id"]
+        start_response = self.client.post(
+            f"/api/assignments/{assignment['id']}/items/{item_id}/start"
+        )
+        self.assertEqual(start_response.status_code, 200)
+        started = start_response.json()
+        self.assertEqual(started["assignment"]["status"], "in_progress")
+        self.assertEqual(started["item"]["status"], "in_progress")
+        self.assertTrue(started["student_url"].startswith("/s/s"))
+
+        student = self.client.get(f"/api/student/sessions/{started['student_token']}").json()
+        for question in student["questions"]:
+            left_operand, remainder = question["prompt"].split(" x ")
+            right_operand = remainder.split(" = ")[0]
+            self.client.post(
+                f"/api/student/sessions/{started['student_token']}/questions/{question['identifier']}/attempts",
+                json={"answer": str(int(left_operand) * int(right_operand))},
+            )
+
+        completed = self.client.get(f"/api/learners/{learner['id']}/assignments?status=completed")
+        self.assertEqual(completed.status_code, 200)
+        self.assertEqual(len(completed.json()), 1)
+        self.assertEqual(completed.json()[0]["status"], "completed")
+        self.assertEqual(completed.json()[0]["items"][0]["status"], "completed")
+
+    def test_assignment_archive_is_hidden_unless_requested(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        assignment = self.client.post(
+            f"/api/learners/{learner['id']}/assignments",
+            json={
+                "title": "Archive me",
+                "items": [{"plugin": "multiply_by_11", "question_count": 10}],
+            },
+        ).json()
+        archive = self.client.post(f"/api/assignments/{assignment['id']}/archive")
+        self.assertEqual(archive.status_code, 200)
+        self.assertEqual(archive.json()["status"], "archived")
+        self.assertEqual(self.client.get(f"/api/learners/{learner['id']}/assignments").json(), [])
+        archived = self.client.get(f"/api/learners/{learner['id']}/assignments?status=archived")
+        self.assertEqual(len(archived.json()), 1)
+
+    def test_assignment_rejects_invalid_learner_and_plugin_settings(self) -> None:
+        missing = self.client.post(
+            "/api/learners/999/assignments",
+            json={
+                "title": "Missing learner",
+                "items": [{"plugin": "multiply_by_11", "question_count": 10}],
+            },
+        )
+        self.assertEqual(missing.status_code, 404)
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        invalid = self.client.post(
+            f"/api/learners/{learner['id']}/assignments",
+            json={
+                "title": "Invalid settings",
+                "items": [
+                    {
+                        "plugin": "multiply_by_11",
+                        "plugin_settings": {"allow_duplicates": True},
+                        "question_count": 10,
+                    }
+                ],
+            },
+        )
+        self.assertEqual(invalid.status_code, 422)
+        self.assertIn("not configurable online", invalid.json()["detail"])
+
 
 if __name__ == "__main__":
     unittest.main()

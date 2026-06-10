@@ -46,7 +46,7 @@ h1 {
   align-items: start;
   display: grid;
   gap: 22px;
-  grid-template-columns: minmax(420px, 1fr) 330px;
+  grid-template-columns: minmax(280px, 360px) minmax(480px, 1fr);
 }
 
 .composer {
@@ -72,6 +72,14 @@ mat-card-content {
   display: grid;
   gap: 4px 16px;
   grid-template-columns: 1fr 1fr;
+}
+
+.learner-grid {
+  grid-template-columns: 1fr;
+}
+
+app-assignment-form {
+  display: block;
 }
 
 .wide {

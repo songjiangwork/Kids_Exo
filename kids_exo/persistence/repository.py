@@ -15,6 +15,8 @@ from kids_exo.online.answer_display import (
 from kids_exo.online.evaluation import evaluate_answer
 from kids_exo.online.models import PracticeSessionSnapshot
 from kids_exo.persistence.models import (
+    AssignmentEntity,
+    AssignmentItemEntity,
     LearnerEntity,
     PracticeSessionEntity,
     QuestionInstanceEntity,
@@ -54,6 +56,13 @@ class LearnerAnalytics:
     last_completed_at: datetime | None
     skill_breakdown: tuple[LearnerSkillBreakdown, ...]
     mistake_notebook: tuple[LearnerMistakeEntry, ...]
+
+
+@dataclass(frozen=True)
+class AssignmentStartResult:
+    assignment: AssignmentEntity
+    item: AssignmentItemEntity
+    practice_session: PracticeSessionEntity
 
 
 _SESSION_TOKEN_ALPHABET = "23456789abcdefghjkmnpqrstvwxyz"
@@ -115,6 +124,158 @@ class PracticeRepository:
             database_session.delete(learner)
             database_session.commit()
 
+    def create_assignment(
+        self,
+        learner_id: int,
+        *,
+        title: str,
+        description: str = "",
+        source_type: str = "parent_assigned",
+        due_at: datetime | None = None,
+        created_by_role: str = "parent",
+        items: list[dict] | tuple[dict, ...],
+    ) -> AssignmentEntity:
+        title = title.strip()
+        if not title:
+            raise ValueError("Assignment title is required")
+        if not items:
+            raise ValueError("Assignment must include at least one item")
+        with self._session_factory() as database_session:
+            if database_session.get(LearnerEntity, learner_id) is None:
+                raise ValueError(f"Unknown learner: {learner_id}")
+            now = self._now()
+            assignment = AssignmentEntity(
+                learner_id=learner_id,
+                title=title,
+                description=description.strip(),
+                status="assigned",
+                source_type=source_type,
+                due_at=due_at,
+                created_by_role=created_by_role,
+                created_at=now,
+                updated_at=now,
+                items=[
+                    AssignmentItemEntity(
+                        item_type=item.get("item_type", "practice_plugin"),
+                        plugin=item["plugin"],
+                        plugin_settings=dict(item.get("plugin_settings", {})),
+                        question_count=int(item["question_count"]),
+                        feedback_mode=item.get("feedback_mode", "immediate"),
+                        show_timer=bool(item.get("show_timer", True)),
+                        order_index=position,
+                        required=bool(item.get("required", True)),
+                        status="assigned",
+                        created_at=now,
+                    )
+                    for position, item in enumerate(items, start=1)
+                ],
+            )
+            database_session.add(assignment)
+            database_session.commit()
+            return assignment
+
+    def list_assignments_for_learner(
+        self,
+        learner_id: int,
+        *,
+        status: str | None = None,
+    ) -> list[AssignmentEntity]:
+        with self._session_factory() as database_session:
+            if database_session.get(LearnerEntity, learner_id) is None:
+                raise ValueError(f"Unknown learner: {learner_id}")
+            query = (
+                select(AssignmentEntity)
+                .where(AssignmentEntity.learner_id == learner_id)
+                .options(
+                    selectinload(AssignmentEntity.items).selectinload(
+                        AssignmentItemEntity.linked_session
+                    )
+                )
+                .order_by(AssignmentEntity.created_at.desc(), AssignmentEntity.id.desc())
+            )
+            if status and status != "all":
+                query = query.where(AssignmentEntity.status == status)
+            elif status is None:
+                query = query.where(AssignmentEntity.status != "archived")
+            return list(database_session.scalars(query))
+
+    def get_assignment(self, assignment_id: int) -> AssignmentEntity:
+        with self._session_factory() as database_session:
+            assignment = database_session.scalars(
+                select(AssignmentEntity)
+                .where(AssignmentEntity.id == assignment_id)
+                .options(
+                    selectinload(AssignmentEntity.items).selectinload(
+                        AssignmentItemEntity.linked_session
+                    )
+                )
+            ).one_or_none()
+            if assignment is None:
+                raise ValueError(f"Unknown assignment: {assignment_id}")
+            return assignment
+
+    def update_assignment_status(self, assignment_id: int, status: str) -> AssignmentEntity:
+        with self._session_factory() as database_session:
+            assignment = self._get_assignment_for_update(database_session, assignment_id)
+            now = self._now()
+            assignment.status = status
+            assignment.updated_at = now
+            assignment.completed_at = now if status == "completed" else assignment.completed_at
+            database_session.commit()
+            return assignment
+
+    def archive_assignment(self, assignment_id: int) -> AssignmentEntity:
+        return self.update_assignment_status(assignment_id, "archived")
+
+    def start_assignment_item(
+        self,
+        assignment_id: int,
+        item_id: int,
+        snapshot: PracticeSessionSnapshot | None = None,
+    ) -> AssignmentStartResult:
+        with self._session_factory() as database_session:
+            assignment = self._get_assignment_for_update(database_session, assignment_id)
+            item = next((candidate for candidate in assignment.items if candidate.id == item_id), None)
+            if item is None:
+                raise ValueError(f"Unknown assignment item: {item_id}")
+            if item.item_type != "practice_plugin":
+                raise ValueError(f"Unsupported assignment item type: {item.item_type}")
+            now = self._now()
+            if item.linked_session is None:
+                if snapshot is None:
+                    raise ValueError("Practice snapshot is required to start this assignment item")
+                practice_session = self._build_practice_session(assignment.learner_id, snapshot)
+                database_session.add(practice_session)
+                database_session.flush()
+                practice_session.student_token = self._generate_student_token(
+                    database_session,
+                    practice_session.id,
+                )
+                item.linked_session = practice_session
+            else:
+                practice_session = item.linked_session
+            if item.status == "assigned":
+                item.status = "in_progress"
+            if assignment.status == "assigned":
+                assignment.status = "in_progress"
+            assignment.updated_at = now
+            database_session.commit()
+            return AssignmentStartResult(assignment, item, practice_session)
+
+    def mark_assignment_item_completed(
+        self,
+        assignment_id: int,
+        item_id: int,
+    ) -> AssignmentEntity:
+        with self._session_factory() as database_session:
+            assignment = self._get_assignment_for_update(database_session, assignment_id)
+            item = next((candidate for candidate in assignment.items if candidate.id == item_id), None)
+            if item is None:
+                raise ValueError(f"Unknown assignment item: {item_id}")
+            self._mark_item_completed(database_session, assignment, item, self._now())
+            database_session.commit()
+            return assignment
+
     def create_practice_session(
         self,
         learner_id: int,
@@ -125,46 +286,9 @@ class PracticeRepository:
         with self._session_factory() as database_session:
             if database_session.get(LearnerEntity, learner_id) is None:
                 raise ValueError(f"Unknown learner: {learner_id}")
-            practice_session = PracticeSessionEntity(
-                learner_id=learner_id,
-                student_token=student_token or "pending-token",
-                plugin=snapshot.plugin,
-                subject=snapshot.subject,
-                category=snapshot.category,
-                skill=snapshot.skill,
-                plugin_settings=(
-                    asdict(snapshot.plugin_settings)
-                    if is_dataclass(snapshot.plugin_settings)
-                    else dict(snapshot.plugin_settings)
-                ),
-                requested_locale=snapshot.requested_locale,
-                feedback_mode=snapshot.feedback_mode,
-                show_timer=snapshot.show_timer,
-                seed=snapshot.seed,
-                localization_fallback_keys=list(snapshot.localization_fallback_keys),
-                status="created",
-                questions=[
-                    QuestionInstanceEntity(
-                        public_identifier=question.identifier,
-                        position=position,
-                        prompt=question.prompt,
-                        strategy=question.strategy,
-                        expected_answer=_expected_answer_for_legacy_integer_column(question),
-                        skill_tags=list(question.skill_tags),
-                        renderer_type=question.renderer_type,
-                        answer_type=question.answer_type,
-                        evaluation_payload=dict(question.evaluation_payload),
-                        prompt_payload=dict(question.prompt_payload),
-                        public_payload=dict(question.public_payload),
-                        question_type=question.question_type,
-                        choices=list(question.choices),
-                        speech_text=question.speech_text,
-                        speech_locale=question.speech_locale,
-                        audio_url=question.audio_url,
-                    )
-                    for position, question in enumerate(snapshot.questions, start=1)
-                ],
-            )
+            practice_session = self._build_practice_session(learner_id, snapshot)
+            if student_token is not None:
+                practice_session.student_token = student_token
             database_session.add(practice_session)
             database_session.flush()
             if student_token is None:
@@ -467,8 +591,107 @@ class PracticeRepository:
                 practice_session.status = "completed"
                 practice_session.completed_at = now
                 practice_session.timer_started_at = None
+                self._sync_assignment_items_for_completed_session(
+                    database_session,
+                    practice_session,
+                    now,
+                )
             database_session.commit()
             return attempt
+
+    def _get_assignment_for_update(self, database_session, assignment_id: int) -> AssignmentEntity:
+        assignment = database_session.scalars(
+            select(AssignmentEntity)
+            .where(AssignmentEntity.id == assignment_id)
+            .options(
+                selectinload(AssignmentEntity.items).selectinload(
+                    AssignmentItemEntity.linked_session
+                )
+            )
+        ).one_or_none()
+        if assignment is None:
+            raise ValueError(f"Unknown assignment: {assignment_id}")
+        return assignment
+
+    def _sync_assignment_items_for_completed_session(
+        self,
+        database_session,
+        practice_session: PracticeSessionEntity,
+        now: datetime,
+    ) -> None:
+        items = list(
+            database_session.scalars(
+                select(AssignmentItemEntity)
+                .where(AssignmentItemEntity.linked_session_id == practice_session.id)
+                .options(selectinload(AssignmentItemEntity.assignment).selectinload(AssignmentEntity.items))
+            )
+        )
+        for item in items:
+            self._mark_item_completed(database_session, item.assignment, item, now)
+
+    def _mark_item_completed(
+        self,
+        database_session,
+        assignment: AssignmentEntity,
+        item: AssignmentItemEntity,
+        now: datetime,
+    ) -> None:
+        item.status = "completed"
+        item.completed_at = now
+        assignment.updated_at = now
+        required_items = [candidate for candidate in assignment.items if candidate.required]
+        if required_items and all(candidate.status == "completed" for candidate in required_items):
+            assignment.status = "completed"
+            assignment.completed_at = now
+        elif assignment.status == "assigned":
+            assignment.status = "in_progress"
+        database_session.add(assignment)
+
+    def _build_practice_session(
+        self,
+        learner_id: int,
+        snapshot: PracticeSessionSnapshot,
+    ) -> PracticeSessionEntity:
+        return PracticeSessionEntity(
+            learner_id=learner_id,
+            student_token="pending-token",
+            plugin=snapshot.plugin,
+            subject=snapshot.subject,
+            category=snapshot.category,
+            skill=snapshot.skill,
+            plugin_settings=(
+                asdict(snapshot.plugin_settings)
+                if is_dataclass(snapshot.plugin_settings)
+                else dict(snapshot.plugin_settings)
+            ),
+            requested_locale=snapshot.requested_locale,
+            feedback_mode=snapshot.feedback_mode,
+            show_timer=snapshot.show_timer,
+            seed=snapshot.seed,
+            localization_fallback_keys=list(snapshot.localization_fallback_keys),
+            status="created",
+            questions=[
+                QuestionInstanceEntity(
+                    public_identifier=question.identifier,
+                    position=position,
+                    prompt=question.prompt,
+                    strategy=question.strategy,
+                    expected_answer=_expected_answer_for_legacy_integer_column(question),
+                    skill_tags=list(question.skill_tags),
+                    renderer_type=question.renderer_type,
+                    answer_type=question.answer_type,
+                    evaluation_payload=dict(question.evaluation_payload),
+                    prompt_payload=dict(question.prompt_payload),
+                    public_payload=dict(question.public_payload),
+                    question_type=question.question_type,
+                    choices=list(question.choices),
+                    speech_text=question.speech_text,
+                    speech_locale=question.speech_locale,
+                    audio_url=question.audio_url,
+                )
+                for position, question in enumerate(snapshot.questions, start=1)
+            ],
+        )
 
     @staticmethod
     def _is_complete(practice_session: PracticeSessionEntity) -> bool:

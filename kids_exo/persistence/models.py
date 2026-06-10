@@ -19,6 +19,10 @@ class LearnerEntity(Base):
         back_populates="learner",
         cascade="all, delete-orphan",
     )
+    assignments: Mapped[list["AssignmentEntity"]] = relationship(
+        back_populates="learner",
+        cascade="all, delete-orphan",
+    )
 
 
 class PracticeSessionEntity(Base):
@@ -48,10 +52,70 @@ class PracticeSessionEntity(Base):
     timer_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     learner: Mapped[LearnerEntity] = relationship(back_populates="practice_sessions")
+    assignment_items: Mapped[list["AssignmentItemEntity"]] = relationship(
+        back_populates="linked_session",
+    )
     questions: Mapped[list["QuestionInstanceEntity"]] = relationship(
         back_populates="practice_session",
         cascade="all, delete-orphan",
         order_by="QuestionInstanceEntity.position",
+    )
+
+
+class AssignmentEntity(Base):
+    __tablename__ = "assignments"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    learner_id: Mapped[int] = mapped_column(ForeignKey("learners.id"))
+    title: Mapped[str] = mapped_column(String(160))
+    description: Mapped[str] = mapped_column(String(1000), default="")
+    status: Mapped[str] = mapped_column(String(30), default="assigned")
+    source_type: Mapped[str] = mapped_column(String(40), default="parent_assigned")
+    due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by_role: Mapped[str] = mapped_column(String(30), default="parent")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    learner: Mapped[LearnerEntity] = relationship(back_populates="assignments")
+    items: Mapped[list["AssignmentItemEntity"]] = relationship(
+        back_populates="assignment",
+        cascade="all, delete-orphan",
+        order_by="AssignmentItemEntity.order_index",
+    )
+
+
+class AssignmentItemEntity(Base):
+    __tablename__ = "assignment_items"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    assignment_id: Mapped[int] = mapped_column(ForeignKey("assignments.id"))
+    item_type: Mapped[str] = mapped_column(String(40), default="practice_plugin")
+    plugin: Mapped[str] = mapped_column(String(100))
+    plugin_settings: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    question_count: Mapped[int] = mapped_column(Integer)
+    feedback_mode: Mapped[str] = mapped_column(String(20), default="immediate")
+    show_timer: Mapped[bool] = mapped_column(Boolean, default=True)
+    order_index: Mapped[int] = mapped_column(Integer, default=1)
+    required: Mapped[bool] = mapped_column(Boolean, default=True)
+    status: Mapped[str] = mapped_column(String(30), default="assigned")
+    linked_session_id: Mapped[int | None] = mapped_column(
+        ForeignKey("practice_sessions.id"),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    assignment: Mapped[AssignmentEntity] = relationship(back_populates="items")
+    linked_session: Mapped[PracticeSessionEntity | None] = relationship(
+        back_populates="assignment_items",
     )
 
 

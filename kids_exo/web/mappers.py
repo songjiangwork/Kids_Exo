@@ -8,6 +8,8 @@ from kids_exo.online.answer_display import (
 from kids_exo.online.catalog import get_online_catalog
 from kids_exo.persistence.repository import PracticeRepository
 from kids_exo.web.schemas import (
+    AssignmentItemResponse,
+    AssignmentResponse,
     IncorrectQuestionResponse,
     LearnerAnalyticsResponse,
     LearnerMistakeEntryResponse,
@@ -240,4 +242,44 @@ def learner_analytics_response(analytics) -> LearnerAnalyticsResponse:
             )
             for item in analytics.mistake_notebook
         ),
+    )
+
+
+def assignment_response(assignment) -> AssignmentResponse:
+    return AssignmentResponse(
+        id=assignment.id,
+        learner_id=assignment.learner_id,
+        title=assignment.title,
+        description=assignment.description,
+        status=assignment.status,
+        source_type=assignment.source_type,
+        due_at=assignment.due_at,
+        created_by_role=assignment.created_by_role,
+        created_at=assignment.created_at,
+        updated_at=assignment.updated_at,
+        completed_at=assignment.completed_at,
+        items=tuple(assignment_item_response(item) for item in assignment.items),
+    )
+
+
+def assignment_item_response(item) -> AssignmentItemResponse:
+    linked = item.__dict__.get("linked_session")
+    return AssignmentItemResponse(
+        id=item.id,
+        item_type=item.item_type,
+        plugin=item.plugin,
+        plugin_settings=item.plugin_settings,
+        question_count=item.question_count,
+        feedback_mode=item.feedback_mode,
+        show_timer=item.show_timer,
+        order_index=item.order_index,
+        required=item.required,
+        status=item.status,
+        linked_session_id=item.linked_session_id,
+        student_token=(linked.student_token if linked is not None else None),
+        skill=(linked.skill if linked is not None else None),
+        subject=(linked.subject if linked is not None else None),
+        category=(linked.category if linked is not None else None),
+        created_at=item.created_at,
+        completed_at=item.completed_at,
     )
