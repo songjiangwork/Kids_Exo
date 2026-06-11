@@ -1,13 +1,18 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 
 from kids_exo.catalog import list_preset_entries
+from kids_exo.persistence.repository import PracticeRepository
 from kids_exo.printable import generate_printable_pdf
+from kids_exo.web.auth import LocalSessionStore, require_parent_account
 from kids_exo.web.schemas import PrintablePdfRequest, PrintableWorksheetResponse
 
 
-def create_router() -> APIRouter:
-    router = APIRouter()
+def create_router(
+    repository: PracticeRepository | None,
+    session_store: LocalSessionStore,
+) -> APIRouter:
+    router = APIRouter(dependencies=[Depends(require_parent_account(repository, session_store))])
 
     @router.get(
         "/api/printable-worksheets",

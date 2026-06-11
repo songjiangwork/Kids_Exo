@@ -38,6 +38,24 @@
   flex: 1;
 }
 
+.account-label {
+  color: #66736f;
+  font-size: 0.95rem;
+  margin-left: 0.5rem;
+}
+
 .app-stage {
   min-height: calc(100vh - 70px);
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    gap: 0.15rem;
+    overflow-x: auto;
+  }
+
+  .brand span:last-child,
+  .account-label {
+    display: none;
+  }
 }

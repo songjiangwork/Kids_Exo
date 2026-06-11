@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from kids_exo.persistence.repository import PracticeRepository
+from kids_exo.web.auth import LocalSessionStore, require_parent_account
 from kids_exo.web.dependencies import create_snapshot, require_repository
 from kids_exo.web.mappers import assignment_item_response, assignment_response
 from kids_exo.web.schemas import (
@@ -12,8 +13,11 @@ from kids_exo.web.schemas import (
 )
 
 
-def create_router(repository: PracticeRepository | None) -> APIRouter:
-    router = APIRouter()
+def create_router(
+    repository: PracticeRepository | None,
+    session_store: LocalSessionStore,
+) -> APIRouter:
+    router = APIRouter(dependencies=[Depends(require_parent_account(repository, session_store))])
 
     @router.post(
         "/api/learners/{learner_id}/assignments",

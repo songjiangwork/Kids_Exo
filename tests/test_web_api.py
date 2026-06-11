@@ -1,13 +1,16 @@
 import unittest
 
+from fastapi import Depends
 from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
 
+from kids_exo.auth.passwords import hash_password
 from kids_exo.localization import LocalizedPresentation, LocalizedText
 from kids_exo.online.models import OnlineQuestionSnapshot, PracticeSessionSnapshot
 from kids_exo.persistence.database import build_engine, build_session_factory
-from kids_exo.persistence.models import Base
+from kids_exo.persistence.models import AccountEntity, Base, HouseholdEntity, HouseholdMemberEntity
 from kids_exo.persistence.repository import PracticeRepository
+from kids_exo.web.auth import LocalSessionStore, require_parent_account
 from kids_exo.web.app import create_app
 from kids_exo.web.mappers import practice_results_response
 
@@ -21,7 +24,19 @@ class PracticeWebApiTests(unittest.TestCase):
         )
         Base.metadata.create_all(engine)
         self.repository = PracticeRepository(build_session_factory(engine))
-        self.client = TestClient(create_app(self.repository))
+        self.app = create_app(self.repository)
+        self.client = TestClient(self.app)
+        self.session_factory = build_session_factory(engine)
+        self.parent_account = self.repository.create_parent_account(
+            email="parent@example.com",
+            display_name="Parent",
+            password="secret password",
+            household_name="Song Family",
+        )
+        self.client.post(
+            "/api/auth/login",
+            json={"email": "parent@example.com", "password": "secret password"},
+        )
 
     def _text_answer_snapshot(self) -> PracticeSessionSnapshot:
         return PracticeSessionSnapshot(
@@ -94,48 +109,102 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(french_plugin["release_stage"], "published")
 
     def test_local_auth_login_me_and_logout(self) -> None:
-        account = self.repository.create_parent_account(
-            email="parent@example.com",
-            display_name="Parent",
-            password="secret password",
-            household_name="Song Family",
-        )
+        client = TestClient(self.app)
 
-        anonymous = self.client.get("/api/auth/me")
-        login = self.client.post(
+        anonymous = client.get("/api/auth/me")
+        login = client.post(
             "/api/auth/login",
             json={"email": "PARENT@example.com", "password": "secret password"},
         )
-        authenticated = self.client.get("/api/auth/me")
-        logout = self.client.post("/api/auth/logout")
-        after_logout = self.client.get("/api/auth/me")
+        authenticated = client.get("/api/auth/me")
+        logout = client.post("/api/auth/logout")
+        after_logout = client.get("/api/auth/me")
 
         self.assertEqual(anonymous.status_code, 200)
         self.assertIsNone(anonymous.json()["account"])
         self.assertEqual(login.status_code, 200)
-        self.assertEqual(login.json()["account"]["id"], account.id)
+        self.assertEqual(login.json()["account"]["id"], self.parent_account.id)
         self.assertEqual(login.json()["account"]["email"], "parent@example.com")
         self.assertIn("kids_exo_session", login.cookies)
-        self.assertEqual(authenticated.json()["account"]["id"], account.id)
+        self.assertEqual(authenticated.json()["account"]["id"], self.parent_account.id)
         self.assertEqual(logout.status_code, 200)
         self.assertIsNone(logout.json()["account"])
         self.assertIsNone(after_logout.json()["account"])
 
     def test_local_auth_rejects_bad_credentials(self) -> None:
-        self.repository.create_parent_account(
-            email="parent@example.com",
-            display_name="Parent",
-            password="secret password",
-            household_name="Song Family",
-        )
-
-        response = self.client.post(
+        response = TestClient(self.app).post(
             "/api/auth/login",
             json={"email": "parent@example.com", "password": "wrong password"},
         )
 
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.json()["detail"], "Invalid email or password")
+
+    def test_parent_facing_apis_require_login(self) -> None:
+        anonymous = TestClient(self.app)
+
+        protected_requests = [
+            anonymous.get("/api/learners"),
+            anonymous.post("/api/learners", json={"nickname": "Alex"}),
+            anonymous.get("/api/printable-worksheets"),
+            anonymous.post(
+                "/api/practice-sessions/preview",
+                json={
+                    "plugin": "multiply_by_11",
+                    "plugin_settings": {"multiplicand_digits": [2], "strategies": ["no_carrying"]},
+                    "question_count": 10,
+                    "feedback_mode": "immediate",
+                    "show_timer": True,
+                },
+            ),
+        ]
+
+        self.assertTrue(all(response.status_code == 401 for response in protected_requests))
+
+    def test_parent_auth_dependency_requires_parent_membership(self) -> None:
+        session_store = LocalSessionStore()
+        app = create_app(self.repository)
+
+        @app.get("/api/test-parent-only")
+        def parent_only(_account=Depends(require_parent_account(self.repository, session_store))):
+            return {"ok": True}
+
+        child = self._create_child_account()
+
+        anonymous = TestClient(app)
+        parent_client = TestClient(app)
+        child_client = TestClient(app)
+        parent_client.cookies.set("kids_exo_session", session_store.create_session(self.parent_account.id))
+        child_client.cookies.set("kids_exo_session", session_store.create_session(child.id))
+
+        self.assertEqual(anonymous.get("/api/test-parent-only").status_code, 401)
+        self.assertEqual(parent_client.get("/api/test-parent-only").status_code, 200)
+        child_response = child_client.get("/api/test-parent-only")
+        self.assertEqual(child_response.status_code, 403)
+        self.assertEqual(child_response.json()["detail"], "Parent account required")
+
+    def _create_child_account(self) -> AccountEntity:
+        with self.session_factory() as database_session:
+            parent = AccountEntity(
+                email="child@example.com",
+                display_name="Child",
+                password_hash=hash_password("secret password"),
+                active=True,
+            )
+            database_session.add(parent)
+            database_session.flush()
+            household = HouseholdEntity(name="Child Household", owner_account_id=parent.id)
+            database_session.add(household)
+            database_session.flush()
+            database_session.add(
+                HouseholdMemberEntity(
+                    household_id=household.id,
+                    account_id=parent.id,
+                    role="child",
+                )
+            )
+            database_session.commit()
+            return parent
 
     def test_printable_catalog_exposes_all_existing_pdf_presets(self) -> None:
         response = self.client.get("/api/printable-worksheets")

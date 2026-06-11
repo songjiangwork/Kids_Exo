@@ -7,6 +7,14 @@
   <a mat-button routerLink="/manage/worksheets">Print worksheets</a>
   <a mat-button routerLink="/manage/learners">Learners</a>
   <a mat-button routerLink="/manage">Parent Studio</a>
+  @if (account(); as parent) {
+    <span class="account-label">{{ parent.display_name }}</span>
+    <button mat-button type="button" (click)="logout()" [disabled]="loggingOut()">
+      {{ loggingOut() ? 'Signing out...' : 'Logout' }}
+    </button>
+  } @else {
+    <a mat-button routerLink="/login">Login</a>
+  }
 </mat-toolbar>
 <main class="app-stage">
   <router-outlet />

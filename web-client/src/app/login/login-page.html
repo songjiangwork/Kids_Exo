@@ -1,0 +1,31 @@
+<section class="login-shell">
+  <mat-card class="login-card" appearance="outlined">
+    <mat-card-content>
+      <p class="eyebrow">Parent Login</p>
+      <h1>Welcome back</h1>
+      <p class="lede">Sign in to manage learners, homework, and printable practice.</p>
+
+      <form (ngSubmit)="login()" class="login-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Email</mat-label>
+          <input matInput type="email" name="email" autocomplete="email" [(ngModel)]="email" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Password</mat-label>
+          <input matInput type="password" name="password" autocomplete="current-password" [(ngModel)]="password" />
+        </mat-form-field>
+
+        @if (error()) {
+          <p class="error">{{ error() }}</p>
+        }
+
+        <button mat-flat-button class="primary-action" type="submit" [disabled]="saving()">
+          {{ saving() ? 'Signing in...' : 'Sign in' }}
+        </button>
+      </form>
+
+      <p class="student-note">Student practice links still open directly and do not require parent login.</p>
+    </mat-card-content>
+  </mat-card>
+</section>

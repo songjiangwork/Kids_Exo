@@ -3,10 +3,47 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from kids_exo.persistence.database import build_engine, build_session_factory
+from kids_exo.persistence.models import Base
+from kids_exo.persistence.repository import PracticeRepository
 from kids_exo.cli import main
 
 
 class CliTests(unittest.TestCase):
+    def test_create_parent_command_creates_a_login_account(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database_path = Path(directory) / "kids-exo.db"
+            database_url = f"sqlite+pysqlite:///{database_path}"
+            engine = build_engine(database_url)
+            Base.metadata.create_all(engine)
+            output = io.StringIO()
+
+            exit_code = main(
+                [
+                    "create-parent",
+                    "--email",
+                    "Parent@Example.COM",
+                    "--display-name",
+                    "Parent",
+                    "--household-name",
+                    "Song Family",
+                    "--password",
+                    "secret password",
+                    "--database-url",
+                    database_url,
+                ],
+                output_stream=output,
+            )
+
+            repository = PracticeRepository(build_session_factory(engine))
+            account = repository.verify_account_password(
+                "parent@example.com",
+                "secret password",
+            )
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(account.display_name, "Parent")
+            self.assertIn("Created parent account: parent@example.com", output.getvalue())
+
     def test_generate_command_writes_a_pdf_from_a_preset(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             output_path = Path(directory) / "printable-worksheet.pdf"

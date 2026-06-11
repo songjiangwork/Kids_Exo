@@ -1,6 +1,8 @@
 import argparse
 from collections.abc import Sequence
 from datetime import datetime
+import getpass
+import os
 from pathlib import Path
 import sys
 from typing import TextIO
@@ -8,6 +10,8 @@ from typing import TextIO
 from kids_exo.catalog import get_preset_entry, list_preset_entries
 from kids_exo.config import load_preset
 from kids_exo.generator import generate_worksheet
+from kids_exo.persistence.database import build_engine, build_session_factory
+from kids_exo.persistence.repository import PracticeRepository
 from kids_exo.renderers.pdf import write_pdf
 
 
@@ -43,6 +47,18 @@ def main(
     )
     interactive_parser.add_argument("--output-dir", default="output")
     interactive_parser.add_argument("--seed", type=int)
+    parent_parser = subparsers.add_parser(
+        "create-parent",
+        help="Create a local parent login account.",
+    )
+    parent_parser.add_argument("--email", required=True)
+    parent_parser.add_argument("--display-name", required=True)
+    parent_parser.add_argument("--household-name", required=True)
+    parent_parser.add_argument("--password")
+    parent_parser.add_argument(
+        "--database-url",
+        default=os.environ.get("KIDS_EXO_DATABASE_URL", "sqlite+pysqlite:///kids-exo.db"),
+    )
     options = parser.parse_args(parsed_arguments)
 
     if options.command == "generate":
@@ -72,6 +88,22 @@ def main(
         )
         _generate_pdf(entry.preset_path, output_path, options.seed)
         output_stream.write(f"Generated: {output_path}\n")
+        return 0
+    if options.command == "create-parent":
+        password = options.password or getpass.getpass("Password: ")
+        repository = PracticeRepository(
+            build_session_factory(build_engine(options.database_url))
+        )
+        try:
+            account = repository.create_parent_account(
+                email=options.email,
+                display_name=options.display_name,
+                password=password,
+                household_name=options.household_name,
+            )
+        except ValueError as exc:
+            raise ValueError(str(exc)) from exc
+        output_stream.write(f"Created parent account: {account.email}\n")
         return 0
     return 1
 

@@ -1,34 +1,14 @@
-import secrets
-from dataclasses import dataclass, field
-
 from fastapi import APIRouter, HTTPException, Request, Response
 
 from kids_exo.persistence.models import AccountEntity
 from kids_exo.persistence.repository import PracticeRepository
+from kids_exo.web.auth import (
+    LocalSessionStore,
+    SESSION_COOKIE_NAME,
+    current_account_or_none,
+)
 from kids_exo.web.dependencies import require_repository
 from kids_exo.web.schemas import AccountResponse, AuthMeResponse, LoginRequest
-
-
-SESSION_COOKIE_NAME = "kids_exo_session"
-
-
-@dataclass
-class LocalSessionStore:
-    _sessions: dict[str, int] = field(default_factory=dict)
-
-    def create_session(self, account_id: int) -> str:
-        token = secrets.token_urlsafe(32)
-        self._sessions[token] = account_id
-        return token
-
-    def account_id_for_token(self, token: str | None) -> int | None:
-        if token is None:
-            return None
-        return self._sessions.get(token)
-
-    def delete_session(self, token: str | None) -> None:
-        if token is not None:
-            self._sessions.pop(token, None)
 
 
 def create_router(
@@ -63,13 +43,8 @@ def create_router(
 
     @router.get("/api/auth/me", response_model=AuthMeResponse)
     def me(request: Request) -> AuthMeResponse:
-        storage = require_repository(repository)
-        account_id = sessions.account_id_for_token(request.cookies.get(SESSION_COOKIE_NAME))
-        if account_id is None:
-            return AuthMeResponse(account=None)
-        try:
-            account = storage.get_account(account_id)
-        except ValueError:
+        account = current_account_or_none(repository, sessions)(request)
+        if account is None:
             return AuthMeResponse(account=None)
         return AuthMeResponse(account=_account_response(account))
 

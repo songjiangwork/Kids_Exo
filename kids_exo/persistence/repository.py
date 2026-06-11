@@ -147,6 +147,19 @@ class PracticeRepository:
             raise ValueError("Invalid account credentials")
         return account
 
+    def list_household_memberships_for_account(
+        self,
+        account_id: int,
+    ) -> list[HouseholdMemberEntity]:
+        with self._session_factory() as database_session:
+            return list(
+                database_session.scalars(
+                    select(HouseholdMemberEntity).where(
+                        HouseholdMemberEntity.account_id == account_id
+                    )
+                )
+            )
+
     def create_learner(self, nickname: str) -> LearnerEntity:
         nickname = nickname.strip()
         if not nickname:
