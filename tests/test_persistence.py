@@ -5,13 +5,20 @@ import unittest
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 
 from kids_exo.localization import LocalizedPresentation, LocalizedText
 from kids_exo.online.models import OnlineQuestionSnapshot, PracticeSessionSnapshot
 from kids_exo.online.session import OnlineSessionRequest, create_practice_session
 from kids_exo.persistence.database import build_engine, build_session_factory
-from kids_exo.persistence.models import Base, PracticeSessionEntity
+from kids_exo.auth.passwords import verify_password
+from kids_exo.persistence.models import (
+    AccountEntity,
+    Base,
+    HouseholdEntity,
+    LearnerEntity,
+    PracticeSessionEntity,
+)
 from kids_exo.persistence.repository import PracticeRepository
 
 
@@ -100,6 +107,77 @@ class PracticeRepositoryTests(unittest.TestCase):
             retrieved.questions[0].public_payload,
             {"tools": {"scratch_pad": True, "audio": False}},
         )
+
+    def test_new_learner_is_assigned_to_default_household(self) -> None:
+        learner = self.repository.create_learner("Alex")
+
+        with self.session_factory() as database_session:
+            saved = database_session.get(LearnerEntity, learner.id)
+            household = database_session.get(HouseholdEntity, saved.household_id)
+            household_id = saved.household_id
+            household_name = household.name
+            owner_email = household.owner_account.email
+            member_role = household.members[0].role
+
+        self.assertIsNotNone(household_id)
+        self.assertEqual(household_name, "Default Household")
+        self.assertEqual(owner_email, "local-parent@example.local")
+        self.assertEqual(member_role, "parent")
+
+    def test_creates_parent_account_with_hashed_password_and_household(self) -> None:
+        account = self.repository.create_parent_account(
+            email=" Parent@Example.COM ",
+            display_name="Parent",
+            password="correct horse battery staple",
+            household_name="Song Family",
+        )
+
+        with self.session_factory() as database_session:
+            saved_account = database_session.get(AccountEntity, account.id)
+            household = database_session.scalar(
+                text("SELECT id FROM households WHERE owner_account_id = :account_id"),
+                {"account_id": account.id},
+            )
+            membership = database_session.scalar(
+                text("SELECT role FROM household_members WHERE account_id = :account_id"),
+                {"account_id": account.id},
+            )
+
+        self.assertEqual(saved_account.email, "parent@example.com")
+        self.assertNotEqual(saved_account.password_hash, "correct horse battery staple")
+        self.assertTrue(verify_password("correct horse battery staple", saved_account.password_hash))
+        self.assertIsNotNone(household)
+        self.assertEqual(membership, "parent")
+
+    def test_rejects_duplicate_parent_account_email(self) -> None:
+        self.repository.create_parent_account(
+            email="parent@example.com",
+            display_name="Parent",
+            password="secret one",
+            household_name="Song Family",
+        )
+
+        with self.assertRaisesRegex(ValueError, "already exists"):
+            self.repository.create_parent_account(
+                email=" PARENT@example.com ",
+                display_name="Parent",
+                password="secret two",
+                household_name="Another Family",
+            )
+
+    def test_verifies_parent_account_password(self) -> None:
+        created = self.repository.create_parent_account(
+            email="parent@example.com",
+            display_name="Parent",
+            password="secret one",
+            household_name="Song Family",
+        )
+
+        verified = self.repository.verify_account_password("PARENT@example.com", "secret one")
+
+        self.assertEqual(verified.id, created.id)
+        with self.assertRaisesRegex(ValueError, "Invalid account credentials"):
+            self.repository.verify_account_password("parent@example.com", "wrong password")
 
     def test_saves_french_choice_session_evaluation_metadata(self) -> None:
         learner = self.repository.create_learner("Alex")
@@ -520,6 +598,9 @@ class AlembicMigrationTests(unittest.TestCase):
             self.assertTrue(
                 {
                     "learners",
+                    "accounts",
+                    "households",
+                    "household_members",
                     "practice_sessions",
                     "question_instances",
                     "response_attempts",
@@ -528,6 +609,24 @@ class AlembicMigrationTests(unittest.TestCase):
                 }
                 <= tables
             )
+            learner_columns = {
+                column["name"]
+                for column in inspect(
+                    build_engine(f"sqlite+pysqlite:///{database_path}")
+                ).get_columns("learners")
+            }
+            self.assertTrue({"household_id", "optional_account_id"} <= learner_columns)
+            with build_engine(f"sqlite+pysqlite:///{database_path}").connect() as connection:
+                self.assertEqual(
+                    connection.execute(
+                        text("SELECT email FROM accounts WHERE email = 'local-parent@example.local'")
+                    ).scalar_one(),
+                    "local-parent@example.local",
+                )
+                self.assertEqual(
+                    connection.execute(text("SELECT name FROM households")).scalar_one(),
+                    "Default Household",
+                )
             session_columns = {
                 column["name"]
                 for column in inspect(

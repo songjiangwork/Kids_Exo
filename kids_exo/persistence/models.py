@@ -9,12 +9,87 @@ class Base(DeclarativeBase):
     pass
 
 
+class AccountEntity(Base):
+    __tablename__ = "accounts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
+    display_name: Mapped[str] = mapped_column(String(160))
+    password_hash: Mapped[str] = mapped_column(String(255))
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+    owned_households: Mapped[list["HouseholdEntity"]] = relationship(
+        back_populates="owner_account",
+        foreign_keys="HouseholdEntity.owner_account_id",
+    )
+    household_memberships: Mapped[list["HouseholdMemberEntity"]] = relationship(
+        back_populates="account",
+        cascade="all, delete-orphan",
+    )
+    learner_profile: Mapped["LearnerEntity | None"] = relationship(
+        back_populates="optional_account",
+    )
+
+
+class HouseholdEntity(Base):
+    __tablename__ = "households"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(160))
+    owner_account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+    owner_account: Mapped[AccountEntity] = relationship(
+        back_populates="owned_households",
+        foreign_keys=[owner_account_id],
+    )
+    members: Mapped[list["HouseholdMemberEntity"]] = relationship(
+        back_populates="household",
+        cascade="all, delete-orphan",
+    )
+    learners: Mapped[list["LearnerEntity"]] = relationship(back_populates="household")
+
+
+class HouseholdMemberEntity(Base):
+    __tablename__ = "household_members"
+    __table_args__ = (
+        UniqueConstraint("household_id", "account_id"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("households.id"))
+    account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
+    role: Mapped[str] = mapped_column(String(30))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+    household: Mapped[HouseholdEntity] = relationship(back_populates="members")
+    account: Mapped[AccountEntity] = relationship(back_populates="household_memberships")
+
+
 class LearnerEntity(Base):
     __tablename__ = "learners"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    household_id: Mapped[int] = mapped_column(ForeignKey("households.id"))
     nickname: Mapped[str] = mapped_column(String(100))
+    optional_account_id: Mapped[int | None] = mapped_column(
+        ForeignKey("accounts.id"),
+        nullable=True,
+    )
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    household: Mapped[HouseholdEntity] = relationship(back_populates="learners")
+    optional_account: Mapped[AccountEntity | None] = relationship(back_populates="learner_profile")
     practice_sessions: Mapped[list["PracticeSessionEntity"]] = relationship(
         back_populates="learner",
         cascade="all, delete-orphan",

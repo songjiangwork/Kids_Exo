@@ -93,6 +93,50 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(french_plugin["answer_types"], ["multiple_choice_index"])
         self.assertEqual(french_plugin["release_stage"], "published")
 
+    def test_local_auth_login_me_and_logout(self) -> None:
+        account = self.repository.create_parent_account(
+            email="parent@example.com",
+            display_name="Parent",
+            password="secret password",
+            household_name="Song Family",
+        )
+
+        anonymous = self.client.get("/api/auth/me")
+        login = self.client.post(
+            "/api/auth/login",
+            json={"email": "PARENT@example.com", "password": "secret password"},
+        )
+        authenticated = self.client.get("/api/auth/me")
+        logout = self.client.post("/api/auth/logout")
+        after_logout = self.client.get("/api/auth/me")
+
+        self.assertEqual(anonymous.status_code, 200)
+        self.assertIsNone(anonymous.json()["account"])
+        self.assertEqual(login.status_code, 200)
+        self.assertEqual(login.json()["account"]["id"], account.id)
+        self.assertEqual(login.json()["account"]["email"], "parent@example.com")
+        self.assertIn("kids_exo_session", login.cookies)
+        self.assertEqual(authenticated.json()["account"]["id"], account.id)
+        self.assertEqual(logout.status_code, 200)
+        self.assertIsNone(logout.json()["account"])
+        self.assertIsNone(after_logout.json()["account"])
+
+    def test_local_auth_rejects_bad_credentials(self) -> None:
+        self.repository.create_parent_account(
+            email="parent@example.com",
+            display_name="Parent",
+            password="secret password",
+            household_name="Song Family",
+        )
+
+        response = self.client.post(
+            "/api/auth/login",
+            json={"email": "parent@example.com", "password": "wrong password"},
+        )
+
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()["detail"], "Invalid email or password")
+
     def test_printable_catalog_exposes_all_existing_pdf_presets(self) -> None:
         response = self.client.get("/api/printable-worksheets")
 

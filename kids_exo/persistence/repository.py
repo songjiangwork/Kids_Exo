@@ -5,6 +5,7 @@ import secrets
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload, sessionmaker
 
+from kids_exo.auth.passwords import hash_password, verify_password
 from kids_exo.online.answer_display import (
     AnswerValue,
     answer_display,
@@ -15,8 +16,11 @@ from kids_exo.online.answer_display import (
 from kids_exo.online.evaluation import evaluate_answer
 from kids_exo.online.models import PracticeSessionSnapshot
 from kids_exo.persistence.models import (
+    AccountEntity,
     AssignmentEntity,
     AssignmentItemEntity,
+    HouseholdEntity,
+    HouseholdMemberEntity,
     LearnerEntity,
     PracticeSessionEntity,
     QuestionInstanceEntity,
@@ -66,21 +70,133 @@ class AssignmentStartResult:
 
 
 _SESSION_TOKEN_ALPHABET = "23456789abcdefghjkmnpqrstvwxyz"
+_DEFAULT_ACCOUNT_EMAIL = "local-parent@example.local"
+_DEFAULT_ACCOUNT_DISPLAY_NAME = "Local Parent"
+_DEFAULT_ACCOUNT_PASSWORD_HASH = "disabled$local-dev-placeholder"
+_DEFAULT_HOUSEHOLD_NAME = "Default Household"
 
 
 class PracticeRepository:
     def __init__(self, session_factory: sessionmaker) -> None:
         self._session_factory = session_factory
 
+    def create_parent_account(
+        self,
+        *,
+        email: str,
+        display_name: str,
+        password: str,
+        household_name: str,
+    ) -> AccountEntity:
+        email = self._normalize_email(email)
+        display_name = display_name.strip()
+        household_name = household_name.strip()
+        if not email:
+            raise ValueError("Account email is required")
+        if not display_name:
+            raise ValueError("Account display name is required")
+        if not household_name:
+            raise ValueError("Household name is required")
+        with self._session_factory() as database_session:
+            existing = database_session.scalar(
+                select(AccountEntity).where(AccountEntity.email == email)
+            )
+            if existing is not None:
+                raise ValueError("Account email already exists")
+            account = AccountEntity(
+                email=email,
+                display_name=display_name,
+                password_hash=hash_password(password),
+                active=True,
+            )
+            database_session.add(account)
+            database_session.flush()
+            household = HouseholdEntity(name=household_name, owner_account_id=account.id)
+            database_session.add(household)
+            database_session.flush()
+            database_session.add(
+                HouseholdMemberEntity(
+                    household_id=household.id,
+                    account_id=account.id,
+                    role="parent",
+                )
+            )
+            database_session.commit()
+            return account
+
+    def get_account_by_email(self, email: str) -> AccountEntity:
+        normalized_email = self._normalize_email(email)
+        with self._session_factory() as database_session:
+            account = database_session.scalar(
+                select(AccountEntity).where(AccountEntity.email == normalized_email)
+            )
+            if account is None:
+                raise ValueError(f"Unknown account: {normalized_email}")
+            return account
+
+    def get_account(self, account_id: int) -> AccountEntity:
+        with self._session_factory() as database_session:
+            account = database_session.get(AccountEntity, account_id)
+            if account is None:
+                raise ValueError(f"Unknown account: {account_id}")
+            return account
+
+    def verify_account_password(self, email: str, password: str) -> AccountEntity:
+        account = self.get_account_by_email(email)
+        if not account.active or not verify_password(password, account.password_hash):
+            raise ValueError("Invalid account credentials")
+        return account
+
     def create_learner(self, nickname: str) -> LearnerEntity:
         nickname = nickname.strip()
         if not nickname:
             raise ValueError("Learner nickname is required")
         with self._session_factory() as database_session:
-            learner = LearnerEntity(nickname=nickname, active=True)
+            household_id = self._default_household_id(database_session)
+            learner = LearnerEntity(nickname=nickname, household_id=household_id, active=True)
             database_session.add(learner)
             database_session.commit()
             return learner
+
+    def _default_household_id(self, database_session) -> int:
+        household = database_session.scalar(
+            select(HouseholdEntity).where(HouseholdEntity.name == _DEFAULT_HOUSEHOLD_NAME)
+        )
+        if household is not None:
+            return household.id
+
+        account = database_session.scalar(
+            select(AccountEntity).where(AccountEntity.email == _DEFAULT_ACCOUNT_EMAIL)
+        )
+        if account is None:
+            account = AccountEntity(
+                email=_DEFAULT_ACCOUNT_EMAIL,
+                display_name=_DEFAULT_ACCOUNT_DISPLAY_NAME,
+                password_hash=_DEFAULT_ACCOUNT_PASSWORD_HASH,
+                active=True,
+            )
+            database_session.add(account)
+            database_session.flush()
+
+        household = HouseholdEntity(
+            name=_DEFAULT_HOUSEHOLD_NAME,
+            owner_account_id=account.id,
+        )
+        database_session.add(household)
+        database_session.flush()
+        database_session.add(
+            HouseholdMemberEntity(
+                household_id=household.id,
+                account_id=account.id,
+                role="parent",
+            )
+        )
+        database_session.flush()
+        return household.id
+
+    @staticmethod
+    def _normalize_email(email: str) -> str:
+        return email.strip().lower()
 
     def list_learners(self) -> list[LearnerEntity]:
         with self._session_factory() as database_session:
