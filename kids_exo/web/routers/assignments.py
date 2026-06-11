@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from kids_exo.persistence.repository import PracticeRepository
-from kids_exo.web.auth import LocalSessionStore, require_parent_account
+from kids_exo.web.auth import LocalSessionStore, ParentContext, require_parent_context
 from kids_exo.web.dependencies import create_snapshot, require_repository
 from kids_exo.web.mappers import assignment_item_response, assignment_response
 from kids_exo.web.schemas import (
@@ -17,7 +17,8 @@ def create_router(
     repository: PracticeRepository | None,
     session_store: LocalSessionStore,
 ) -> APIRouter:
-    router = APIRouter(dependencies=[Depends(require_parent_account(repository, session_store))])
+    router = APIRouter()
+    parent_context = require_parent_context(repository, session_store)
 
     @router.post(
         "/api/learners/{learner_id}/assignments",
@@ -27,6 +28,7 @@ def create_router(
     def create_assignment(
         learner_id: int,
         request: AssignmentCreateRequest,
+        parent: ParentContext = Depends(parent_context),
     ) -> AssignmentResponse:
         storage = require_repository(repository)
         try:
@@ -39,6 +41,7 @@ def create_router(
                 due_at=request.due_at,
                 created_by_role=request.created_by_role,
                 items=[item.model_dump() for item in request.items],
+                household_id=parent.household_id,
             )
         except ValueError as exc:
             status_code = 404 if str(exc).startswith("Unknown learner") else 422
@@ -52,12 +55,17 @@ def create_router(
     def list_assignments(
         learner_id: int,
         status: str | None = None,
+        parent: ParentContext = Depends(parent_context),
     ) -> list[AssignmentResponse]:
         storage = require_repository(repository)
         try:
             return [
                 assignment_response(assignment)
-                for assignment in storage.list_assignments_for_learner(learner_id, status=status)
+                for assignment in storage.list_assignments_for_learner(
+                    learner_id,
+                    status=status,
+                    household_id=parent.household_id,
+                )
             ]
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -69,10 +77,11 @@ def create_router(
     def start_assignment_item(
         assignment_id: int,
         item_id: int,
+        parent: ParentContext = Depends(parent_context),
     ) -> AssignmentItemStartResponse:
         storage = require_repository(repository)
         try:
-            assignment = storage.get_assignment(assignment_id)
+            assignment = storage.get_assignment(assignment_id, household_id=parent.household_id)
             item = next((candidate for candidate in assignment.items if candidate.id == item_id), None)
             if item is None:
                 raise ValueError(f"Unknown assignment item: {item_id}")
@@ -87,7 +96,12 @@ def create_router(
                         show_timer=item.show_timer,
                     )
                 )
-            result = storage.start_assignment_item(assignment_id, item_id, snapshot)
+            result = storage.start_assignment_item(
+                assignment_id,
+                item_id,
+                snapshot,
+                household_id=parent.household_id,
+            )
         except ValueError as exc:
             status_code = 404 if str(exc).startswith("Unknown assignment") else 422
             raise HTTPException(status_code=status_code, detail=str(exc)) from exc
@@ -103,10 +117,15 @@ def create_router(
         "/api/assignments/{assignment_id}/archive",
         response_model=AssignmentResponse,
     )
-    def archive_assignment(assignment_id: int) -> AssignmentResponse:
+    def archive_assignment(
+        assignment_id: int,
+        parent: ParentContext = Depends(parent_context),
+    ) -> AssignmentResponse:
         storage = require_repository(repository)
         try:
-            return assignment_response(storage.archive_assignment(assignment_id))
+            return assignment_response(
+                storage.archive_assignment(assignment_id, household_id=parent.household_id)
+            )
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 

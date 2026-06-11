@@ -161,6 +161,110 @@ class PracticeWebApiTests(unittest.TestCase):
 
         self.assertTrue(all(response.status_code == 401 for response in protected_requests))
 
+    def test_parent_only_sees_their_own_household_learners(self) -> None:
+        first_parent_learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        self.repository.create_parent_account(
+            email="second@example.com",
+            display_name="Second Parent",
+            password="secret password",
+            household_name="Second Family",
+        )
+        second_client = TestClient(self.app)
+        second_client.post(
+            "/api/auth/login",
+            json={"email": "second@example.com", "password": "secret password"},
+        )
+
+        second_parent_list_before = second_client.get("/api/learners")
+        second_parent_learner = second_client.post("/api/learners", json={"nickname": "Bailey"}).json()
+        first_parent_list = self.client.get("/api/learners")
+        second_parent_list_after = second_client.get("/api/learners")
+
+        self.assertEqual(second_parent_list_before.json(), [])
+        self.assertEqual([learner["nickname"] for learner in first_parent_list.json()], ["Alex"])
+        self.assertEqual([learner["nickname"] for learner in second_parent_list_after.json()], ["Bailey"])
+        self.assertEqual(second_client.get(f"/api/learners/{first_parent_learner['id']}").status_code, 404)
+        self.assertEqual(self.client.get(f"/api/learners/{second_parent_learner['id']}").status_code, 404)
+
+    def test_parent_cannot_access_other_household_sessions_or_assignments(self) -> None:
+        first_parent_learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        second_client = TestClient(self.app)
+        self.repository.create_parent_account(
+            email="second@example.com",
+            display_name="Second Parent",
+            password="secret password",
+            household_name="Second Family",
+        )
+        second_client.post(
+            "/api/auth/login",
+            json={"email": "second@example.com", "password": "secret password"},
+        )
+
+        session = self.client.post(
+            f"/api/learners/{first_parent_learner['id']}/sessions",
+            json={
+                "plugin": "multiply_by_11",
+                "plugin_settings": {"multiplicand_digits": [2], "strategies": ["no_carrying"]},
+                "question_count": 10,
+                "feedback_mode": "immediate",
+                "show_timer": True,
+            },
+        ).json()
+        assignment = self.client.post(
+            f"/api/learners/{first_parent_learner['id']}/assignments",
+            json={
+                "title": "Private homework",
+                "items": [
+                    {
+                        "plugin": "multiply_by_11",
+                        "plugin_settings": {"multiplicand_digits": [2], "strategies": ["no_carrying"]},
+                        "question_count": 10,
+                        "feedback_mode": "immediate",
+                        "show_timer": True,
+                    }
+                ],
+            },
+        ).json()
+
+        self.assertEqual(
+            second_client.post(
+                f"/api/learners/{first_parent_learner['id']}/sessions",
+                json={
+                    "plugin": "multiply_by_11",
+                    "plugin_settings": {"multiplicand_digits": [2], "strategies": ["no_carrying"]},
+                    "question_count": 10,
+                    "feedback_mode": "immediate",
+                    "show_timer": True,
+                },
+            ).status_code,
+            422,
+        )
+        self.assertEqual(second_client.get(f"/api/learners/{first_parent_learner['id']}/sessions").status_code, 404)
+        self.assertEqual(
+            second_client.get(
+                f"/api/learners/{first_parent_learner['id']}/sessions/{session['id']}/results"
+            ).status_code,
+            404,
+        )
+        self.assertEqual(
+            second_client.get(f"/api/learners/{first_parent_learner['id']}/assignments").status_code,
+            404,
+        )
+        self.assertEqual(
+            second_client.post(
+                f"/api/assignments/{assignment['id']}/items/{assignment['items'][0]['id']}/start"
+            ).status_code,
+            404,
+        )
+        self.assertEqual(
+            second_client.post(f"/api/assignments/{assignment['id']}/archive").status_code,
+            404,
+        )
+        self.assertEqual(
+            second_client.get(f"/api/student/sessions/{session['student_token']}").status_code,
+            200,
+        )
+
     def test_parent_auth_dependency_requires_parent_membership(self) -> None:
         session_store = LocalSessionStore()
         app = create_app(self.repository)

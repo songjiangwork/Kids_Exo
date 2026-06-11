@@ -160,12 +160,28 @@ class PracticeRepository:
                 )
             )
 
-    def create_learner(self, nickname: str) -> LearnerEntity:
+    def get_primary_parent_household_id(self, account_id: int) -> int:
+        with self._session_factory() as database_session:
+            membership = database_session.scalar(
+                select(HouseholdMemberEntity)
+                .where(
+                    HouseholdMemberEntity.account_id == account_id,
+                    HouseholdMemberEntity.role.in_(("parent", "admin")),
+                )
+                .order_by(HouseholdMemberEntity.id)
+            )
+            if membership is None:
+                raise ValueError(f"Account has no parent household: {account_id}")
+            return membership.household_id
+
+    def create_learner(self, nickname: str, household_id: int | None = None) -> LearnerEntity:
         nickname = nickname.strip()
         if not nickname:
             raise ValueError("Learner nickname is required")
         with self._session_factory() as database_session:
-            household_id = self._default_household_id(database_session)
+            household_id = household_id or self._default_household_id(database_session)
+            if database_session.get(HouseholdEntity, household_id) is None:
+                raise ValueError(f"Unknown household: {household_id}")
             learner = LearnerEntity(nickname=nickname, household_id=household_id, active=True)
             database_session.add(learner)
             database_session.commit()
@@ -211,18 +227,21 @@ class PracticeRepository:
     def _normalize_email(email: str) -> str:
         return email.strip().lower()
 
-    def list_learners(self) -> list[LearnerEntity]:
+    def list_learners(self, household_id: int | None = None) -> list[LearnerEntity]:
         with self._session_factory() as database_session:
+            query = select(LearnerEntity).order_by(LearnerEntity.nickname, LearnerEntity.id)
+            if household_id is not None:
+                query = query.where(LearnerEntity.household_id == household_id)
             return list(
-                database_session.scalars(
-                    select(LearnerEntity).order_by(LearnerEntity.nickname, LearnerEntity.id)
-                )
+                database_session.scalars(query)
             )
 
-    def get_learner(self, learner_id: int) -> LearnerEntity:
+    def get_learner(self, learner_id: int, household_id: int | None = None) -> LearnerEntity:
         with self._session_factory() as database_session:
             learner = database_session.get(LearnerEntity, learner_id)
-            if learner is None:
+            if learner is None or (
+                household_id is not None and learner.household_id != household_id
+            ):
                 raise ValueError(f"Unknown learner: {learner_id}")
             return learner
 
@@ -232,23 +251,28 @@ class PracticeRepository:
         *,
         nickname: str,
         active: bool,
+        household_id: int | None = None,
     ) -> LearnerEntity:
         nickname = nickname.strip()
         if not nickname:
             raise ValueError("Learner nickname is required")
         with self._session_factory() as database_session:
             learner = database_session.get(LearnerEntity, learner_id)
-            if learner is None:
+            if learner is None or (
+                household_id is not None and learner.household_id != household_id
+            ):
                 raise ValueError(f"Unknown learner: {learner_id}")
             learner.nickname = nickname
             learner.active = active
             database_session.commit()
             return learner
 
-    def delete_learner(self, learner_id: int) -> None:
+    def delete_learner(self, learner_id: int, household_id: int | None = None) -> None:
         with self._session_factory() as database_session:
             learner = database_session.get(LearnerEntity, learner_id)
-            if learner is None:
+            if learner is None or (
+                household_id is not None and learner.household_id != household_id
+            ):
                 raise ValueError(f"Unknown learner: {learner_id}")
             database_session.delete(learner)
             database_session.commit()
@@ -263,6 +287,7 @@ class PracticeRepository:
         due_at: datetime | None = None,
         created_by_role: str = "parent",
         items: list[dict] | tuple[dict, ...],
+        household_id: int | None = None,
     ) -> AssignmentEntity:
         title = title.strip()
         if not title:
@@ -270,7 +295,10 @@ class PracticeRepository:
         if not items:
             raise ValueError("Assignment must include at least one item")
         with self._session_factory() as database_session:
-            if database_session.get(LearnerEntity, learner_id) is None:
+            learner = database_session.get(LearnerEntity, learner_id)
+            if learner is None or (
+                household_id is not None and learner.household_id != household_id
+            ):
                 raise ValueError(f"Unknown learner: {learner_id}")
             now = self._now()
             assignment = AssignmentEntity(
@@ -308,9 +336,13 @@ class PracticeRepository:
         learner_id: int,
         *,
         status: str | None = None,
+        household_id: int | None = None,
     ) -> list[AssignmentEntity]:
         with self._session_factory() as database_session:
-            if database_session.get(LearnerEntity, learner_id) is None:
+            learner = database_session.get(LearnerEntity, learner_id)
+            if learner is None or (
+                household_id is not None and learner.household_id != household_id
+            ):
                 raise ValueError(f"Unknown learner: {learner_id}")
             query = (
                 select(AssignmentEntity)
@@ -328,24 +360,40 @@ class PracticeRepository:
                 query = query.where(AssignmentEntity.status != "archived")
             return list(database_session.scalars(query))
 
-    def get_assignment(self, assignment_id: int) -> AssignmentEntity:
+    def get_assignment(
+        self,
+        assignment_id: int,
+        household_id: int | None = None,
+    ) -> AssignmentEntity:
         with self._session_factory() as database_session:
             assignment = database_session.scalars(
                 select(AssignmentEntity)
                 .where(AssignmentEntity.id == assignment_id)
                 .options(
+                    selectinload(AssignmentEntity.learner),
                     selectinload(AssignmentEntity.items).selectinload(
                         AssignmentItemEntity.linked_session
                     )
                 )
             ).one_or_none()
-            if assignment is None:
+            if assignment is None or (
+                household_id is not None and assignment.learner.household_id != household_id
+            ):
                 raise ValueError(f"Unknown assignment: {assignment_id}")
             return assignment
 
-    def update_assignment_status(self, assignment_id: int, status: str) -> AssignmentEntity:
+    def update_assignment_status(
+        self,
+        assignment_id: int,
+        status: str,
+        household_id: int | None = None,
+    ) -> AssignmentEntity:
         with self._session_factory() as database_session:
-            assignment = self._get_assignment_for_update(database_session, assignment_id)
+            assignment = self._get_assignment_for_update(
+                database_session,
+                assignment_id,
+                household_id=household_id,
+            )
             now = self._now()
             assignment.status = status
             assignment.updated_at = now
@@ -353,17 +401,26 @@ class PracticeRepository:
             database_session.commit()
             return assignment
 
-    def archive_assignment(self, assignment_id: int) -> AssignmentEntity:
-        return self.update_assignment_status(assignment_id, "archived")
+    def archive_assignment(
+        self,
+        assignment_id: int,
+        household_id: int | None = None,
+    ) -> AssignmentEntity:
+        return self.update_assignment_status(assignment_id, "archived", household_id)
 
     def start_assignment_item(
         self,
         assignment_id: int,
         item_id: int,
         snapshot: PracticeSessionSnapshot | None = None,
+        household_id: int | None = None,
     ) -> AssignmentStartResult:
         with self._session_factory() as database_session:
-            assignment = self._get_assignment_for_update(database_session, assignment_id)
+            assignment = self._get_assignment_for_update(
+                database_session,
+                assignment_id,
+                household_id=household_id,
+            )
             item = next((candidate for candidate in assignment.items if candidate.id == item_id), None)
             if item is None:
                 raise ValueError(f"Unknown assignment item: {item_id}")
@@ -395,9 +452,14 @@ class PracticeRepository:
         self,
         assignment_id: int,
         item_id: int,
+        household_id: int | None = None,
     ) -> AssignmentEntity:
         with self._session_factory() as database_session:
-            assignment = self._get_assignment_for_update(database_session, assignment_id)
+            assignment = self._get_assignment_for_update(
+                database_session,
+                assignment_id,
+                household_id=household_id,
+            )
             item = next((candidate for candidate in assignment.items if candidate.id == item_id), None)
             if item is None:
                 raise ValueError(f"Unknown assignment item: {item_id}")
@@ -411,9 +473,13 @@ class PracticeRepository:
         snapshot: PracticeSessionSnapshot,
         *,
         student_token: str | None = None,
+        household_id: int | None = None,
     ) -> PracticeSessionEntity:
         with self._session_factory() as database_session:
-            if database_session.get(LearnerEntity, learner_id) is None:
+            learner = database_session.get(LearnerEntity, learner_id)
+            if learner is None or (
+                household_id is not None and learner.household_id != household_id
+            ):
                 raise ValueError(f"Unknown learner: {learner_id}")
             practice_session = self._build_practice_session(learner_id, snapshot)
             if student_token is not None:
@@ -490,9 +556,16 @@ class PracticeRepository:
             database_session.commit()
             return practice_session
 
-    def list_sessions_for_learner(self, learner_id: int) -> list[PracticeSessionEntity]:
+    def list_sessions_for_learner(
+        self,
+        learner_id: int,
+        household_id: int | None = None,
+    ) -> list[PracticeSessionEntity]:
         with self._session_factory() as database_session:
-            if database_session.get(LearnerEntity, learner_id) is None:
+            learner = database_session.get(LearnerEntity, learner_id)
+            if learner is None or (
+                household_id is not None and learner.household_id != household_id
+            ):
                 raise ValueError(f"Unknown learner: {learner_id}")
             return list(
                 database_session.scalars(
@@ -511,8 +584,14 @@ class PracticeRepository:
         self,
         learner_id: int,
         session_id: int,
+        household_id: int | None = None,
     ) -> PracticeSessionEntity:
         with self._session_factory() as database_session:
+            learner = database_session.get(LearnerEntity, learner_id)
+            if learner is None or (
+                household_id is not None and learner.household_id != household_id
+            ):
+                raise ValueError("Unknown practice session")
             result = database_session.scalars(
                 select(PracticeSessionEntity)
                 .where(
@@ -531,8 +610,12 @@ class PracticeRepository:
                 raise ValueError("Practice session is not completed")
             return result
 
-    def get_learner_analytics(self, learner_id: int) -> LearnerAnalytics:
-        sessions = self.list_sessions_for_learner(learner_id)
+    def get_learner_analytics(
+        self,
+        learner_id: int,
+        household_id: int | None = None,
+    ) -> LearnerAnalytics:
+        sessions = self.list_sessions_for_learner(learner_id, household_id=household_id)
         completed_sessions = [
             saved_session
             for saved_session in sessions
@@ -728,17 +811,25 @@ class PracticeRepository:
             database_session.commit()
             return attempt
 
-    def _get_assignment_for_update(self, database_session, assignment_id: int) -> AssignmentEntity:
+    def _get_assignment_for_update(
+        self,
+        database_session,
+        assignment_id: int,
+        household_id: int | None = None,
+    ) -> AssignmentEntity:
         assignment = database_session.scalars(
             select(AssignmentEntity)
             .where(AssignmentEntity.id == assignment_id)
             .options(
+                selectinload(AssignmentEntity.learner),
                 selectinload(AssignmentEntity.items).selectinload(
                     AssignmentItemEntity.linked_session
                 )
             )
         ).one_or_none()
-        if assignment is None:
+        if assignment is None or (
+            household_id is not None and assignment.learner.household_id != household_id
+        ):
             raise ValueError(f"Unknown assignment: {assignment_id}")
         return assignment
 

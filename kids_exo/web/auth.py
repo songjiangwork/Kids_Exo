@@ -31,6 +31,12 @@ class LocalSessionStore:
             self._sessions.pop(token, None)
 
 
+@dataclass(frozen=True)
+class ParentContext:
+    account: AccountEntity
+    household_id: int
+
+
 def current_account_or_none(
     repository: PracticeRepository | None,
     session_store: LocalSessionStore,
@@ -74,6 +80,19 @@ def require_parent_account(
         if not _has_parent_membership(memberships):
             raise HTTPException(status_code=403, detail="Parent account required")
         return account
+
+    return dependency
+
+
+def require_parent_context(
+    repository: PracticeRepository | None,
+    session_store: LocalSessionStore,
+) -> Callable[[Request], ParentContext]:
+    def dependency(request: Request) -> ParentContext:
+        account = require_parent_account(repository, session_store)(request)
+        storage = require_repository(repository)
+        household_id = storage.get_primary_parent_household_id(account.id)
+        return ParentContext(account=account, household_id=household_id)
 
     return dependency
 

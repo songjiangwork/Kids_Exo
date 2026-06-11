@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from kids_exo.persistence.repository import PracticeRepository
-from kids_exo.web.auth import LocalSessionStore, require_parent_account
+from kids_exo.web.auth import LocalSessionStore, ParentContext, require_parent_context
 from kids_exo.web.dependencies import create_snapshot, require_repository
 from kids_exo.web.mappers import (
     practice_results_response,
@@ -21,11 +21,13 @@ def create_router(
     repository: PracticeRepository | None,
     session_store: LocalSessionStore,
 ) -> APIRouter:
-    router = APIRouter(dependencies=[Depends(require_parent_account(repository, session_store))])
+    router = APIRouter()
+    parent_context = require_parent_context(repository, session_store)
 
     @router.post("/api/practice-sessions/preview", response_model=PracticePreviewResponse)
     def create_practice_preview(
         request: PracticePreviewRequest,
+        _parent: ParentContext = Depends(parent_context),
     ) -> PracticePreviewResponse:
         try:
             session = create_snapshot(request)
@@ -51,6 +53,7 @@ def create_router(
     def save_practice_session(
         learner_id: int,
         request: PracticePreviewRequest,
+        parent: ParentContext = Depends(parent_context),
     ) -> SavedPracticeSessionResponse:
         storage = require_repository(repository)
         try:
@@ -58,6 +61,7 @@ def create_router(
             saved = storage.create_practice_session(
                 learner_id,
                 snapshot,
+                household_id=parent.household_id,
             )
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -67,12 +71,18 @@ def create_router(
         "/api/learners/{learner_id}/sessions",
         response_model=list[SessionSummaryResponse],
     )
-    def list_learner_sessions(learner_id: int) -> list[SessionSummaryResponse]:
+    def list_learner_sessions(
+        learner_id: int,
+        parent: ParentContext = Depends(parent_context),
+    ) -> list[SessionSummaryResponse]:
         storage = require_repository(repository)
         try:
             return [
                 session_summary_response(saved)
-                for saved in storage.list_sessions_for_learner(learner_id)
+                for saved in storage.list_sessions_for_learner(
+                    learner_id,
+                    household_id=parent.household_id,
+                )
             ]
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
@@ -84,10 +94,15 @@ def create_router(
     def get_parent_session_results(
         learner_id: int,
         session_id: int,
+        parent: ParentContext = Depends(parent_context),
     ) -> PracticeResultsResponse:
         storage = require_repository(repository)
         try:
-            saved = storage.get_results_for_learner(learner_id, session_id)
+            saved = storage.get_results_for_learner(
+                learner_id,
+                session_id,
+                household_id=parent.household_id,
+            )
         except ValueError as exc:
             status_code = 409 if "not completed" in str(exc) else 404
             raise HTTPException(status_code=status_code, detail=str(exc)) from exc

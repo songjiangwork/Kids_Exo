@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from kids_exo.persistence.repository import PracticeRepository
-from kids_exo.web.auth import LocalSessionStore, require_parent_account
+from kids_exo.web.auth import LocalSessionStore, ParentContext, require_parent_context
 from kids_exo.web.dependencies import require_repository
 from kids_exo.web.mappers import learner_analytics_response
 from kids_exo.web.schemas import (
@@ -16,37 +16,53 @@ def create_router(
     repository: PracticeRepository | None,
     session_store: LocalSessionStore,
 ) -> APIRouter:
-    router = APIRouter(dependencies=[Depends(require_parent_account(repository, session_store))])
+    router = APIRouter()
+    parent_context = require_parent_context(repository, session_store)
 
     @router.post("/api/learners", response_model=LearnerResponse, status_code=201)
-    def create_learner(request: LearnerCreateRequest) -> LearnerResponse:
+    def create_learner(
+        request: LearnerCreateRequest,
+        parent: ParentContext = Depends(parent_context),
+    ) -> LearnerResponse:
         storage = require_repository(repository)
         try:
-            return LearnerResponse.model_validate(storage.create_learner(request.nickname))
+            return LearnerResponse.model_validate(
+                storage.create_learner(request.nickname, household_id=parent.household_id)
+            )
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     @router.get("/api/learners", response_model=list[LearnerResponse])
-    def list_learners() -> list[LearnerResponse]:
+    def list_learners(parent: ParentContext = Depends(parent_context)) -> list[LearnerResponse]:
         storage = require_repository(repository)
         return [
             LearnerResponse.model_validate(learner)
-            for learner in storage.list_learners()
+            for learner in storage.list_learners(household_id=parent.household_id)
         ]
 
     @router.get("/api/learners/{learner_id}", response_model=LearnerResponse)
-    def get_learner(learner_id: int) -> LearnerResponse:
+    def get_learner(
+        learner_id: int,
+        parent: ParentContext = Depends(parent_context),
+    ) -> LearnerResponse:
         storage = require_repository(repository)
         try:
-            return LearnerResponse.model_validate(storage.get_learner(learner_id))
+            return LearnerResponse.model_validate(
+                storage.get_learner(learner_id, household_id=parent.household_id)
+            )
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     @router.get("/api/learners/{learner_id}/analytics", response_model=LearnerAnalyticsResponse)
-    def get_learner_analytics(learner_id: int) -> LearnerAnalyticsResponse:
+    def get_learner_analytics(
+        learner_id: int,
+        parent: ParentContext = Depends(parent_context),
+    ) -> LearnerAnalyticsResponse:
         storage = require_repository(repository)
         try:
-            return learner_analytics_response(storage.get_learner_analytics(learner_id))
+            return learner_analytics_response(
+                storage.get_learner_analytics(learner_id, household_id=parent.household_id)
+            )
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -54,6 +70,7 @@ def create_router(
     def update_learner(
         learner_id: int,
         request: LearnerUpdateRequest,
+        parent: ParentContext = Depends(parent_context),
     ) -> LearnerResponse:
         storage = require_repository(repository)
         try:
@@ -62,6 +79,7 @@ def create_router(
                     learner_id,
                     nickname=request.nickname,
                     active=request.active,
+                    household_id=parent.household_id,
                 )
             )
         except ValueError as exc:
@@ -69,10 +87,13 @@ def create_router(
             raise HTTPException(status_code=status_code, detail=str(exc)) from exc
 
     @router.delete("/api/learners/{learner_id}", status_code=204)
-    def delete_learner(learner_id: int) -> None:
+    def delete_learner(
+        learner_id: int,
+        parent: ParentContext = Depends(parent_context),
+    ) -> None:
         storage = require_repository(repository)
         try:
-            storage.delete_learner(learner_id)
+            storage.delete_learner(learner_id, household_id=parent.household_id)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
