@@ -36,6 +36,24 @@ class OnlineEvaluationTests(unittest.TestCase):
             {"answer_type": "integer_exact", "expected_value": 2021},
         )
 
+    def test_signed_integer_exact_accepts_negative_answers(self) -> None:
+        result = evaluate_answer(
+            "signed_integer_exact",
+            {"expected_value": -7},
+            " -7 ",
+        )
+
+        self.assertTrue(result.is_correct)
+        self.assertEqual(result.normalized_answer, -7)
+        self.assertEqual(
+            result.detail,
+            {"answer_type": "signed_integer_exact", "expected_value": -7},
+        )
+
+    def test_signed_integer_exact_rejects_non_integer_answers(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Submitted answer must be an integer"):
+            evaluate_answer("signed_integer_exact", {"expected_value": -7}, "-7.5")
+
     def test_multiple_choice_index_normalizes_and_compares_answers(self) -> None:
         result = evaluate_answer(
             "multiple_choice_index",

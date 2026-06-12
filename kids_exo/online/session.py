@@ -14,6 +14,7 @@ from kids_exo.online.french_alphabet import (
     create_french_common_words_session,
 )
 from kids_exo.online.models import OnlineQuestionSnapshot, PracticeSessionSnapshot
+from kids_exo.online.signed_integer import create_signed_integer_session
 from kids_exo.plugins.registry import get_plugin_definition
 
 
@@ -37,6 +38,8 @@ def create_practice_session(request: OnlineSessionRequest) -> PracticeSessionSna
         return create_french_alphabet_session(request)
     if request.plugin == "french_common_word_sounds":
         return create_french_common_words_session(request)
+    if request.plugin == "integer_signed_addition_subtraction":
+        return create_signed_integer_session(request)
     definition = get_plugin_definition(request.plugin)
     settings = load_online_plugin_settings(request.plugin, request.plugin_settings)
     if request.question_count > 30 and hasattr(settings, "allow_duplicates"):

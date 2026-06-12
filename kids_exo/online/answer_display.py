@@ -12,7 +12,7 @@ def expected_answer_value(
     legacy_expected_answer: int | None = None,
 ) -> AnswerValue:
     payload = evaluation_payload or {}
-    if answer_type == "integer_exact" and "expected_value" in payload:
+    if answer_type in {"integer_exact", "signed_integer_exact"} and "expected_value" in payload:
         return payload["expected_value"]
     if answer_type == "multiple_choice_index" and "expected_index" in payload:
         return payload["expected_index"]

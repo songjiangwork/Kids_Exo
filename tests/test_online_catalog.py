@@ -25,6 +25,7 @@ class OnlinePluginCatalogTests(unittest.TestCase):
                 "tens_sum_to_ten_same_ones",
                 "near_round_pair_multiplication",
                 "difference_of_squares",
+                "integer_signed_addition_subtraction",
                 "french_alphabet_sounds",
                 "french_common_word_sounds",
             ),
@@ -82,6 +83,18 @@ class OnlinePluginCatalogTests(unittest.TestCase):
                     question_count=10,
                 )
             )
+        with self.assertRaisesRegex(ValueError, "not configurable online"):
+            create_practice_session(
+                OnlineSessionRequest(
+                    plugin="integer_signed_addition_subtraction",
+                    plugin_settings={
+                        "number_range": ["within_20"],
+                        "operations": ["addition"],
+                        "absolute_limit": 999,
+                    },
+                    question_count=10,
+                )
+            )
 
     def test_new_online_plugins_expose_only_their_meaningful_settings(self) -> None:
         distributive = get_online_plugin("integer_multiplication_distributive")
@@ -93,6 +106,7 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         tens_same_ones = get_online_plugin("tens_sum_to_ten_same_ones")
         near_round = get_online_plugin("near_round_pair_multiplication")
         difference = get_online_plugin("difference_of_squares")
+        signed_integers = get_online_plugin("integer_signed_addition_subtraction")
         french_alphabet = get_online_plugin("french_alphabet_sounds")
         french_common_words = get_online_plugin("french_common_word_sounds")
 
@@ -125,6 +139,13 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         self.assertEqual(
             tuple(setting.name for setting in difference.settings),
             ("strategies",),
+        )
+        self.assertEqual(signed_integers.subject, "Math")
+        self.assertEqual(signed_integers.category, "Integer Arithmetic")
+        self.assertEqual(signed_integers.answer_types, ("signed_integer_exact",))
+        self.assertEqual(
+            tuple(setting.name for setting in signed_integers.settings),
+            ("number_range", "operations"),
         )
         self.assertEqual(french_alphabet.subject, "French")
         self.assertEqual(french_alphabet.category, "Pronunciation")

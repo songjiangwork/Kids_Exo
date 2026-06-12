@@ -16,7 +16,7 @@ def evaluate_answer(
     evaluation_payload: dict[str, Any],
     submitted_answer: str,
 ) -> EvaluationResult:
-    if answer_type == "integer_exact":
+    if answer_type in {"integer_exact", "signed_integer_exact"}:
         expected_value = int(evaluation_payload["expected_value"])
         normalized_answer = _parse_integer_answer(submitted_answer)
         return EvaluationResult(

@@ -7,6 +7,7 @@ from sqlalchemy.pool import StaticPool
 from kids_exo.auth.passwords import hash_password
 from kids_exo.localization import LocalizedPresentation, LocalizedText
 from kids_exo.online.models import OnlineQuestionSnapshot, PracticeSessionSnapshot
+from kids_exo.online.session import OnlineSessionRequest, create_practice_session
 from kids_exo.persistence.database import build_engine, build_session_factory
 from kids_exo.persistence.models import AccountEntity, Base, HouseholdEntity, HouseholdMemberEntity
 from kids_exo.persistence.repository import PracticeRepository
@@ -88,6 +89,7 @@ class PracticeWebApiTests(unittest.TestCase):
                 "tens_sum_to_ten_same_ones",
                 "near_round_pair_multiplication",
                 "difference_of_squares",
+                "integer_signed_addition_subtraction",
                 "french_alphabet_sounds",
                 "french_common_word_sounds",
             ],
@@ -742,6 +744,62 @@ class PracticeWebApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()["is_correct"])
+
+    def test_student_can_submit_and_review_signed_integer_answers(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        created = self.client.post(
+            f"/api/learners/{learner['id']}/sessions",
+            json={
+                "plugin": "integer_signed_addition_subtraction",
+                "plugin_settings": {
+                    "number_range": ["within_20"],
+                    "operations": ["addition", "subtraction"],
+                },
+                "question_count": 10,
+                "seed": 42,
+            },
+        ).json()
+        expected_session = create_practice_session(
+            OnlineSessionRequest(
+                plugin="integer_signed_addition_subtraction",
+                plugin_settings={
+                    "number_range": ["within_20"],
+                    "operations": ["addition", "subtraction"],
+                },
+                question_count=10,
+                seed=42,
+            )
+        )
+        first_expected = expected_session.questions[0].expected_answer
+        first_question = created["questions"][0]
+        wrong_answer = first_expected + 1
+
+        first_response = self.client.post(
+            f"/api/student/sessions/{created['student_token']}/questions/{first_question['identifier']}/attempts",
+            json={"answer": str(wrong_answer)},
+        )
+        for created_question, expected_question in zip(created["questions"][1:], expected_session.questions[1:]):
+            response = self.client.post(
+                f"/api/student/sessions/{created['student_token']}/questions/{created_question['identifier']}/attempts",
+                json={"answer": str(expected_question.expected_answer)},
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.json()["is_correct"])
+        results = self.client.get(f"/api/student/sessions/{created['student_token']}/results").json()
+
+        self.assertEqual(created["plugin"], "integer_signed_addition_subtraction")
+        self.assertEqual(created["subject"], "Math")
+        self.assertEqual(created["category"], "Integer Arithmetic")
+        self.assertEqual(first_question["renderer_type"], "numeric_answer")
+        self.assertEqual(first_response.status_code, 200)
+        self.assertFalse(first_response.json()["is_correct"])
+        self.assertEqual(results["correct_answers"], 9)
+        missed = results["incorrect_questions"][0]
+        self.assertEqual(missed["answer_type"], "signed_integer_exact")
+        self.assertEqual(missed["submitted_answer"], wrong_answer)
+        self.assertEqual(missed["expected_answer"], first_expected)
+        self.assertEqual(missed["submitted_display"], str(wrong_answer))
+        self.assertEqual(missed["expected_display"], str(first_expected))
 
     def test_deferred_feedback_does_not_reveal_correctness_on_submission(self) -> None:
         learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()

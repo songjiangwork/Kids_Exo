@@ -136,6 +136,49 @@ class OnlinePracticeSessionTests(unittest.TestCase):
                 )
                 self.assertEqual(session.presentation.heading.locale, "en-CA")
 
+    def test_signed_integer_session_generates_addition_and_subtraction_questions(self) -> None:
+        first = create_practice_session(
+            OnlineSessionRequest(
+                plugin="integer_signed_addition_subtraction",
+                plugin_settings={
+                    "number_range": ["within_20"],
+                    "operations": ["addition", "subtraction"],
+                },
+                question_count=10,
+                seed=42,
+            )
+        )
+        second = create_practice_session(
+            OnlineSessionRequest(
+                plugin="integer_signed_addition_subtraction",
+                plugin_settings={
+                    "number_range": ["within_20"],
+                    "operations": ["addition", "subtraction"],
+                },
+                question_count=10,
+                seed=42,
+            )
+        )
+        question = first.questions[0]
+
+        self.assertEqual(first.plugin, "integer_signed_addition_subtraction")
+        self.assertEqual(first.subject, "Math")
+        self.assertEqual(first.category, "Integer Arithmetic")
+        self.assertEqual(first.skill, "Signed Integer Addition and Subtraction")
+        self.assertEqual(first.questions, second.questions)
+        self.assertEqual({item.strategy for item in first.questions}, {"addition", "subtraction"})
+        self.assertEqual(question.renderer_type, "numeric_answer")
+        self.assertEqual(question.answer_type, "signed_integer_exact")
+        self.assertEqual(question.evaluation_payload, {"expected_value": question.expected_answer})
+        self.assertIn("= __________", question.prompt)
+        self.assertTrue(
+            first.evaluate_answer(question.identifier, str(question.expected_answer)).is_correct
+        )
+        self.assertEqual(
+            first.student_questions()[0].public_payload,
+            {"tools": {"scratch_pad": True, "audio": False}},
+        )
+
     def test_french_alphabet_session_generates_audio_choice_questions(self) -> None:
         session = create_practice_session(
             OnlineSessionRequest(

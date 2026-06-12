@@ -10,6 +10,9 @@ from kids_exo.plugins.french_common_word_sounds.metadata import (
 from kids_exo.plugins.integer_multiplication_distributive.metadata import (
     PLUGIN_METADATA as DISTRIBUTIVE_PROPERTY,
 )
+from kids_exo.plugins.integer_signed_addition_subtraction.metadata import (
+    PLUGIN_METADATA as SIGNED_INTEGER_ADDITION_SUBTRACTION,
+)
 from kids_exo.plugins.multiply_by_11.metadata import PLUGIN_METADATA as MULTIPLY_BY_11
 from kids_exo.plugins.multiply_by_5_25_125.metadata import (
     PLUGIN_METADATA as MULTIPLY_BY_FIVE_FAMILY,
@@ -43,6 +46,7 @@ ENABLED_ONLINE_PLUGIN_METADATA = (
     TENS_SUM_TO_TEN_SAME_ONES,
     NEAR_ROUND_PAIR,
     DIFFERENCE_OF_SQUARES,
+    SIGNED_INTEGER_ADDITION_SUBTRACTION,
     FRENCH_ALPHABET_SOUNDS,
     FRENCH_COMMON_WORD_SOUNDS,
 )
