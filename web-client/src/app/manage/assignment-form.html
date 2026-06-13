@@ -4,8 +4,8 @@
     <h2>Assign focused practice</h2>
     <div class="form-grid">
       <mat-form-field appearance="outline">
-        <mat-label>Title</mat-label>
-        <input matInput [(ngModel)]="title" required />
+        <mat-label>Homework title</mat-label>
+        <input matInput [ngModel]="title" (ngModelChange)="updateTitle($event)" required />
       </mat-form-field>
 
       <mat-form-field appearance="outline">

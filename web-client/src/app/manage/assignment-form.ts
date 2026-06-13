@@ -49,6 +49,7 @@ export class AssignmentForm implements OnChanges {
   protected dueDate: Date | null = null;
   protected showTimer = true;
   protected pluginSettings: PluginSettingsValue = {};
+  private titleWasEdited = false;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['catalog'] && this.selectedPluginId === '') {
@@ -75,9 +76,14 @@ export class AssignmentForm implements OnChanges {
     this.pluginSettings = Object.fromEntries(
       (plugin?.settings ?? []).map((setting) => [setting.name, [...setting.default]]),
     );
-    if (plugin !== undefined && this.title.trim() === '') {
-      this.title = `${plugin.title} homework`;
+    if (plugin !== undefined && !this.titleWasEdited) {
+      this.title = this.defaultTitleFor(plugin);
     }
+  }
+
+  protected updateTitle(value: string): void {
+    this.title = value;
+    this.titleWasEdited = value.trim() !== this.defaultTitleFor(this.selectedPlugin);
   }
 
   protected updatePluginSettings(value: PluginSettingsValue): void {
@@ -123,5 +129,9 @@ export class AssignmentForm implements OnChanges {
       0,
     );
     return dueAt.toISOString();
+  }
+
+  private defaultTitleFor(plugin: OnlinePlugin | undefined): string {
+    return plugin?.title ?? '';
   }
 }

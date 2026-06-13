@@ -26,6 +26,16 @@ const catalog: OnlineCatalog = {
       ],
       supported_delivery_modes: ['web_practice'],
     },
+    {
+      plugin: 'signed_integer',
+      title: 'Signed Integer Addition and Subtraction',
+      description: 'Practice signed integers.',
+      subject: 'Math',
+      category: 'Integer Arithmetic',
+      default_locale: 'en-CA',
+      settings: [],
+      supported_delivery_modes: ['web_practice'],
+    },
   ],
 };
 
@@ -47,17 +57,33 @@ describe('AssignmentForm', () => {
   it('renders shared description notes copy', () => {
     expect(fixture.nativeElement.textContent).toContain('Description / notes (optional)');
     expect(fixture.nativeElement.textContent).toContain('Due date (optional)');
+    expect(fixture.nativeElement.textContent).toContain('Homework title');
+  });
+
+  it('defaults the title to the selected skill name', () => {
+    expect((fixture.componentInstance as any).title).toBe('Multiply by 11');
+
+    (fixture.componentInstance as any).selectPlugin('signed_integer');
+
+    expect((fixture.componentInstance as any).title).toBe('Signed Integer Addition and Subtraction');
+  });
+
+  it('keeps a manually edited title when switching skills', () => {
+    (fixture.componentInstance as any).updateTitle('Monday fluency sprint');
+    (fixture.componentInstance as any).selectPlugin('signed_integer');
+
+    expect((fixture.componentInstance as any).title).toBe('Monday fluency sprint');
   });
 
   it('validates title and emits homework request payload', () => {
     const emitted: unknown[] = [];
     fixture.componentInstance.createAssignment.subscribe((value) => emitted.push(value));
 
-    (fixture.componentInstance as any).title = '';
+    (fixture.componentInstance as any).updateTitle('');
     (fixture.componentInstance as any).submit();
     expect(emitted.length).toBe(0);
 
-    (fixture.componentInstance as any).title = 'New homework';
+    (fixture.componentInstance as any).updateTitle('New homework');
     (fixture.componentInstance as any).description = 'Practice before dinner.';
     (fixture.componentInstance as any).submit();
 
