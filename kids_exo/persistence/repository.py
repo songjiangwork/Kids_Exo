@@ -1,8 +1,8 @@
 from dataclasses import asdict, dataclass, is_dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import secrets
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload, sessionmaker
 
 from kids_exo.auth.passwords import hash_password, verify_password
@@ -74,6 +74,10 @@ _DEFAULT_ACCOUNT_EMAIL = "local-parent@example.local"
 _DEFAULT_ACCOUNT_DISPLAY_NAME = "Local Parent"
 _DEFAULT_ACCOUNT_PASSWORD_HASH = "disabled$local-dev-placeholder"
 _DEFAULT_HOUSEHOLD_NAME = "Default Household"
+_DEFAULT_PIN = "1234"
+_DEFAULT_AVATARS = ("fox", "panda", "owl", "bear", "cat", "dog")
+_MAX_STUDENT_PIN_FAILURES = 5
+_STUDENT_PIN_LOCK_DURATION = timedelta(minutes=5)
 
 
 class PracticeRepository:
@@ -119,6 +123,8 @@ class PracticeRepository:
                     household_id=household.id,
                     account_id=account.id,
                     role="parent",
+                    parent_unlock_pin_hash=hash_password(_DEFAULT_PIN),
+                    parent_unlock_pin_updated_at=self._now(),
                 )
             )
             database_session.commit()
@@ -174,6 +180,55 @@ class PracticeRepository:
                 raise ValueError(f"Account has no parent household: {account_id}")
             return membership.household_id
 
+    def verify_parent_unlock_pin(self, account_id: int, household_id: int, pin: str) -> None:
+        with self._session_factory() as database_session:
+            membership = database_session.scalar(
+                select(HouseholdMemberEntity).where(
+                    HouseholdMemberEntity.account_id == account_id,
+                    HouseholdMemberEntity.household_id == household_id,
+                    HouseholdMemberEntity.role.in_(("parent", "admin")),
+                )
+            )
+            if membership is None:
+                raise ValueError("Parent account required")
+            if membership.parent_unlock_pin_hash is None:
+                membership.parent_unlock_pin_hash = hash_password(_DEFAULT_PIN)
+                membership.parent_unlock_pin_updated_at = self._now()
+                database_session.commit()
+            if not verify_password(pin, membership.parent_unlock_pin_hash):
+                raise ValueError("Invalid parent PIN")
+
+    def change_parent_unlock_pin(
+        self,
+        account_id: int,
+        household_id: int,
+        *,
+        current_pin: str,
+        new_pin: str,
+    ) -> None:
+        normalized_new_pin = new_pin.strip()
+        if not normalized_new_pin.isdigit() or not 4 <= len(normalized_new_pin) <= 12:
+            raise ValueError("Parent PIN must be 4 to 12 digits")
+        with self._session_factory() as database_session:
+            membership = database_session.scalar(
+                select(HouseholdMemberEntity).where(
+                    HouseholdMemberEntity.account_id == account_id,
+                    HouseholdMemberEntity.household_id == household_id,
+                    HouseholdMemberEntity.role.in_(("parent", "admin")),
+                )
+            )
+            if membership is None:
+                raise ValueError("Parent account required")
+            if membership.parent_unlock_pin_hash is None:
+                membership.parent_unlock_pin_hash = hash_password(_DEFAULT_PIN)
+                membership.parent_unlock_pin_updated_at = self._now()
+                database_session.commit()
+            if not verify_password(current_pin.strip(), membership.parent_unlock_pin_hash):
+                raise ValueError("Invalid parent PIN")
+            membership.parent_unlock_pin_hash = hash_password(normalized_new_pin)
+            membership.parent_unlock_pin_updated_at = self._now()
+            database_session.commit()
+
     def create_learner(self, nickname: str, household_id: int | None = None) -> LearnerEntity:
         nickname = nickname.strip()
         if not nickname:
@@ -182,7 +237,16 @@ class PracticeRepository:
             household_id = household_id or self._default_household_id(database_session)
             if database_session.get(HouseholdEntity, household_id) is None:
                 raise ValueError(f"Unknown household: {household_id}")
-            learner = LearnerEntity(nickname=nickname, household_id=household_id, active=True)
+            learner = LearnerEntity(
+                nickname=nickname,
+                household_id=household_id,
+                active=True,
+                avatar_key=self._avatar_for_next_learner(database_session, household_id),
+                student_login_enabled=True,
+                student_pin_hash=hash_password(_DEFAULT_PIN),
+                student_pin_updated_at=self._now(),
+                student_login_failed_count=0,
+            )
             database_session.add(learner)
             database_session.commit()
             return learner
@@ -218,6 +282,8 @@ class PracticeRepository:
                 household_id=household.id,
                 account_id=account.id,
                 role="parent",
+                parent_unlock_pin_hash=hash_password(_DEFAULT_PIN),
+                parent_unlock_pin_updated_at=self._now(),
             )
         )
         database_session.flush()
@@ -226,6 +292,15 @@ class PracticeRepository:
     @staticmethod
     def _normalize_email(email: str) -> str:
         return email.strip().lower()
+
+    @staticmethod
+    def _avatar_for_next_learner(database_session, household_id: int) -> str:
+        count = database_session.scalar(
+            select(func.count()).select_from(LearnerEntity).where(
+                LearnerEntity.household_id == household_id
+            )
+        )
+        return _DEFAULT_AVATARS[int(count or 0) % len(_DEFAULT_AVATARS)]
 
     def list_learners(self, household_id: int | None = None) -> list[LearnerEntity]:
         with self._session_factory() as database_session:
@@ -236,6 +311,20 @@ class PracticeRepository:
                 database_session.scalars(query)
             )
 
+    def list_student_switcher_entries(self, household_id: int) -> list[LearnerEntity]:
+        with self._session_factory() as database_session:
+            return list(
+                database_session.scalars(
+                    select(LearnerEntity)
+                    .where(
+                        LearnerEntity.household_id == household_id,
+                        LearnerEntity.active.is_(True),
+                        LearnerEntity.student_login_enabled.is_(True),
+                    )
+                    .order_by(LearnerEntity.nickname, LearnerEntity.id)
+                )
+            )
+
     def get_learner(self, learner_id: int, household_id: int | None = None) -> LearnerEntity:
         with self._session_factory() as database_session:
             learner = database_session.get(LearnerEntity, learner_id)
@@ -244,6 +333,40 @@ class PracticeRepository:
             ):
                 raise ValueError(f"Unknown learner: {learner_id}")
             return learner
+
+    def verify_student_pin(
+        self,
+        *,
+        student_id: int,
+        household_id: int,
+        pin: str,
+    ) -> LearnerEntity:
+        with self._session_factory() as database_session:
+            student = database_session.get(LearnerEntity, student_id)
+            now = self._now()
+            if student is None or student.household_id != household_id:
+                raise ValueError(f"Unknown learner: {student_id}")
+            if not student.active or not student.student_login_enabled:
+                raise ValueError("Student login is disabled")
+            if (
+                student.student_login_locked_until is not None
+                and student.student_login_locked_until > now
+            ):
+                raise ValueError("Student login is temporarily locked")
+            if student.student_pin_hash is None:
+                student.student_pin_hash = hash_password(_DEFAULT_PIN)
+                student.student_pin_updated_at = now
+                database_session.commit()
+            if not verify_password(pin, student.student_pin_hash):
+                student.student_login_failed_count += 1
+                if student.student_login_failed_count >= _MAX_STUDENT_PIN_FAILURES:
+                    student.student_login_locked_until = now + _STUDENT_PIN_LOCK_DURATION
+                database_session.commit()
+                raise ValueError("Invalid student PIN")
+            student.student_login_failed_count = 0
+            student.student_login_locked_until = None
+            database_session.commit()
+            return student
 
     def update_learner(
         self,
@@ -266,6 +389,28 @@ class PracticeRepository:
             learner.active = active
             database_session.commit()
             return learner
+
+    def reset_student_pin(
+        self,
+        learner_id: int,
+        *,
+        pin: str,
+        household_id: int | None = None,
+    ) -> None:
+        normalized_pin = pin.strip()
+        if not normalized_pin.isdigit() or not 4 <= len(normalized_pin) <= 12:
+            raise ValueError("Student PIN must be 4 to 12 digits")
+        with self._session_factory() as database_session:
+            learner = database_session.get(LearnerEntity, learner_id)
+            if learner is None or (
+                household_id is not None and learner.household_id != household_id
+            ):
+                raise ValueError(f"Unknown learner: {learner_id}")
+            learner.student_pin_hash = hash_password(normalized_pin)
+            learner.student_pin_updated_at = self._now()
+            learner.student_login_failed_count = 0
+            learner.student_login_locked_until = None
+            database_session.commit()
 
     def delete_learner(self, learner_id: int, household_id: int | None = None) -> None:
         with self._session_factory() as database_session:

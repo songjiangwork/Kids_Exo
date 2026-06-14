@@ -1,32 +1,82 @@
 <section class="form-shell">
   <header class="hero">
-    <p class="eyebrow">Learner Form</p>
-    <h1>@if (learnerId === null) { Add learner } @else { Edit learner }</h1>
-    <p class="lede">Use one focused form for creating and editing learner profiles.</p>
+    <p class="eyebrow">Student Form</p>
+    <h1>@if (learnerId === null) { Add student } @else { Edit student }</h1>
+    <p class="lede">Use one focused form for creating and editing student profiles.</p>
   </header>
 
   @if (loading()) {
-    <div class="loading"><mat-spinner diameter="32" /> Loading learner...</div>
+    <div class="loading"><mat-spinner diameter="32" /> Loading student...</div>
   } @else {
     <mat-card class="form-card" appearance="outlined">
       <mat-card-content>
         <mat-form-field appearance="outline" class="field">
-          <mat-label>Nickname</mat-label>
+          <mat-label>Student name</mat-label>
           <input matInput [(ngModel)]="nickname" (keyup.enter)="save()" />
         </mat-form-field>
 
         @if (learnerId !== null) {
-          <mat-checkbox [(ngModel)]="active">Active learner</mat-checkbox>
+          <mat-checkbox [(ngModel)]="active">Active student</mat-checkbox>
         }
 
         <div class="actions">
-          <a mat-button routerLink="/manage/learners">Cancel</a>
+          <a mat-button routerLink="/manage/students">Cancel</a>
           <button mat-flat-button class="primary-action" (click)="save()" [disabled]="saving()">
-            @if (saving()) { Saving... } @else { Save learner }
+            @if (saving()) { Saving... } @else { Save student }
           </button>
         </div>
       </mat-card-content>
     </mat-card>
+
+    @if (learnerId !== null) {
+      <mat-card class="form-card pin-card" appearance="outlined">
+        <mat-card-content>
+          <p class="eyebrow">Student PIN</p>
+          <h2>Reset student PIN</h2>
+          <p class="lede">Only a parent can change this PIN. Students use it to enter Student Mode from the household home page.</p>
+
+          <div class="pin-grid">
+            <mat-form-field appearance="outline" class="field">
+              <mat-label>New PIN</mat-label>
+              <input
+                matInput
+                type="password"
+                inputmode="numeric"
+                maxlength="12"
+                autocomplete="new-password"
+                [(ngModel)]="studentPin"
+              />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="field">
+              <mat-label>Confirm new PIN</mat-label>
+              <input
+                matInput
+                type="password"
+                inputmode="numeric"
+                maxlength="12"
+                autocomplete="new-password"
+                [(ngModel)]="studentPinConfirm"
+                (keyup.enter)="resetStudentPin()"
+              />
+            </mat-form-field>
+          </div>
+
+          @if (pinError()) {
+            <p class="error">{{ pinError() }}</p>
+          }
+          @if (pinMessage()) {
+            <p class="success">{{ pinMessage() }}</p>
+          }
+
+          <div class="actions">
+            <button mat-stroked-button (click)="resetStudentPin()" [disabled]="resettingPin()">
+              @if (resettingPin()) { Resetting... } @else { Reset student PIN }
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
   }
 
   @if (error()) {

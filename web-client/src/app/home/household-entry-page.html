@@ -1,0 +1,113 @@
+<section class="entry-shell">
+  <header class="hero">
+    <p class="eyebrow">Household Home</p>
+    <h1>Who is using Kids Exo?</h1>
+    <p class="lede">
+      Students can open their own dashboard with a PIN. Parent management needs the parent PIN.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <div class="loading"><mat-spinner diameter="32" /> Loading household...</div>
+  } @else {
+    <div class="entry-grid">
+      <mat-card class="entry-card" appearance="outlined">
+        <mat-card-content>
+          <p class="eyebrow">Student Mode</p>
+          <h2>Choose your student card</h2>
+          <div class="student-grid">
+            @for (student of students(); track student.id) {
+              <button type="button" class="student-card" (click)="selectStudent(student)">
+                <span class="avatar" [attr.data-avatar]="student.avatar_key">
+                  {{ avatarLabel(student).slice(0, 1) }}
+                </span>
+                <strong>{{ student.nickname }}</strong>
+              </button>
+            } @empty {
+              <p>No students are ready for PIN login yet.</p>
+            }
+          </div>
+
+          @if (selectedStudent(); as student) {
+            <div class="pin-dialog" role="dialog" aria-label="Student PIN">
+              <h3>{{ student.nickname }}'s PIN</h3>
+              <mat-form-field appearance="outline">
+                <mat-label>Student PIN</mat-label>
+                <input matInput type="password" inputmode="numeric" [(ngModel)]="studentPin" (keyup.enter)="loginStudent()" />
+              </mat-form-field>
+              @if (studentError()) {
+                <p class="error">{{ studentError() }}</p>
+              }
+              <button mat-flat-button class="primary-action" (click)="loginStudent()" [disabled]="studentSaving()">
+                {{ studentSaving() ? 'Opening...' : 'Open student dashboard' }}
+              </button>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="entry-card parent-card" appearance="outlined">
+        <mat-card-content>
+          <p class="eyebrow">Parent Management</p>
+          <h2>Unlock parent tools</h2>
+          <p>Use the parent PIN to manage students, homework, worksheets, and settings.</p>
+          <mat-form-field appearance="outline">
+            <mat-label>Parent PIN</mat-label>
+            <input matInput type="password" inputmode="numeric" [(ngModel)]="parentPin" (keyup.enter)="unlockParent()" />
+          </mat-form-field>
+          @if (parentError()) {
+            <p class="error">{{ parentError() }}</p>
+          }
+          <button mat-flat-button class="primary-action" (click)="unlockParent()" [disabled]="parentSaving()">
+            {{ parentSaving() ? 'Unlocking...' : 'Unlock Parent Management' }}
+          </button>
+
+          <div class="secondary-panel">
+            <button mat-button type="button" (click)="toggleParentPinForm()">
+              {{ showParentPinForm() ? 'Hide parent PIN form' : 'Change parent PIN' }}
+            </button>
+
+            @if (showParentPinForm()) {
+              <div class="pin-dialog parent-pin-form" role="group" aria-label="Change parent PIN">
+                <h3>Change parent PIN</h3>
+                <p>Parents manage both parent and student PINs. Students cannot change PINs.</p>
+                <mat-form-field appearance="outline">
+                  <mat-label>Current parent PIN</mat-label>
+                  <input matInput type="password" inputmode="numeric" [(ngModel)]="currentParentPin" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>New parent PIN</mat-label>
+                  <input matInput type="password" inputmode="numeric" maxlength="12" [(ngModel)]="newParentPin" />
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Confirm new PIN</mat-label>
+                  <input
+                    matInput
+                    type="password"
+                    inputmode="numeric"
+                    maxlength="12"
+                    [(ngModel)]="confirmParentPin"
+                    (keyup.enter)="changeParentPin()"
+                  />
+                </mat-form-field>
+                @if (parentPinError()) {
+                  <p class="error">{{ parentPinError() }}</p>
+                }
+                @if (parentPinMessage()) {
+                  <p class="success">{{ parentPinMessage() }}</p>
+                }
+                <button mat-stroked-button type="button" (click)="changeParentPin()" [disabled]="parentPinChanging()">
+                  {{ parentPinChanging() ? 'Changing...' : 'Save new parent PIN' }}
+                </button>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+</section>

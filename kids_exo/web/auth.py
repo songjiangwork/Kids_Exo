@@ -1,5 +1,6 @@
 import secrets
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from typing import Callable
 
 from fastapi import HTTPException, Request
@@ -13,18 +14,71 @@ SESSION_COOKIE_NAME = "kids_exo_session"
 
 
 @dataclass
+class SessionState:
+    account_id: int
+    parent_unlocked_until: datetime | None = None
+    active_student_id: int | None = None
+
+
+@dataclass
 class LocalSessionStore:
-    _sessions: dict[str, int] = field(default_factory=dict)
+    _sessions: dict[str, SessionState] = field(default_factory=dict)
 
     def create_session(self, account_id: int) -> str:
         token = secrets.token_urlsafe(32)
-        self._sessions[token] = account_id
+        self._sessions[token] = SessionState(account_id=account_id)
         return token
 
-    def account_id_for_token(self, token: str | None) -> int | None:
+    def get_state(self, token: str | None) -> SessionState | None:
         if token is None:
             return None
         return self._sessions.get(token)
+
+    def account_id_for_token(self, token: str | None) -> int | None:
+        state = self.get_state(token)
+        if state is None:
+            return None
+        return state.account_id
+
+    def set_parent_unlocked(self, token: str | None, until: datetime) -> None:
+        state = self.get_state(token)
+        if state is not None:
+            state.parent_unlocked_until = until
+
+    def clear_parent_unlocked(self, token: str | None) -> None:
+        state = self.get_state(token)
+        if state is not None:
+            state.parent_unlocked_until = None
+
+    def is_parent_unlocked(self, token: str | None) -> bool:
+        state = self.get_state(token)
+        return bool(
+            state is not None
+            and state.parent_unlocked_until is not None
+            and state.parent_unlocked_until > datetime.now(timezone.utc)
+        )
+
+    def parent_unlock_expires_at(self, token: str | None) -> datetime | None:
+        state = self.get_state(token)
+        if state is None or not self.is_parent_unlocked(token):
+            return None
+        return state.parent_unlocked_until
+
+    def set_active_student(self, token: str | None, student_id: int) -> None:
+        state = self.get_state(token)
+        if state is not None:
+            state.active_student_id = student_id
+
+    def clear_active_student(self, token: str | None) -> None:
+        state = self.get_state(token)
+        if state is not None:
+            state.active_student_id = None
+
+    def active_student_id(self, token: str | None) -> int | None:
+        state = self.get_state(token)
+        if state is None:
+            return None
+        return state.active_student_id
 
     def delete_session(self, token: str | None) -> None:
         if token is not None:
@@ -35,6 +89,17 @@ class LocalSessionStore:
 class ParentContext:
     account: AccountEntity
     household_id: int
+
+
+@dataclass(frozen=True)
+class StudentAccessContext:
+    account: AccountEntity
+    household_id: int
+    student_id: int
+    parent_unlocked: bool
+
+
+PARENT_UNLOCK_DURATION = timedelta(minutes=15)
 
 
 def current_account_or_none(
@@ -93,6 +158,54 @@ def require_parent_context(
         storage = require_repository(repository)
         household_id = storage.get_primary_parent_household_id(account.id)
         return ParentContext(account=account, household_id=household_id)
+
+    return dependency
+
+
+def require_parent_unlock(
+    repository: PracticeRepository | None,
+    session_store: LocalSessionStore,
+) -> Callable[[Request], ParentContext]:
+    parent_context = require_parent_context(repository, session_store)
+
+    def dependency(request: Request) -> ParentContext:
+        parent = parent_context(request)
+        if not session_store.is_parent_unlocked(request.cookies.get(SESSION_COOKIE_NAME)):
+            raise HTTPException(status_code=403, detail="Parent management is locked")
+        return parent
+
+    return dependency
+
+
+def require_student_access(
+    repository: PracticeRepository | None,
+    session_store: LocalSessionStore,
+) -> Callable[[int, Request], StudentAccessContext]:
+    parent_context = require_parent_context(repository, session_store)
+
+    def dependency(learner_id: int, request: Request) -> StudentAccessContext:
+        parent = parent_context(request)
+        token = request.cookies.get(SESSION_COOKIE_NAME)
+        storage = require_repository(repository)
+        try:
+            storage.get_learner(learner_id, household_id=parent.household_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        if session_store.is_parent_unlocked(token):
+            return StudentAccessContext(
+                account=parent.account,
+                household_id=parent.household_id,
+                student_id=learner_id,
+                parent_unlocked=True,
+            )
+        if session_store.active_student_id(token) == learner_id:
+            return StudentAccessContext(
+                account=parent.account,
+                household_id=parent.household_id,
+                student_id=learner_id,
+                parent_unlocked=False,
+            )
+        raise HTTPException(status_code=403, detail="Student access required")
 
     return dependency
 

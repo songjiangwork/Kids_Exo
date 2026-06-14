@@ -1,12 +1,14 @@
 <section class="assignment-notebook">
-  <app-assignment-form
-    [catalog]="catalog"
-    [saving]="saving"
-    sourceType="learner_added"
-    createdByRole="learner"
-    submitLabel="Create my homework"
-    (createAssignment)="createAssignment.emit($event)"
-  />
+  @if (allowCreate) {
+    <app-assignment-form
+      [catalog]="catalog"
+      [saving]="saving"
+      sourceType="learner_added"
+      createdByRole="learner"
+      submitLabel="Create my homework"
+      (createAssignment)="createAssignment.emit($event)"
+    />
+  }
 
   <div class="status-grid">
     @for (count of statusCounts; track count.label) {

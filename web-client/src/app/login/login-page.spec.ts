@@ -34,7 +34,7 @@ describe('LoginPage', () => {
     expect(fixture.nativeElement.textContent).toContain('Enter your email and password.');
   });
 
-  it('logs in and navigates to manage by default', async () => {
+  it('logs in and navigates to household home by default', async () => {
     const { fixture, http, router } = await createFixture();
     const navigateByUrl = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
 
@@ -57,7 +57,7 @@ describe('LoginPage', () => {
       },
     });
 
-    expect(navigateByUrl).toHaveBeenCalledWith('/manage');
+    expect(navigateByUrl).toHaveBeenCalledWith('/home');
   });
 
   it('shows a friendly error for failed login', async () => {

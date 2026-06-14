@@ -149,6 +149,51 @@ class PracticeRepositoryTests(unittest.TestCase):
         self.assertIsNotNone(household)
         self.assertEqual(membership, "parent")
 
+    def test_changes_parent_unlock_pin(self) -> None:
+        account = self.repository.create_parent_account(
+            email="parent@example.com",
+            display_name="Parent",
+            password="correct horse battery staple",
+            household_name="Song Family",
+        )
+        with self.session_factory() as database_session:
+            household_id = database_session.scalar(
+                text("SELECT household_id FROM household_members WHERE account_id = :account_id"),
+                {"account_id": account.id},
+            )
+
+        self.repository.change_parent_unlock_pin(
+            account.id,
+            household_id,
+            current_pin="1234",
+            new_pin="5678",
+        )
+
+        with self.assertRaisesRegex(ValueError, "Invalid parent PIN"):
+            self.repository.verify_parent_unlock_pin(account.id, household_id, "1234")
+        self.repository.verify_parent_unlock_pin(account.id, household_id, "5678")
+
+    def test_change_parent_unlock_pin_rejects_invalid_new_pin(self) -> None:
+        account = self.repository.create_parent_account(
+            email="parent@example.com",
+            display_name="Parent",
+            password="correct horse battery staple",
+            household_name="Song Family",
+        )
+        with self.session_factory() as database_session:
+            household_id = database_session.scalar(
+                text("SELECT household_id FROM household_members WHERE account_id = :account_id"),
+                {"account_id": account.id},
+            )
+
+        with self.assertRaisesRegex(ValueError, "Parent PIN must be 4 to 12 digits"):
+            self.repository.change_parent_unlock_pin(
+                account.id,
+                household_id,
+                current_pin="1234",
+                new_pin="12ab",
+            )
+
     def test_rejects_duplicate_parent_account_email(self) -> None:
         self.repository.create_parent_account(
             email="parent@example.com",
@@ -392,6 +437,43 @@ class PracticeRepositoryTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "Learner nickname is required"):
             self.repository.update_learner(learner.id, nickname="   ", active=True)
+
+    def test_resets_student_pin_and_clears_failed_login_state(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        with self.assertRaisesRegex(ValueError, "Invalid student PIN"):
+            self.repository.verify_student_pin(
+                student_id=learner.id,
+                household_id=learner.household_id,
+                pin="0000",
+            )
+
+        self.repository.reset_student_pin(learner.id, pin="5678")
+
+        with self.assertRaisesRegex(ValueError, "Invalid student PIN"):
+            self.repository.verify_student_pin(
+                student_id=learner.id,
+                household_id=learner.household_id,
+                pin="1234",
+            )
+        verified = self.repository.verify_student_pin(
+            student_id=learner.id,
+            household_id=learner.household_id,
+            pin="5678",
+        )
+        with self.session_factory() as database_session:
+            saved = database_session.get(LearnerEntity, learner.id)
+            failed_count = saved.student_login_failed_count
+            locked_until = saved.student_login_locked_until
+
+        self.assertEqual(verified.id, learner.id)
+        self.assertEqual(failed_count, 0)
+        self.assertIsNone(locked_until)
+
+    def test_reset_student_pin_rejects_invalid_pin(self) -> None:
+        learner = self.repository.create_learner("Alex")
+
+        with self.assertRaisesRegex(ValueError, "Student PIN must be 4 to 12 digits"):
+            self.repository.reset_student_pin(learner.id, pin="12ab")
 
     def test_deletes_a_learner_profile(self) -> None:
         learner = self.repository.create_learner("Alex")

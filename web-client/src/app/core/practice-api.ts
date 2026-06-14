@@ -106,6 +106,30 @@ export interface Learner {
   active: boolean;
 }
 
+export interface HouseholdStudent {
+  id: number;
+  nickname: string;
+  avatar_key: string;
+  student_login_enabled: boolean;
+}
+
+export interface HouseholdStudentsResponse {
+  students: HouseholdStudent[];
+}
+
+export interface ParentUnlockStatus {
+  unlocked: boolean;
+  expires_at?: string | null;
+}
+
+export interface StudentLoginResponse {
+  student: HouseholdStudent;
+}
+
+export interface StudentAuthState {
+  student: HouseholdStudent | null;
+}
+
 export interface LearnerSkillBreakdown {
   plugin: string;
   title: string;
@@ -267,6 +291,10 @@ export class PracticeApi {
     });
   }
 
+  resetStudentPin(learnerId: number, pin: string): Observable<void> {
+    return this.http.post<void>(`/api/learners/${learnerId}/student-pin`, { pin });
+  }
+
   learner(learnerId: number): Observable<Learner> {
     return this.http.get<Learner>(`/api/learners/${learnerId}`);
   }
@@ -277,6 +305,37 @@ export class PracticeApi {
 
   learners(): Observable<Learner[]> {
     return this.http.get<Learner[]>('/api/learners');
+  }
+
+  householdStudents(): Observable<HouseholdStudentsResponse> {
+    return this.http.get<HouseholdStudentsResponse>('/api/household/students');
+  }
+
+  unlockParent(pin: string): Observable<ParentUnlockStatus> {
+    return this.http.post<ParentUnlockStatus>('/api/household/parent-unlock', { pin });
+  }
+
+  lockParent(): Observable<ParentUnlockStatus> {
+    return this.http.post<ParentUnlockStatus>('/api/household/parent-lock', {});
+  }
+
+  changeParentPin(currentPin: string, newPin: string): Observable<ParentUnlockStatus> {
+    return this.http.post<ParentUnlockStatus>('/api/household/parent-pin', {
+      current_pin: currentPin,
+      new_pin: newPin,
+    });
+  }
+
+  parentUnlockStatus(): Observable<ParentUnlockStatus> {
+    return this.http.get<ParentUnlockStatus>('/api/household/parent-unlock/status');
+  }
+
+  studentLogin(studentId: number, pin: string): Observable<StudentLoginResponse> {
+    return this.http.post<StudentLoginResponse>('/api/household/students/' + studentId + '/login', { pin });
+  }
+
+  studentAuthMe(): Observable<StudentAuthState> {
+    return this.http.get<StudentAuthState>('/api/student-auth/me');
   }
 
   createSession(learnerId: number, request: PracticeRequest): Observable<SavedSession> {

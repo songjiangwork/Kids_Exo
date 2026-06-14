@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { LearnerForm } from './learner-form';
 
 @Component({ template: '' })
@@ -30,5 +30,37 @@ describe('LearnerForm', () => {
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({ nickname: 'Mia' });
     request.flush({ id: 3, nickname: 'Mia', active: true });
+  });
+
+  it('resets a student PIN from the edit form', async () => {
+    await TestBed.configureTestingModule({
+      imports: [LearnerForm],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([{ path: 'manage/students', component: EmptyRoute }]),
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { paramMap: convertToParamMap({ id: '3' }) } },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(LearnerForm);
+    fixture.detectChanges();
+
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/learners/3').flush({ id: 3, nickname: 'Mia', active: true });
+
+    const component = fixture.componentInstance as any;
+    component.studentPin = '5678';
+    component.studentPinConfirm = '5678';
+    component.resetStudentPin();
+
+    const request = http.expectOne('/api/learners/3/student-pin');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ pin: '5678' });
+    request.flush(null);
+    expect(component.pinMessage()).toBe('Student PIN has been reset.');
   });
 });

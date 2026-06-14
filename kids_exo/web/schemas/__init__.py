@@ -14,6 +14,15 @@ from kids_exo.web.schemas.catalog import (
     PluginSettingSchemaResponse,
     SettingOptionResponse,
 )
+from kids_exo.web.schemas.household import (
+    HouseholdStudentsResponse,
+    HouseholdStudentSummaryResponse,
+    ParentPinChangeRequest,
+    ParentUnlockStatusResponse,
+    PinRequest,
+    StudentAuthMeResponse,
+    StudentLoginResponse,
+)
 from kids_exo.web.schemas.learner import (
     LearnerAnalyticsResponse,
     LearnerCreateRequest,
@@ -21,6 +30,7 @@ from kids_exo.web.schemas.learner import (
     LearnerResponse,
     LearnerSkillBreakdownResponse,
     LearnerUpdateRequest,
+    StudentPinResetRequest,
 )
 from kids_exo.web.schemas.printable import PrintablePdfRequest, PrintableWorksheetResponse
 from kids_exo.web.schemas.session import (
@@ -50,6 +60,8 @@ __all__ = [
     "AccountResponse",
     "AuthMeResponse",
     "FromDomainModel",
+    "HouseholdStudentsResponse",
+    "HouseholdStudentSummaryResponse",
     "IncorrectQuestionResponse",
     "LearnerAnalyticsResponse",
     "LearnerCreateRequest",
@@ -57,10 +69,14 @@ __all__ = [
     "LearnerResponse",
     "LearnerSkillBreakdownResponse",
     "LearnerUpdateRequest",
+    "StudentPinResetRequest",
     "LoginRequest",
     "LocaleCoverageResponse",
     "OnlineCatalogResponse",
     "OnlinePluginResponse",
+    "ParentPinChangeRequest",
+    "ParentUnlockStatusResponse",
+    "PinRequest",
     "PluginSettingSchemaResponse",
     "PracticePreviewRequest",
     "PracticePreviewResponse",
@@ -71,6 +87,8 @@ __all__ = [
     "SessionSummaryResponse",
     "SettingOptionResponse",
     "StudentQuestionResponse",
+    "StudentAuthMeResponse",
+    "StudentLoginResponse",
     "StudentSessionResponse",
     "TimerStatusResponse",
 ]

@@ -65,7 +65,7 @@ export class ParentStudio implements OnInit {
             this.loading.set(false);
           },
           error: () => {
-            this.error.set('Could not load learners.');
+            this.error.set('Could not load students.');
             this.loading.set(false);
           },
         });
@@ -79,7 +79,7 @@ export class ParentStudio implements OnInit {
 
   protected assignHomework(request: AssignmentCreateRequest): void {
     if (!this.nickname.trim()) {
-      this.error.set('Choose a learner or enter a new learner name.');
+      this.error.set('Choose a student or enter a new student name.');
       return;
     }
     this.error.set('');

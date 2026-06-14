@@ -53,6 +53,7 @@ export class LearnerDetail implements OnInit {
   protected readonly assignments = signal<Assignment[]>([]);
   protected readonly createdSession = signal<SavedSession | null>(null);
   protected readonly selectedResults = signal<PracticeResults | null>(null);
+  protected readonly studentMode = signal(false);
   protected readonly loading = signal(true);
   protected readonly creatingPracticePlugin = signal<string | null>(null);
   protected readonly creatingAssignment = signal(false);
@@ -104,13 +105,17 @@ export class LearnerDetail implements OnInit {
 
   ngOnInit(): void {
     this.learnerId = Number(this.route.snapshot.paramMap.get('id') ?? 0);
+    this.api.studentAuthMe().subscribe({
+      next: (state) => this.studentMode.set(state.student?.id === this.learnerId),
+      error: () => this.studentMode.set(false),
+    });
     this.api.learner(this.learnerId).subscribe({
       next: (learner) => {
         this.learner.set(learner);
         this.loadLearnerData();
       },
       error: () => {
-        this.error.set('Could not load this learner.');
+        this.error.set('Could not load this student.');
         this.loading.set(false);
       },
     });
@@ -245,7 +250,7 @@ export class LearnerDetail implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        this.error.set('Could not load learner history and statistics.');
+        this.error.set('Could not load student history and statistics.');
         this.loading.set(false);
       },
     });

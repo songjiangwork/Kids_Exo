@@ -29,7 +29,7 @@ export class LearnerManagement implements OnInit {
   }
 
   protected deleteLearner(learner: Learner): void {
-    const confirmed = window.confirm(`Delete learner "${learner.nickname}"? This also removes their practice history.`);
+    const confirmed = window.confirm(`Delete student "${learner.nickname}"? This also removes their practice history.`);
     if (!confirmed) {
       return;
     }
@@ -41,7 +41,7 @@ export class LearnerManagement implements OnInit {
         this.deleting.set(false);
       },
       error: () => {
-        this.error.set('Could not delete this learner.');
+        this.error.set('Could not delete this student.');
         this.deleting.set(false);
       },
     });
@@ -54,7 +54,7 @@ export class LearnerManagement implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        this.error.set('Could not load learners.');
+        this.error.set('Could not load students.');
         this.loading.set(false);
       },
     });

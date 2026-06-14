@@ -40,9 +40,29 @@ h1 {
   padding: 12px;
 }
 
+.pin-card {
+  margin-top: 22px;
+}
+
+h2 {
+  color: var(--ink);
+  font-family: var(--display-font);
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin: 0 0 12px;
+}
+
 .field {
   display: block;
   width: 100%;
+}
+
+.pin-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 22px;
 }
 
 .actions {
@@ -73,4 +93,17 @@ h1 {
   border-radius: 14px;
   color: #9a3828;
   padding: 14px 18px;
+}
+
+.success {
+  background: #e4f5dc;
+  border-radius: 14px;
+  color: #176b55;
+  padding: 14px 18px;
+}
+
+@media (max-width: 640px) {
+  .pin-grid {
+    grid-template-columns: 1fr;
+  }
 }

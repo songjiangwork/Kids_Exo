@@ -130,4 +130,17 @@ describe("AssignmentNotebook", () => {
     expect((emitted[0] as any).assignment.id).toBe(4);
     expect((emitted[0] as any).item.id).toBe(9);
   });
+
+  it("keeps self-assignment creation visible when archive is disabled", () => {
+    fixture.componentRef.setInput("allowCreate", true);
+    fixture.componentRef.setInput("allowArchive", false);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain("Description / notes (optional)");
+    expect(fixture.nativeElement.textContent).toContain("Create my homework");
+    const archiveButton = Array.from(
+      fixture.nativeElement.querySelectorAll("button.danger") as NodeListOf<HTMLButtonElement>,
+    ).find((button) => button.textContent?.includes("Archive"));
+    expect(archiveButton).toBeUndefined();
+  });
 });

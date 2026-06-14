@@ -40,8 +40,9 @@ export class LoginPage {
     this.error.set('');
     this.auth.login(this.email.trim(), this.password).subscribe({
       next: () => {
-        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/manage';
-        void this.router.navigateByUrl(returnUrl);
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        const target = returnUrl === null ? '/home' : `/home?returnUrl=${encodeURIComponent(returnUrl)}`;
+        void this.router.navigateByUrl(target);
       },
       error: () => {
         this.saving.set(false);

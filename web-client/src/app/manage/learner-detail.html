@@ -1,16 +1,18 @@
 <section class="detail-shell">
   @if (loading()) {
-    <div class="loading"><mat-spinner diameter="32" /> Loading learner details...</div>
+    <div class="loading"><mat-spinner diameter="32" /> Loading student details...</div>
   } @else if (learner(); as profile) {
     <header class="hero">
-      <p class="eyebrow">Learner Dashboard</p>
+      <p class="eyebrow">Student Dashboard</p>
       <h1>{{ profile.nickname }}</h1>
       <p class="lede">
         Status: @if (profile.active) { active } @else { inactive }
       </p>
-      <div class="hero-actions">
-        <a mat-stroked-button [routerLink]="['/manage/learners', profile.id, 'edit']">Edit learner</a>
-      </div>
+      @if (!studentMode()) {
+        <div class="hero-actions">
+          <a mat-stroked-button [routerLink]="['/manage/students', profile.id, 'edit']">Edit student</a>
+        </div>
+      }
     </header>
 
     @if (createdSession(); as session) {
@@ -21,10 +23,10 @@
           <p>10 focused questions are ready for {{ profile.nickname }}.</p>
           <div class="handoff-actions">
             <a mat-flat-button class="primary-action" [routerLink]="['/s', session.student_token]">
-              Open learner practice
+              Open student practice
             </a>
-            <a mat-button [routerLink]="['/manage/learners', profile.id]">
-              Stay on learner page
+            <a mat-button [routerLink]="['/manage/students', profile.id]">
+              Stay on student page
             </a>
           </div>
         </mat-card-content>
@@ -58,6 +60,7 @@
           [weakestSkills]="weakestSkillsTop3()"
           [topMistakes]="topMistakesTop3()"
           [creatingPracticePlugin]="creatingPracticePlugin()"
+          [allowCreatePractice]="!studentMode()"
           (createPracticeFromPlugin)="createPracticeFromPlugin($event)"
           (reviewResults)="reviewResults($event)"
         />
@@ -68,6 +71,8 @@
           [assignments]="assignments()"
           [catalog]="catalog()"
           [saving]="creatingAssignment()"
+          [allowCreate]="true"
+          [allowArchive]="!studentMode()"
           (createAssignment)="createAssignment($event)"
           (startAssignmentItem)="startAssignmentItem($event)"
           (archiveAssignment)="archiveAssignment($event)"
@@ -85,6 +90,7 @@
         <app-mistake-notebook-table
           [mistakes]="analytics()?.mistake_notebook ?? []"
           [creatingPracticePlugin]="creatingPracticePlugin()"
+          [allowCreatePractice]="!studentMode()"
           (createPracticeFromPlugin)="createPracticeFromPlugin($event)"
         />
       </mat-tab>
@@ -107,5 +113,7 @@
     <p class="error">{{ error() }}</p>
   }
 
-  <a mat-button routerLink="/manage/learners">Back to learners</a>
+  @if (!studentMode()) {
+    <a mat-button routerLink="/manage/students">Back to students</a>
+  }
 </section>

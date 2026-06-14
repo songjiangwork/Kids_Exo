@@ -1,4 +1,4 @@
-<section class="summary-grid" aria-label="Learner summary">
+<section class="summary-grid" aria-label="Student summary">
   @for (card of summaryCards; track card.label) {
     <mat-card appearance="outlined">
       <mat-card-content>
@@ -61,17 +61,19 @@
               {{ formatAnswer(mistake.expected_display ?? mistake.expected_answer) }}
             </p>
           </div>
-          <button
-            mat-button
-            (click)="createPracticeFromPlugin.emit(mistake.plugin)"
-            [disabled]="isCreating(mistake.plugin)"
-          >
-            @if (isCreating(mistake.plugin)) {
-              Creating...
-            } @else {
-              Practice
-            }
-          </button>
+          @if (allowCreatePractice) {
+            <button
+              mat-button
+              (click)="createPracticeFromPlugin.emit(mistake.plugin)"
+              [disabled]="isCreating(mistake.plugin)"
+            >
+              @if (isCreating(mistake.plugin)) {
+                Creating...
+              } @else {
+                Practice
+              }
+            </button>
+          }
         </div>
       } @empty {
         <p>No mistakes recorded yet.</p>

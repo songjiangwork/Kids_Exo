@@ -1,17 +1,17 @@
 <section class="learner-shell">
   <header class="hero">
-    <p class="eyebrow">Learners</p>
-    <h1>Manage learner profiles</h1>
+    <p class="eyebrow">Students</p>
+    <h1>Manage student profiles</h1>
     <p class="lede">
-      Keep learner names tidy, open learner details, and edit profiles through a focused form.
+      Keep student names tidy, open student dashboards, and edit profiles through a focused form.
     </p>
-    <a mat-flat-button class="primary-action" routerLink="/manage/learners/new">
-      Add learner
+    <a mat-flat-button class="primary-action" routerLink="/manage/students/new">
+      Add student
     </a>
   </header>
 
   @if (loading()) {
-    <div class="loading"><mat-spinner diameter="32" /> Loading learners...</div>
+    <div class="loading"><mat-spinner diameter="32" /> Loading students...</div>
   } @else {
     <mat-card class="table-card" appearance="outlined">
       <div class="table-wrap">
@@ -39,10 +39,10 @@
                   </span>
                 </td>
                 <td>
-                  <a mat-button [routerLink]="['/manage/learners', learner.id]">Detail</a>
+                  <a mat-button [routerLink]="['/manage/students', learner.id]">Detail</a>
                 </td>
                 <td>
-                  <a mat-button [routerLink]="['/manage/learners', learner.id, 'edit']">Edit</a>
+                  <a mat-button [routerLink]="['/manage/students', learner.id, 'edit']">Edit</a>
                 </td>
                 <td>
                   <button mat-button class="danger-action" (click)="deleteLearner(learner)" [disabled]="deleting()">
@@ -52,7 +52,7 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="6">No learners yet. Add the first learner above.</td>
+                <td colspan="6">No students yet. Add the first student above.</td>
               </tr>
             }
           </tbody>

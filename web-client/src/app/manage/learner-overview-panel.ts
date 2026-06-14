@@ -26,6 +26,7 @@ export class LearnerOverviewPanel {
   @Input() weakestSkills: LearnerSkillBreakdown[] = [];
   @Input() topMistakes: LearnerMistakeEntry[] = [];
   @Input() creatingPracticePlugin: string | null = null;
+  @Input() allowCreatePractice = true;
 
   @Output() createPracticeFromPlugin = new EventEmitter<string>();
   @Output() reviewResults = new EventEmitter<SessionSummary>();

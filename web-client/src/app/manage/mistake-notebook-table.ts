@@ -31,20 +31,23 @@ interface MistakeFilter {
 export class MistakeNotebookTable implements AfterViewInit, OnChanges {
   @Input() mistakes: LearnerMistakeEntry[] = [];
   @Input() creatingPracticePlugin: string | null = null;
+  @Input() allowCreatePractice = true;
   @Output() createPracticeFromPlugin = new EventEmitter<string>();
 
   @ViewChild(MatPaginator) private paginator?: MatPaginator;
   @ViewChild(MatSort) private sort?: MatSort;
 
-  protected readonly displayedColumns = [
-    'skill',
-    'prompt',
-    'expected',
-    'last',
-    'times',
-    'lastSeen',
-    'actions',
-  ];
+  protected displayedColumns(): string[] {
+    const columns = [
+      'skill',
+      'prompt',
+      'expected',
+      'last',
+      'times',
+      'lastSeen',
+    ];
+    return this.allowCreatePractice ? [...columns, 'actions'] : columns;
+  }
   protected readonly dataSource = new MatTableDataSource<LearnerMistakeEntry>([]);
   protected filter: MistakeFilter = { plugin: '', search: '', minMissed: 0 };
 

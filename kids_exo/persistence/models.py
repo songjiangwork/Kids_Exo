@@ -69,6 +69,11 @@ class HouseholdMemberEntity(Base):
     household_id: Mapped[int] = mapped_column(ForeignKey("households.id"))
     account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
     role: Mapped[str] = mapped_column(String(30))
+    parent_unlock_pin_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    parent_unlock_pin_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -83,6 +88,19 @@ class LearnerEntity(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     household_id: Mapped[int] = mapped_column(ForeignKey("households.id"))
     nickname: Mapped[str] = mapped_column(String(100))
+    avatar_key: Mapped[str] = mapped_column(String(40), default="fox")
+    student_login_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    student_code: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    student_pin_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    student_pin_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    student_login_failed_count: Mapped[int] = mapped_column(Integer, default=0)
+    student_login_locked_until: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     optional_account_id: Mapped[int | None] = mapped_column(
         ForeignKey("accounts.id"),
         nullable=True,

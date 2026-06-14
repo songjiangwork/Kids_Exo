@@ -184,7 +184,7 @@ describe('ParentStudio', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Homework assigned');
-    expect(fixture.nativeElement.textContent).toContain('Open learner dashboard');
+    expect(fixture.nativeElement.textContent).toContain('Open student dashboard');
   });
 
   it('keeps learner history on the learner detail page instead of the setup page', async () => {

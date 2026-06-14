@@ -3,13 +3,13 @@
     <p class="eyebrow">Parent Studio</p>
     <h1>Assign homework</h1>
     <p class="lede">
-      Choose a learner, set up focused practice, and leave homework that the learner can start from their dashboard.
+      Choose a student, set up focused practice, and leave homework that the student can start from their dashboard.
     </p>
     <a mat-stroked-button class="print-link" routerLink="/manage/worksheets">
       Generate a printable PDF
     </a>
-    <a mat-stroked-button class="print-link" routerLink="/manage/learners">
-      Manage learners
+    <a mat-stroked-button class="print-link" routerLink="/manage/students">
+      Manage students
     </a>
   </header>
 
@@ -20,14 +20,14 @@
       <mat-card class="composer" appearance="outlined">
         <mat-card-header>
           <mat-card-title>Who is this homework for?</mat-card-title>
-          <mat-card-subtitle>Select an existing learner or create a new learner first.</mat-card-subtitle>
+          <mat-card-subtitle>Select an existing student or create a new student first.</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
           <div class="form-grid learner-grid">
             <mat-form-field appearance="outline">
-              <mat-label>Learner</mat-label>
+              <mat-label>Student</mat-label>
               <mat-select [(ngModel)]="learnerId" (ngModelChange)="selectLearner($event)">
-                <mat-option [value]="null">New learner</mat-option>
+                <mat-option [value]="null">New student</mat-option>
                 @for (learner of learners(); track learner.id) {
                   <mat-option [value]="learner.id">{{ learner.nickname }} (#{{ learner.id }})</mat-option>
                 }
@@ -36,7 +36,7 @@
 
             @if (learnerId === null) {
               <mat-form-field appearance="outline">
-                <mat-label>New learner nickname</mat-label>
+                <mat-label>New student name</mat-label>
                 <input matInput [(ngModel)]="nickname" />
               </mat-form-field>
             }
@@ -64,10 +64,10 @@
       <mat-card-content>
         <p class="eyebrow">Homework assigned</p>
         <h2>{{ nickname }}&apos;s homework is ready</h2>
-        <p>{{ assignment.title }} is now available in the learner dashboard.</p>
+        <p>{{ assignment.title }} is now available in the student dashboard.</p>
         @if (learnerId !== null) {
-          <a mat-flat-button class="open-button" [routerLink]="['/manage/learners', learnerId]">
-            Open learner dashboard
+          <a mat-flat-button class="open-button" [routerLink]="['/manage/students', learnerId]">
+            Open student dashboard
           </a>
         }
       </mat-card-content>

@@ -359,7 +359,7 @@ describe('LearnerDetail', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('New practice ready');
-    expect(fixture.nativeElement.textContent).toContain('Open learner practice');
+    expect(fixture.nativeElement.textContent).toContain('Open student practice');
   });
 
   it('loads completed practice results from history', async () => {

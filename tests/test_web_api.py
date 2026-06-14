@@ -38,6 +38,7 @@ class PracticeWebApiTests(unittest.TestCase):
             "/api/auth/login",
             json={"email": "parent@example.com", "password": "secret password"},
         )
+        self.client.post("/api/household/parent-unlock", json={"pin": "1234"})
 
     def _text_answer_snapshot(self) -> PracticeSessionSnapshot:
         return PracticeSessionSnapshot(
@@ -163,6 +164,149 @@ class PracticeWebApiTests(unittest.TestCase):
 
         self.assertTrue(all(response.status_code == 401 for response in protected_requests))
 
+    def test_parent_unlock_controls_parent_management_apis(self) -> None:
+        client = TestClient(self.app)
+        client.post(
+            "/api/auth/login",
+            json={"email": "parent@example.com", "password": "secret password"},
+        )
+
+        locked = client.get("/api/learners")
+        wrong_pin = client.post("/api/household/parent-unlock", json={"pin": "0000"})
+        unlocked = client.post("/api/household/parent-unlock", json={"pin": "1234"})
+        status = client.get("/api/household/parent-unlock/status")
+        after_unlock = client.get("/api/learners")
+        client.post("/api/household/parent-lock")
+        after_lock = client.get("/api/learners")
+
+        self.assertEqual(locked.status_code, 403)
+        self.assertEqual(locked.json()["detail"], "Parent management is locked")
+        self.assertEqual(wrong_pin.status_code, 403)
+        self.assertEqual(unlocked.status_code, 200)
+        self.assertTrue(unlocked.json()["unlocked"])
+        self.assertTrue(status.json()["unlocked"])
+        self.assertEqual(after_unlock.status_code, 200)
+        self.assertEqual(after_lock.status_code, 403)
+
+    def test_parent_can_change_parent_pin(self) -> None:
+        client = TestClient(self.app)
+        client.post(
+            "/api/auth/login",
+            json={"email": "parent@example.com", "password": "secret password"},
+        )
+
+        wrong_current = client.post(
+            "/api/household/parent-pin",
+            json={"current_pin": "0000", "new_pin": "5678"},
+        )
+        response = client.post(
+            "/api/household/parent-pin",
+            json={"current_pin": "1234", "new_pin": "5678"},
+        )
+        client.post("/api/household/parent-lock")
+        old_pin = client.post("/api/household/parent-unlock", json={"pin": "1234"})
+        new_pin = client.post("/api/household/parent-unlock", json={"pin": "5678"})
+
+        self.assertEqual(wrong_current.status_code, 403)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["unlocked"])
+        self.assertEqual(old_pin.status_code, 403)
+        self.assertEqual(new_pin.status_code, 200)
+
+    def test_change_parent_pin_rejects_invalid_new_pin(self) -> None:
+        response = self.client.post(
+            "/api/household/parent-pin",
+            json={"current_pin": "1234", "new_pin": "12ab"},
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_household_student_switcher_and_student_pin_access_scope(self) -> None:
+        first_student = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        second_student = self.client.post("/api/learners", json={"nickname": "Bailey"}).json()
+        client = TestClient(self.app)
+        client.post(
+            "/api/auth/login",
+            json={"email": "parent@example.com", "password": "secret password"},
+        )
+
+        switcher = client.get("/api/household/students")
+        wrong_pin = client.post(
+            f"/api/household/students/{first_student['id']}/login",
+            json={"pin": "0000"},
+        )
+        login = client.post(
+            f"/api/household/students/{first_student['id']}/login",
+            json={"pin": "1234"},
+        )
+        own_detail = client.get(f"/api/learners/{first_student['id']}")
+        other_detail = client.get(f"/api/learners/{second_student['id']}")
+        list_students = client.get("/api/learners")
+        edit_student = client.patch(
+            f"/api/learners/{first_student['id']}",
+            json={"nickname": "Alex Edited", "active": True},
+        )
+        reset_student_pin = client.post(
+            f"/api/learners/{first_student['id']}/student-pin",
+            json={"pin": "5678"},
+        )
+        own_assignment = client.post(
+            f"/api/learners/{first_student['id']}/assignments",
+            json={
+                "title": "My homework",
+                "source_type": "parent_assigned",
+                "created_by_role": "parent",
+                "items": [{"plugin": "multiply_by_11", "question_count": 10}],
+            },
+        )
+        other_assignment = client.post(
+            f"/api/learners/{second_student['id']}/assignments",
+            json={
+                "title": "Other homework",
+                "items": [{"plugin": "multiply_by_11", "question_count": 10}],
+            },
+        )
+
+        self.assertEqual(switcher.status_code, 200)
+        self.assertEqual(
+            [student["nickname"] for student in switcher.json()["students"]],
+            ["Alex", "Bailey"],
+        )
+        self.assertNotIn("student_pin_hash", switcher.text)
+        self.assertEqual(wrong_pin.status_code, 403)
+        self.assertEqual(login.status_code, 200)
+        self.assertEqual(login.json()["student"]["id"], first_student["id"])
+        self.assertEqual(own_detail.status_code, 200)
+        self.assertEqual(other_detail.status_code, 403)
+        self.assertEqual(list_students.status_code, 403)
+        self.assertEqual(edit_student.status_code, 403)
+        self.assertEqual(reset_student_pin.status_code, 403)
+        self.assertEqual(own_assignment.status_code, 201)
+        self.assertEqual(own_assignment.json()["source_type"], "learner_added")
+        self.assertEqual(own_assignment.json()["created_by_role"], "learner")
+        self.assertEqual(other_assignment.status_code, 403)
+
+    def test_student_pin_login_cannot_access_another_household_student(self) -> None:
+        first_student = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        self.repository.create_parent_account(
+            email="second@example.com",
+            display_name="Second Parent",
+            password="secret password",
+            household_name="Second Family",
+        )
+        second_client = TestClient(self.app)
+        second_client.post(
+            "/api/auth/login",
+            json={"email": "second@example.com", "password": "secret password"},
+        )
+
+        response = second_client.post(
+            f"/api/household/students/{first_student['id']}/login",
+            json={"pin": "1234"},
+        )
+
+        self.assertEqual(response.status_code, 404)
+
     def test_parent_only_sees_their_own_household_learners(self) -> None:
         first_parent_learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
         self.repository.create_parent_account(
@@ -176,6 +320,7 @@ class PracticeWebApiTests(unittest.TestCase):
             "/api/auth/login",
             json={"email": "second@example.com", "password": "secret password"},
         )
+        second_client.post("/api/household/parent-unlock", json={"pin": "1234"})
 
         second_parent_list_before = second_client.get("/api/learners")
         second_parent_learner = second_client.post("/api/learners", json={"nickname": "Bailey"}).json()
@@ -201,6 +346,7 @@ class PracticeWebApiTests(unittest.TestCase):
             "/api/auth/login",
             json={"email": "second@example.com", "password": "secret password"},
         )
+        second_client.post("/api/household/parent-unlock", json={"pin": "1234"})
 
         session = self.client.post(
             f"/api/learners/{first_parent_learner['id']}/sessions",
@@ -705,6 +851,37 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertFalse(response.json()["active"])
         learners = self.client.get("/api/learners").json()
         self.assertEqual(learners[0]["nickname"], "Herbert")
+
+    def test_parent_can_reset_student_pin(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+
+        response = self.client.post(
+            f"/api/learners/{learner['id']}/student-pin",
+            json={"pin": "5678"},
+        )
+        old_pin_login = self.client.post(
+            f"/api/household/students/{learner['id']}/login",
+            json={"pin": "1234"},
+        )
+        new_pin_login = self.client.post(
+            f"/api/household/students/{learner['id']}/login",
+            json={"pin": "5678"},
+        )
+
+        self.assertEqual(response.status_code, 204)
+        self.assertEqual(old_pin_login.status_code, 403)
+        self.assertEqual(new_pin_login.status_code, 200)
+        self.assertEqual(new_pin_login.json()["student"]["id"], learner["id"])
+
+    def test_reset_student_pin_rejects_invalid_pin(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+
+        response = self.client.post(
+            f"/api/learners/{learner['id']}/student-pin",
+            json={"pin": "12ab"},
+        )
+
+        self.assertEqual(response.status_code, 422)
 
     def test_update_learner_rejects_unknown_learner(self) -> None:
         response = self.client.patch(

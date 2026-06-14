@@ -2,7 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
+import { vi } from 'vitest';
 import { App } from './app';
 
 @Component({ template: '' })
@@ -60,5 +61,30 @@ describe('App', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Login');
+  });
+
+  it('locks parent management and returns home', async () => {
+    const fixture = TestBed.createComponent(App);
+    const http = TestBed.inject(HttpTestingController);
+    const router = TestBed.inject(Router);
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    fixture.detectChanges();
+    http.expectOne('/api/auth/me').flush({
+      account: {
+        id: 1,
+        email: 'parent@example.com',
+        display_name: 'Parent',
+        active: true,
+      },
+    });
+    fixture.detectChanges();
+
+    const lock = Array.from(
+      fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
+    ).find((button) => button.textContent?.includes('Lock parent')) as HTMLButtonElement;
+    lock.click();
+    http.expectOne('/api/household/parent-lock').flush({ unlocked: false });
+
+    expect(navigate).toHaveBeenCalledWith(['/home']);
   });
 });

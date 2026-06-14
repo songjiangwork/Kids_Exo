@@ -1,7 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from kids_exo.persistence.repository import PracticeRepository
-from kids_exo.web.auth import LocalSessionStore, ParentContext, require_parent_context
+from kids_exo.web.auth import (
+    LocalSessionStore,
+    ParentContext,
+    StudentAccessContext,
+    require_parent_unlock,
+    require_parent_context,
+    require_student_access,
+    SESSION_COOKIE_NAME,
+)
 from kids_exo.web.dependencies import create_snapshot, require_repository
 from kids_exo.web.mappers import assignment_item_response, assignment_response
 from kids_exo.web.schemas import (
@@ -18,7 +26,9 @@ def create_router(
     session_store: LocalSessionStore,
 ) -> APIRouter:
     router = APIRouter()
+    parent_unlock = require_parent_unlock(repository, session_store)
     parent_context = require_parent_context(repository, session_store)
+    student_access = require_student_access(repository, session_store)
 
     @router.post(
         "/api/learners/{learner_id}/assignments",
@@ -28,20 +38,22 @@ def create_router(
     def create_assignment(
         learner_id: int,
         request: AssignmentCreateRequest,
-        parent: ParentContext = Depends(parent_context),
+        access: StudentAccessContext = Depends(student_access),
     ) -> AssignmentResponse:
         storage = require_repository(repository)
         try:
             _validated_items(request.items)
+            source_type = "parent_assigned" if access.parent_unlocked else "learner_added"
+            created_by_role = "parent" if access.parent_unlocked else "learner"
             assignment = storage.create_assignment(
                 learner_id,
                 title=request.title,
                 description=request.description,
-                source_type=request.source_type,
+                source_type=source_type,
                 due_at=request.due_at,
-                created_by_role=request.created_by_role,
+                created_by_role=created_by_role,
                 items=[item.model_dump() for item in request.items],
-                household_id=parent.household_id,
+                household_id=access.household_id,
             )
         except ValueError as exc:
             status_code = 404 if str(exc).startswith("Unknown learner") else 422
@@ -55,7 +67,7 @@ def create_router(
     def list_assignments(
         learner_id: int,
         status: str | None = None,
-        parent: ParentContext = Depends(parent_context),
+        access: StudentAccessContext = Depends(student_access),
     ) -> list[AssignmentResponse]:
         storage = require_repository(repository)
         try:
@@ -64,7 +76,7 @@ def create_router(
                 for assignment in storage.list_assignments_for_learner(
                     learner_id,
                     status=status,
-                    household_id=parent.household_id,
+                    household_id=access.household_id,
                 )
             ]
         except ValueError as exc:
@@ -77,11 +89,18 @@ def create_router(
     def start_assignment_item(
         assignment_id: int,
         item_id: int,
+        fastapi_request: Request,
         parent: ParentContext = Depends(parent_context),
     ) -> AssignmentItemStartResponse:
         storage = require_repository(repository)
         try:
             assignment = storage.get_assignment(assignment_id, household_id=parent.household_id)
+            if (
+                not session_store.is_parent_unlocked(fastapi_request.cookies.get(SESSION_COOKIE_NAME))
+                and session_store.active_student_id(fastapi_request.cookies.get(SESSION_COOKIE_NAME))
+                != assignment.learner_id
+            ):
+                raise PermissionError("Student access required")
             item = next((candidate for candidate in assignment.items if candidate.id == item_id), None)
             if item is None:
                 raise ValueError(f"Unknown assignment item: {item_id}")
@@ -105,6 +124,8 @@ def create_router(
         except ValueError as exc:
             status_code = 404 if str(exc).startswith("Unknown assignment") else 422
             raise HTTPException(status_code=status_code, detail=str(exc)) from exc
+        except PermissionError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
         token = result.practice_session.student_token
         return AssignmentItemStartResponse(
             assignment=assignment_response(result.assignment),
@@ -119,7 +140,7 @@ def create_router(
     )
     def archive_assignment(
         assignment_id: int,
-        parent: ParentContext = Depends(parent_context),
+        parent: ParentContext = Depends(parent_unlock),
     ) -> AssignmentResponse:
         storage = require_repository(repository)
         try:

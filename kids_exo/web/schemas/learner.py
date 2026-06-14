@@ -15,6 +15,10 @@ class LearnerUpdateRequest(BaseModel):
     active: bool
 
 
+class StudentPinResetRequest(BaseModel):
+    pin: str
+
+
 class LearnerResponse(FromDomainModel):
     id: int
     nickname: str

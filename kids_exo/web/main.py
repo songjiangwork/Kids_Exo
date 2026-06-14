@@ -7,6 +7,7 @@ from kids_exo.web.routers import (
     assignments,
     auth,
     catalog,
+    household,
     learners,
     parent_sessions,
     printable,
@@ -18,6 +19,7 @@ def create_app(repository: PracticeRepository | None = None) -> FastAPI:
     app = FastAPI(title="Kids Exo API", version="0.1.0")
     session_store = LocalSessionStore()
     app.include_router(auth.create_router(repository, session_store))
+    app.include_router(household.create_router(repository, session_store))
     app.include_router(catalog.create_router())
     app.include_router(printable.create_router(repository, session_store))
     app.include_router(learners.create_router(repository, session_store))

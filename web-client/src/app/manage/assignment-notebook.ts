@@ -18,6 +18,8 @@ export class AssignmentNotebook {
   @Input() assignments: Assignment[] = [];
   @Input() catalog: OnlineCatalog | null = null;
   @Input() saving = false;
+  @Input() allowCreate = true;
+  @Input() allowArchive = true;
   @Output() readonly createAssignment = new EventEmitter<AssignmentCreateRequest>();
   @Output() readonly startAssignmentItem = new EventEmitter<{ assignment: Assignment; item: AssignmentItem }>();
   @Output() readonly archiveAssignment = new EventEmitter<Assignment>();
@@ -70,6 +72,6 @@ export class AssignmentNotebook {
   }
 
   protected canArchive(assignment: Assignment): boolean {
-    return assignment.status !== "archived" && assignment.status !== "completed";
+    return this.allowArchive && assignment.status !== "archived" && assignment.status !== "completed";
   }
 }

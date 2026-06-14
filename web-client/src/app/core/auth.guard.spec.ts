@@ -5,7 +5,8 @@ import { firstValueFrom, isObservable, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { routes } from '../app.routes';
 import { AuthService } from './auth.service';
-import { parentAuthGuard } from './auth.guard';
+import { parentAuthGuard, parentUnlockGuard } from './auth.guard';
+import { PracticeApi } from './practice-api';
 
 describe('parentAuthGuard', () => {
   function createAuthMock(account: ReturnType<typeof signal>, me = vi.fn()) {
@@ -65,10 +66,50 @@ describe('parentAuthGuard', () => {
     });
     const router = TestBed.inject(Router);
 
-    const result = await resolveGuardResult(parentAuthGuard, '/manage/learners');
+    const result = await resolveGuardResult(parentAuthGuard, '/manage/students');
 
     expect(result).toBeInstanceOf(UrlTree);
-    expect(router.serializeUrl(result as UrlTree)).toBe('/login?returnUrl=%2Fmanage%2Flearners');
+    expect(router.serializeUrl(result as UrlTree)).toBe('/login?returnUrl=%2Fmanage%2Fstudents');
+  });
+
+  it('requires parent unlock for parent management routes', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        {
+          provide: PracticeApi,
+          useValue: { parentUnlockStatus: vi.fn(() => of({ unlocked: false })) },
+        },
+      ],
+    });
+    const router = TestBed.inject(Router);
+
+    const result = await resolveGuardResult(parentUnlockGuard, '/manage/students');
+
+    expect(result).toBeInstanceOf(UrlTree);
+    expect(router.serializeUrl(result as UrlTree)).toBe('/home?returnUrl=%2Fmanage%2Fstudents');
+  });
+
+  it('allows parent management routes when parent unlock is active', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        {
+          provide: PracticeApi,
+          useValue: { parentUnlockStatus: vi.fn(() => of({ unlocked: true })) },
+        },
+      ],
+    });
+
+    await expect(resolveGuardResult(parentUnlockGuard, '/manage/students')).resolves.toBe(true);
+  });
+
+  it('redirects old learner management routes to student routes', () => {
+    const learnerRedirect = routes.find((route) => route.path === 'manage/learners');
+    const learnerDetailRedirect = routes.find((route) => route.path === 'manage/learners/:id');
+
+    expect(learnerRedirect?.redirectTo).toBe('manage/students');
+    expect(learnerDetailRedirect?.redirectTo).toBe('manage/students/:id');
   });
 
   it('redirects to login when the session check fails', async () => {
