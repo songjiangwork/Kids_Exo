@@ -15,12 +15,16 @@ from kids_exo.web.schemas.catalog import (
     SettingOptionResponse,
 )
 from kids_exo.web.schemas.household import (
+    HouseholdSummaryResponse,
     HouseholdStudentsResponse,
     HouseholdStudentSummaryResponse,
     ParentPinChangeRequest,
     ParentUnlockStatusResponse,
     PinRequest,
     StudentAuthMeResponse,
+    StudentDirectAuthMeResponse,
+    StudentDirectLoginRequest,
+    StudentDirectLoginResponse,
     StudentLoginResponse,
 )
 from kids_exo.web.schemas.learner import (
@@ -62,6 +66,7 @@ __all__ = [
     "FromDomainModel",
     "HouseholdStudentsResponse",
     "HouseholdStudentSummaryResponse",
+    "HouseholdSummaryResponse",
     "IncorrectQuestionResponse",
     "LearnerAnalyticsResponse",
     "LearnerCreateRequest",
@@ -88,6 +93,9 @@ __all__ = [
     "SettingOptionResponse",
     "StudentQuestionResponse",
     "StudentAuthMeResponse",
+    "StudentDirectAuthMeResponse",
+    "StudentDirectLoginRequest",
+    "StudentDirectLoginResponse",
     "StudentLoginResponse",
     "StudentSessionResponse",
     "TimerStatusResponse",

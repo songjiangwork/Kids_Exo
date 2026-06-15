@@ -43,6 +43,7 @@ class HouseholdEntity(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(160))
+    household_code: Mapped[str] = mapped_column(String(20), unique=True, index=True)
     owner_account_id: Mapped[int] = mapped_column(ForeignKey("accounts.id"))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

@@ -9,7 +9,13 @@ from kids_exo.localization import LocalizedPresentation, LocalizedText
 from kids_exo.online.models import OnlineQuestionSnapshot, PracticeSessionSnapshot
 from kids_exo.online.session import OnlineSessionRequest, create_practice_session
 from kids_exo.persistence.database import build_engine, build_session_factory
-from kids_exo.persistence.models import AccountEntity, Base, HouseholdEntity, HouseholdMemberEntity
+from kids_exo.persistence.models import (
+    AccountEntity,
+    Base,
+    HouseholdEntity,
+    HouseholdMemberEntity,
+    LearnerEntity,
+)
 from kids_exo.persistence.repository import PracticeRepository
 from kids_exo.web.auth import LocalSessionStore, require_parent_account
 from kids_exo.web.app import create_app
@@ -307,6 +313,128 @@ class PracticeWebApiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 404)
 
+    def test_direct_student_login_access_scope_and_generic_errors(self) -> None:
+        first_student = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        second_student = self.client.post("/api/learners", json={"nickname": "Bailey"}).json()
+        with self.session_factory() as database_session:
+            first = database_session.get(LearnerEntity, first_student["id"])
+            household = database_session.get(HouseholdEntity, first.household_id)
+
+        anonymous = TestClient(self.app)
+        bad_household = anonymous.post(
+            "/api/student-direct-auth/login",
+            json={"household_code": "WRONG", "student_code": first.student_code, "pin": "1234"},
+        )
+        bad_student = anonymous.post(
+            "/api/student-direct-auth/login",
+            json={"household_code": household.household_code, "student_code": "WRONG", "pin": "1234"},
+        )
+        bad_pin = anonymous.post(
+            "/api/student-direct-auth/login",
+            json={"household_code": household.household_code, "student_code": first.student_code, "pin": "0000"},
+        )
+        login = anonymous.post(
+            "/api/student-direct-auth/login",
+            json={
+                "household_code": household.household_code.lower(),
+                "student_code": first.student_code.lower(),
+                "pin": "1234",
+            },
+        )
+        me = anonymous.get("/api/student-direct-auth/me")
+        own_detail = anonymous.get(f"/api/learners/{first_student['id']}")
+        other_detail = anonymous.get(f"/api/learners/{second_student['id']}")
+        list_students = anonymous.get("/api/learners")
+        parent_manage = anonymous.post(
+            f"/api/learners/{first_student['id']}/student-pin",
+            json={"pin": "5678"},
+        )
+        assignment = anonymous.post(
+            f"/api/learners/{first_student['id']}/assignments",
+            json={
+                "title": "My homework",
+                "items": [{"plugin": "multiply_by_11", "question_count": 10}],
+            },
+        )
+        start_assignment = anonymous.post(
+            "/api/assignments/{assignment_id}/items/{item_id}/start".format(
+                assignment_id=assignment.json()["id"],
+                item_id=assignment.json()["items"][0]["id"],
+            )
+        )
+
+        self.assertEqual(bad_household.status_code, 403)
+        self.assertEqual(bad_student.status_code, 403)
+        self.assertEqual(bad_pin.status_code, 403)
+        self.assertEqual(
+            bad_household.json()["detail"],
+            "Household code, student code, or PIN is incorrect.",
+        )
+        self.assertEqual(bad_student.json()["detail"], bad_household.json()["detail"])
+        self.assertEqual(bad_pin.json()["detail"], bad_household.json()["detail"])
+        self.assertEqual(login.status_code, 200)
+        self.assertEqual(login.json()["redirect_to"], f"/manage/students/{first_student['id']}")
+        self.assertEqual(me.status_code, 200)
+        self.assertEqual(me.json()["student"]["id"], first_student["id"])
+        self.assertEqual(me.json()["household"]["name"], "Song Family")
+        self.assertEqual(own_detail.status_code, 200)
+        self.assertEqual(other_detail.status_code, 403)
+        self.assertEqual(list_students.status_code, 401)
+        self.assertEqual(parent_manage.status_code, 401)
+        self.assertEqual(assignment.status_code, 201)
+        self.assertEqual(start_assignment.status_code, 200)
+        self.assertTrue(start_assignment.json()["student_url"].startswith("/s/s"))
+
+    def test_direct_student_login_lockout_and_success_clears_failed_count(self) -> None:
+        student = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        with self.session_factory() as database_session:
+            learner = database_session.get(LearnerEntity, student["id"])
+            household = database_session.get(HouseholdEntity, learner.household_id)
+
+        first_failure = TestClient(self.app).post(
+            "/api/student-direct-auth/login",
+            json={
+                "household_code": household.household_code,
+                "student_code": learner.student_code,
+                "pin": "0000",
+            },
+        )
+        success = TestClient(self.app).post(
+            "/api/student-direct-auth/login",
+            json={
+                "household_code": household.household_code,
+                "student_code": learner.student_code,
+                "pin": "1234",
+            },
+        )
+        with self.session_factory() as database_session:
+            self.assertEqual(
+                database_session.get(LearnerEntity, student["id"]).student_login_failed_count,
+                0,
+            )
+        for _ in range(5):
+            TestClient(self.app).post(
+                "/api/student-direct-auth/login",
+                json={
+                    "household_code": household.household_code,
+                    "student_code": learner.student_code,
+                    "pin": "0000",
+                },
+            )
+        locked = TestClient(self.app).post(
+            "/api/student-direct-auth/login",
+            json={
+                "household_code": household.household_code,
+                "student_code": learner.student_code,
+                "pin": "1234",
+            },
+        )
+
+        self.assertEqual(first_failure.status_code, 403)
+        self.assertEqual(success.status_code, 200)
+        self.assertEqual(locked.status_code, 403)
+        self.assertEqual(locked.json()["detail"], "Too many failed attempts. Try again later.")
+
     def test_parent_only_sees_their_own_household_learners(self) -> None:
         first_parent_learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
         self.repository.create_parent_account(
@@ -445,7 +573,11 @@ class PracticeWebApiTests(unittest.TestCase):
             )
             database_session.add(parent)
             database_session.flush()
-            household = HouseholdEntity(name="Child Household", owner_account_id=parent.id)
+            household = HouseholdEntity(
+                name="Child Household",
+                household_code="CHILD2",
+                owner_account_id=parent.id,
+            )
             database_session.add(household)
             database_session.flush()
             database_session.add(

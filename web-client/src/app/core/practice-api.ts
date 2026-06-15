@@ -104,6 +104,7 @@ export interface Learner {
   id: number;
   nickname: string;
   active: boolean;
+  student_code?: string | null;
 }
 
 export interface HouseholdStudent {
@@ -111,9 +112,17 @@ export interface HouseholdStudent {
   nickname: string;
   avatar_key: string;
   student_login_enabled: boolean;
+  student_code?: string | null;
+}
+
+export interface HouseholdSummary {
+  id: number;
+  name: string;
+  household_code: string;
 }
 
 export interface HouseholdStudentsResponse {
+  household: HouseholdSummary;
   students: HouseholdStudent[];
 }
 
@@ -128,6 +137,16 @@ export interface StudentLoginResponse {
 
 export interface StudentAuthState {
   student: HouseholdStudent | null;
+}
+
+export interface StudentDirectLoginResponse {
+  student: HouseholdStudent;
+  redirect_to: string;
+}
+
+export interface StudentDirectAuthState {
+  student: HouseholdStudent;
+  household: HouseholdSummary;
 }
 
 export interface LearnerSkillBreakdown {
@@ -336,6 +355,26 @@ export class PracticeApi {
 
   studentAuthMe(): Observable<StudentAuthState> {
     return this.http.get<StudentAuthState>('/api/student-auth/me');
+  }
+
+  directStudentLogin(
+    householdCode: string,
+    studentCode: string,
+    pin: string,
+  ): Observable<StudentDirectLoginResponse> {
+    return this.http.post<StudentDirectLoginResponse>('/api/student-direct-auth/login', {
+      household_code: householdCode,
+      student_code: studentCode,
+      pin,
+    });
+  }
+
+  directStudentMe(): Observable<StudentDirectAuthState> {
+    return this.http.get<StudentDirectAuthState>('/api/student-direct-auth/me');
+  }
+
+  directStudentLogout(): Observable<void> {
+    return this.http.post<void>('/api/student-direct-auth/logout', {});
   }
 
   createSession(learnerId: number, request: PracticeRequest): Observable<SavedSession> {

@@ -23,6 +23,7 @@ class LearnerResponse(FromDomainModel):
     id: int
     nickname: str
     active: bool
+    student_code: str | None = None
 
 
 class LearnerSkillBreakdownResponse(FromDomainModel):

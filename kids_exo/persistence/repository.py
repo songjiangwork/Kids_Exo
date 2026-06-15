@@ -70,6 +70,7 @@ class AssignmentStartResult:
 
 
 _SESSION_TOKEN_ALPHABET = "23456789abcdefghjkmnpqrstvwxyz"
+_PUBLIC_CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 _DEFAULT_ACCOUNT_EMAIL = "local-parent@example.local"
 _DEFAULT_ACCOUNT_DISPLAY_NAME = "Local Parent"
 _DEFAULT_ACCOUNT_PASSWORD_HASH = "disabled$local-dev-placeholder"
@@ -78,6 +79,7 @@ _DEFAULT_PIN = "1234"
 _DEFAULT_AVATARS = ("fox", "panda", "owl", "bear", "cat", "dog")
 _MAX_STUDENT_PIN_FAILURES = 5
 _STUDENT_PIN_LOCK_DURATION = timedelta(minutes=5)
+_DIRECT_STUDENT_LOGIN_ERROR = "Household code, student code, or PIN is incorrect."
 
 
 class PracticeRepository:
@@ -115,7 +117,11 @@ class PracticeRepository:
             )
             database_session.add(account)
             database_session.flush()
-            household = HouseholdEntity(name=household_name, owner_account_id=account.id)
+            household = HouseholdEntity(
+                name=household_name,
+                household_code=self._generate_household_code(database_session),
+                owner_account_id=account.id,
+            )
             database_session.add(household)
             database_session.flush()
             database_session.add(
@@ -243,6 +249,7 @@ class PracticeRepository:
                 active=True,
                 avatar_key=self._avatar_for_next_learner(database_session, household_id),
                 student_login_enabled=True,
+                student_code=self._generate_student_code(database_session, household_id, nickname),
                 student_pin_hash=hash_password(_DEFAULT_PIN),
                 student_pin_updated_at=self._now(),
                 student_login_failed_count=0,
@@ -273,6 +280,7 @@ class PracticeRepository:
 
         household = HouseholdEntity(
             name=_DEFAULT_HOUSEHOLD_NAME,
+            household_code=self._generate_household_code(database_session),
             owner_account_id=account.id,
         )
         database_session.add(household)
@@ -292,6 +300,42 @@ class PracticeRepository:
     @staticmethod
     def _normalize_email(email: str) -> str:
         return email.strip().lower()
+
+    @staticmethod
+    def _normalize_public_code(value: str) -> str:
+        return value.strip().upper()
+
+    def _generate_household_code(self, database_session) -> str:
+        for _ in range(20):
+            code = "".join(secrets.choice(_PUBLIC_CODE_ALPHABET) for _ in range(6))
+            existing = database_session.scalar(
+                select(HouseholdEntity.id).where(HouseholdEntity.household_code == code)
+            )
+            if existing is None:
+                return code
+        raise ValueError("Could not generate a unique household code")
+
+    def _generate_student_code(self, database_session, household_id: int, nickname: str) -> str:
+        normalized_name = self._normalize_public_code(nickname)
+        prefix = next(
+            (character for character in normalized_name if character in _PUBLIC_CODE_ALPHABET),
+            "S",
+        )
+        existing_codes = set(
+            database_session.scalars(
+                select(LearnerEntity.student_code).where(
+                    LearnerEntity.household_id == household_id,
+                    LearnerEntity.student_code.is_not(None),
+                )
+            )
+        )
+        if prefix not in existing_codes:
+            return prefix
+        for index in range(2, 100):
+            candidate = f"{prefix}{index}"
+            if candidate not in existing_codes:
+                return candidate
+        raise ValueError("Could not generate a unique student code")
 
     @staticmethod
     def _avatar_for_next_learner(database_session, household_id: int) -> str:
@@ -333,6 +377,61 @@ class PracticeRepository:
             ):
                 raise ValueError(f"Unknown learner: {learner_id}")
             return learner
+
+    def get_household(self, household_id: int) -> HouseholdEntity:
+        with self._session_factory() as database_session:
+            household = database_session.get(HouseholdEntity, household_id)
+            if household is None:
+                raise ValueError(f"Unknown household: {household_id}")
+            return household
+
+    def verify_direct_student_login(
+        self,
+        *,
+        household_code: str,
+        student_code: str,
+        pin: str,
+    ) -> LearnerEntity:
+        normalized_household_code = self._normalize_public_code(household_code)
+        normalized_student_code = self._normalize_public_code(student_code)
+        with self._session_factory() as database_session:
+            household = database_session.scalar(
+                select(HouseholdEntity).where(
+                    HouseholdEntity.household_code == normalized_household_code
+                )
+            )
+            if household is None:
+                raise ValueError(_DIRECT_STUDENT_LOGIN_ERROR)
+            student = database_session.scalar(
+                select(LearnerEntity).where(
+                    LearnerEntity.household_id == household.id,
+                    LearnerEntity.student_code == normalized_student_code,
+                )
+            )
+            now = self._now()
+            if student is None:
+                raise ValueError(_DIRECT_STUDENT_LOGIN_ERROR)
+            if not student.active or not student.student_login_enabled:
+                raise ValueError(_DIRECT_STUDENT_LOGIN_ERROR)
+            if (
+                student.student_login_locked_until is not None
+                and student.student_login_locked_until > now
+            ):
+                raise ValueError("Too many failed attempts. Try again later.")
+            if student.student_pin_hash is None:
+                student.student_pin_hash = hash_password(_DEFAULT_PIN)
+                student.student_pin_updated_at = now
+                database_session.commit()
+            if not verify_password(pin, student.student_pin_hash):
+                student.student_login_failed_count += 1
+                if student.student_login_failed_count >= _MAX_STUDENT_PIN_FAILURES:
+                    student.student_login_locked_until = now + _STUDENT_PIN_LOCK_DURATION
+                database_session.commit()
+                raise ValueError(_DIRECT_STUDENT_LOGIN_ERROR)
+            student.student_login_failed_count = 0
+            student.student_login_locked_until = None
+            database_session.commit()
+            return student
 
     def verify_student_pin(
         self,

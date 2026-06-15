@@ -7,6 +7,11 @@ export const routes: Routes = [
     loadComponent: () => import('./login/login-page').then((module) => module.LoginPage),
   },
   {
+    path: 'student-login',
+    loadComponent: () =>
+      import('./student-login/student-login-page').then((module) => module.StudentLoginPage),
+  },
+  {
     path: 'home',
     canActivate: [parentAuthGuard],
     loadComponent: () => import('./home/household-entry-page').then((module) => module.HouseholdEntryPage),
@@ -40,7 +45,7 @@ export const routes: Routes = [
   },
   {
     path: 'manage/students/:id',
-    canActivate: [parentAuthGuard, studentOrParentAccessGuard],
+    canActivate: [studentOrParentAccessGuard],
     loadComponent: () => import('./manage/learner-detail').then((module) => module.LearnerDetail),
   },
   { path: 'manage/learners', pathMatch: 'full', redirectTo: 'manage/students' },

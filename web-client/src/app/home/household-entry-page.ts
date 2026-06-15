@@ -6,7 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { HouseholdStudent, PracticeApi } from '../core/practice-api';
+import { HouseholdStudent, HouseholdSummary, PracticeApi } from '../core/practice-api';
 
 @Component({
   selector: 'app-household-entry-page',
@@ -23,6 +23,7 @@ import { HouseholdStudent, PracticeApi } from '../core/practice-api';
 })
 export class HouseholdEntryPage implements OnInit {
   protected readonly students = signal<HouseholdStudent[]>([]);
+  protected readonly household = signal<HouseholdSummary | null>(null);
   protected readonly selectedStudent = signal<HouseholdStudent | null>(null);
   protected readonly loading = signal(true);
   protected readonly studentSaving = signal(false);
@@ -49,6 +50,7 @@ export class HouseholdEntryPage implements OnInit {
   ngOnInit(): void {
     this.api.householdStudents().subscribe({
       next: (response) => {
+        this.household.set(response.household);
         this.students.set(response.students);
         this.loading.set(false);
       },

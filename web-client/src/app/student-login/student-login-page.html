@@ -1,0 +1,42 @@
+<section class="student-login-shell">
+  <mat-card class="login-card" appearance="outlined">
+    <mat-card-content>
+      <p class="eyebrow">Student Login</p>
+      <h1>Open your dashboard</h1>
+      <p class="lede">Enter your household code, student code, and PIN.</p>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Household Code</mat-label>
+        <input matInput autocomplete="organization" [(ngModel)]="householdCode" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Student Code</mat-label>
+        <input matInput autocomplete="username" [(ngModel)]="studentCode" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>PIN</mat-label>
+        <input
+          matInput
+          type="password"
+          inputmode="numeric"
+          autocomplete="current-password"
+          [(ngModel)]="pin"
+          (keyup.enter)="login()"
+        />
+      </mat-form-field>
+
+      @if (error()) {
+        <p class="error">{{ error() }}</p>
+      }
+
+      <div class="actions">
+        <a mat-button routerLink="/login">Parent login</a>
+        <button mat-flat-button class="primary-action" (click)="login()" [disabled]="saving()">
+          {{ saving() ? 'Opening...' : 'Login' }}
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</section>

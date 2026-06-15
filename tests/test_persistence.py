@@ -116,11 +116,15 @@ class PracticeRepositoryTests(unittest.TestCase):
             household = database_session.get(HouseholdEntity, saved.household_id)
             household_id = saved.household_id
             household_name = household.name
+            household_code = household.household_code
+            student_code = saved.student_code
             owner_email = household.owner_account.email
             member_role = household.members[0].role
 
         self.assertIsNotNone(household_id)
         self.assertEqual(household_name, "Default Household")
+        self.assertIsNotNone(household_code)
+        self.assertIsNotNone(student_code)
         self.assertEqual(owner_email, "local-parent@example.local")
         self.assertEqual(member_role, "parent")
 
@@ -138,6 +142,10 @@ class PracticeRepositoryTests(unittest.TestCase):
                 text("SELECT id FROM households WHERE owner_account_id = :account_id"),
                 {"account_id": account.id},
             )
+            household_code = database_session.scalar(
+                text("SELECT household_code FROM households WHERE owner_account_id = :account_id"),
+                {"account_id": account.id},
+            )
             membership = database_session.scalar(
                 text("SELECT role FROM household_members WHERE account_id = :account_id"),
                 {"account_id": account.id},
@@ -147,7 +155,83 @@ class PracticeRepositoryTests(unittest.TestCase):
         self.assertNotEqual(saved_account.password_hash, "correct horse battery staple")
         self.assertTrue(verify_password("correct horse battery staple", saved_account.password_hash))
         self.assertIsNotNone(household)
+        self.assertIsNotNone(household_code)
         self.assertEqual(membership, "parent")
+
+    def test_student_code_uniqueness_is_scoped_to_household(self) -> None:
+        first_account = self.repository.create_parent_account(
+            email="first@example.com",
+            display_name="First",
+            password="secret password",
+            household_name="First Family",
+        )
+        second_account = self.repository.create_parent_account(
+            email="second@example.com",
+            display_name="Second",
+            password="secret password",
+            household_name="Second Family",
+        )
+        with self.session_factory() as database_session:
+            first_household_id = database_session.scalar(
+                text("SELECT household_id FROM household_members WHERE account_id = :account_id"),
+                {"account_id": first_account.id},
+            )
+            second_household_id = database_session.scalar(
+                text("SELECT household_id FROM household_members WHERE account_id = :account_id"),
+                {"account_id": second_account.id},
+            )
+
+        first = self.repository.create_learner("Herbert", household_id=first_household_id)
+        second = self.repository.create_learner("Herbert", household_id=second_household_id)
+        third = self.repository.create_learner("Helen", household_id=first_household_id)
+
+        self.assertEqual(first.student_code, "H")
+        self.assertEqual(second.student_code, "H")
+        self.assertEqual(third.student_code, "H2")
+
+    def test_direct_student_login_verifies_household_code_student_code_and_pin(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        with self.session_factory() as database_session:
+            household = database_session.get(HouseholdEntity, learner.household_id)
+
+        verified = self.repository.verify_direct_student_login(
+            household_code=household.household_code.lower(),
+            student_code=learner.student_code.lower(),
+            pin="1234",
+        )
+
+        self.assertEqual(verified.id, learner.id)
+
+    def test_direct_student_login_uses_generic_errors_and_lockout(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        with self.session_factory() as database_session:
+            household = database_session.get(HouseholdEntity, learner.household_id)
+
+        with self.assertRaisesRegex(ValueError, "Household code, student code, or PIN is incorrect"):
+            self.repository.verify_direct_student_login(
+                household_code="wrong",
+                student_code=learner.student_code,
+                pin="1234",
+            )
+        with self.assertRaisesRegex(ValueError, "Household code, student code, or PIN is incorrect"):
+            self.repository.verify_direct_student_login(
+                household_code=household.household_code,
+                student_code="wrong",
+                pin="1234",
+            )
+        for _ in range(5):
+            with self.assertRaisesRegex(ValueError, "Household code, student code, or PIN is incorrect"):
+                self.repository.verify_direct_student_login(
+                    household_code=household.household_code,
+                    student_code=learner.student_code,
+                    pin="0000",
+                )
+        with self.assertRaisesRegex(ValueError, "Too many failed attempts"):
+            self.repository.verify_direct_student_login(
+                household_code=household.household_code,
+                student_code=learner.student_code,
+                pin="1234",
+            )
 
     def test_changes_parent_unlock_pin(self) -> None:
         account = self.repository.create_parent_account(
@@ -697,7 +781,14 @@ class AlembicMigrationTests(unittest.TestCase):
                     build_engine(f"sqlite+pysqlite:///{database_path}")
                 ).get_columns("learners")
             }
-            self.assertTrue({"household_id", "optional_account_id"} <= learner_columns)
+            household_columns = {
+                column["name"]
+                for column in inspect(
+                    build_engine(f"sqlite+pysqlite:///{database_path}")
+                ).get_columns("households")
+            }
+            self.assertTrue({"household_code"} <= household_columns)
+            self.assertTrue({"household_id", "optional_account_id", "student_code"} <= learner_columns)
             with build_engine(f"sqlite+pysqlite:///{database_path}").connect() as connection:
                 self.assertEqual(
                     connection.execute(
@@ -709,6 +800,21 @@ class AlembicMigrationTests(unittest.TestCase):
                     connection.execute(text("SELECT name FROM households")).scalar_one(),
                     "Default Household",
                 )
+                self.assertIsNotNone(
+                    connection.execute(text("SELECT household_code FROM households")).scalar_one()
+                )
+            indexes = inspect(build_engine(f"sqlite+pysqlite:///{database_path}")).get_indexes("households")
+            unique_constraints = inspect(
+                build_engine(f"sqlite+pysqlite:///{database_path}")
+            ).get_unique_constraints("households")
+            household_code_is_unique = any(
+                index.get("unique") and index.get("column_names") == ["household_code"]
+                for index in indexes
+            ) or any(
+                constraint.get("column_names") == ["household_code"]
+                for constraint in unique_constraints
+            )
+            self.assertTrue(household_code_is_unique)
             session_columns = {
                 column["name"]
                 for column in inspect(

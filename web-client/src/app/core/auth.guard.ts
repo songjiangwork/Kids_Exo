@@ -36,12 +36,18 @@ export const parentUnlockGuard: CanActivateFn = (_route, state) => {
 
 export const studentOrParentAccessGuard: CanActivateFn = (route, state) => {
   const api = inject(PracticeApi);
+  const auth = inject(AuthService);
   const router = inject(Router);
   const studentId = Number(route.paramMap.get('id'));
   return api.learner(studentId).pipe(
     map(() => true),
-    catchError(() => of(router.createUrlTree(['/home'], {
-      queryParams: { returnUrl: state.url },
-    }))),
+    catchError(() => auth.me().pipe(
+      map((authState) => authState.account !== null
+        ? router.createUrlTree(['/home'], { queryParams: { returnUrl: state.url } })
+        : router.createUrlTree(['/student-login'], { queryParams: { returnUrl: state.url } })),
+      catchError(() => of(router.createUrlTree(['/student-login'], {
+        queryParams: { returnUrl: state.url },
+      }))),
+    )),
   );
 };

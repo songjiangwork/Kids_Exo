@@ -20,9 +20,10 @@ describe('HouseholdEntryPage', () => {
     fixture.detectChanges();
     const http = TestBed.inject(HttpTestingController);
     http.expectOne('/api/household/students').flush({
+      household: { id: 1, name: 'Song Family', household_code: 'SONGH2' },
       students: [
-        { id: 3, nickname: 'Herbert', avatar_key: 'fox', student_login_enabled: true },
-        { id: 4, nickname: 'Linsey', avatar_key: 'panda', student_login_enabled: true },
+        { id: 3, nickname: 'Herbert', avatar_key: 'fox', student_login_enabled: true, student_code: 'H' },
+        { id: 4, nickname: 'Linsey', avatar_key: 'panda', student_login_enabled: true, student_code: 'L' },
       ],
     });
     fixture.detectChanges();
@@ -38,6 +39,7 @@ describe('HouseholdEntryPage', () => {
 
     expect(fixture.nativeElement.textContent).toContain('Student Mode');
     expect(fixture.nativeElement.textContent).toContain('Parent Management');
+    expect(fixture.nativeElement.textContent).toContain('SONGH2');
     expect(fixture.nativeElement.textContent).toContain('Herbert');
     expect(fixture.nativeElement.textContent).toContain('Linsey');
   });

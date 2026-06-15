@@ -15,6 +15,7 @@ from kids_exo.web.dependencies import require_repository
 from kids_exo.web.schemas import (
     HouseholdStudentsResponse,
     HouseholdStudentSummaryResponse,
+    HouseholdSummaryResponse,
     ParentPinChangeRequest,
     ParentUnlockStatusResponse,
     PinRequest,
@@ -36,7 +37,13 @@ def create_router(
     ) -> HouseholdStudentsResponse:
         storage = require_repository(repository)
         students = storage.list_student_switcher_entries(parent.household_id)
+        household = storage.get_household(parent.household_id)
         return HouseholdStudentsResponse(
+            household=HouseholdSummaryResponse(
+                id=household.id,
+                name=household.name,
+                household_code=household.household_code,
+            ),
             students=tuple(_student_summary(student) for student in students)
         )
 
@@ -122,16 +129,26 @@ def create_router(
         return ParentUnlockStatusResponse(unlocked=expires_at is not None, expires_at=expires_at)
 
     @router.get("/api/student-auth/me", response_model=StudentAuthMeResponse)
-    def student_me(
-        fastapi_request: Request,
-        parent: ParentContext = Depends(parent_context),
-    ) -> StudentAuthMeResponse:
-        student_id = session_store.active_student_id(fastapi_request.cookies.get(SESSION_COOKIE_NAME))
+    def student_me(fastapi_request: Request) -> StudentAuthMeResponse:
+        token = fastapi_request.cookies.get(SESSION_COOKIE_NAME)
+        state = session_store.get_state(token)
+        student_id = session_store.active_student_id(token)
         if student_id is None:
             return StudentAuthMeResponse(student=None)
         storage = require_repository(repository)
+        household_id: int | None = None
+        if state is not None and state.session_type == "student":
+            household_id = state.household_id
+        else:
+            try:
+                parent = parent_context(fastapi_request)
+                household_id = parent.household_id
+            except HTTPException:
+                return StudentAuthMeResponse(student=None)
+        if household_id is None:
+            return StudentAuthMeResponse(student=None)
         try:
-            student = storage.get_learner(student_id, household_id=parent.household_id)
+            student = storage.get_learner(student_id, household_id=household_id)
         except ValueError:
             return StudentAuthMeResponse(student=None)
         return StudentAuthMeResponse(student=_student_summary(student))
@@ -150,4 +167,5 @@ def _student_summary(student: LearnerEntity) -> HouseholdStudentSummaryResponse:
         nickname=student.nickname,
         avatar_key=student.avatar_key,
         student_login_enabled=student.student_login_enabled,
+        student_code=student.student_code,
     )

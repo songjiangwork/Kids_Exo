@@ -90,15 +90,26 @@ def create_router(
         assignment_id: int,
         item_id: int,
         fastapi_request: Request,
-        parent: ParentContext = Depends(parent_context),
     ) -> AssignmentItemStartResponse:
         storage = require_repository(repository)
         try:
-            assignment = storage.get_assignment(assignment_id, household_id=parent.household_id)
+            token = fastapi_request.cookies.get(SESSION_COOKIE_NAME)
+            state = session_store.get_state(token)
+            if state is not None and state.session_type == "student":
+                if state.household_id is None or state.active_student_id is None:
+                    raise PermissionError("Student access required")
+                household_id = state.household_id
+                active_student_id = state.active_student_id
+                parent_unlocked = False
+            else:
+                parent = parent_context(fastapi_request)
+                household_id = parent.household_id
+                active_student_id = session_store.active_student_id(token)
+                parent_unlocked = session_store.is_parent_unlocked(token)
+            assignment = storage.get_assignment(assignment_id, household_id=household_id)
             if (
-                not session_store.is_parent_unlocked(fastapi_request.cookies.get(SESSION_COOKIE_NAME))
-                and session_store.active_student_id(fastapi_request.cookies.get(SESSION_COOKIE_NAME))
-                != assignment.learner_id
+                not parent_unlocked
+                and active_student_id != assignment.learner_id
             ):
                 raise PermissionError("Student access required")
             item = next((candidate for candidate in assignment.items if candidate.id == item_id), None)
@@ -119,7 +130,7 @@ def create_router(
                 assignment_id,
                 item_id,
                 snapshot,
-                household_id=parent.household_id,
+                household_id=household_id,
             )
         except ValueError as exc:
             status_code = 404 if str(exc).startswith("Unknown assignment") else 422

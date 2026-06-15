@@ -15,7 +15,9 @@ SESSION_COOKIE_NAME = "kids_exo_session"
 
 @dataclass
 class SessionState:
-    account_id: int
+    session_type: str
+    account_id: int | None = None
+    household_id: int | None = None
     parent_unlocked_until: datetime | None = None
     active_student_id: int | None = None
 
@@ -26,7 +28,16 @@ class LocalSessionStore:
 
     def create_session(self, account_id: int) -> str:
         token = secrets.token_urlsafe(32)
-        self._sessions[token] = SessionState(account_id=account_id)
+        self._sessions[token] = SessionState(session_type="parent", account_id=account_id)
+        return token
+
+    def create_student_session(self, *, household_id: int, student_id: int) -> str:
+        token = secrets.token_urlsafe(32)
+        self._sessions[token] = SessionState(
+            session_type="student",
+            household_id=household_id,
+            active_student_id=student_id,
+        )
         return token
 
     def get_state(self, token: str | None) -> SessionState | None:
@@ -93,7 +104,7 @@ class ParentContext:
 
 @dataclass(frozen=True)
 class StudentAccessContext:
-    account: AccountEntity
+    account: AccountEntity | None
     household_id: int
     student_id: int
     parent_unlocked: bool
@@ -184,9 +195,24 @@ def require_student_access(
     parent_context = require_parent_context(repository, session_store)
 
     def dependency(learner_id: int, request: Request) -> StudentAccessContext:
-        parent = parent_context(request)
         token = request.cookies.get(SESSION_COOKIE_NAME)
         storage = require_repository(repository)
+        state = session_store.get_state(token)
+        if state is not None and state.session_type == "student":
+            if state.household_id is None or state.active_student_id != learner_id:
+                raise HTTPException(status_code=403, detail="Student access required")
+            try:
+                storage.get_learner(learner_id, household_id=state.household_id)
+            except ValueError as exc:
+                raise HTTPException(status_code=404, detail=str(exc)) from exc
+            return StudentAccessContext(
+                account=None,
+                household_id=state.household_id,
+                student_id=learner_id,
+                parent_unlocked=False,
+            )
+
+        parent = parent_context(request)
         try:
             storage.get_learner(learner_id, household_id=parent.household_id)
         except ValueError as exc:

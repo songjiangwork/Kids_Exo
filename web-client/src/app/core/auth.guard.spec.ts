@@ -1,11 +1,11 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { CanActivateFn, GuardResult, Router, UrlTree, provideRouter } from '@angular/router';
+import { CanActivateFn, GuardResult, Router, UrlTree, convertToParamMap, provideRouter } from '@angular/router';
 import { firstValueFrom, isObservable, of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { routes } from '../app.routes';
 import { AuthService } from './auth.service';
-import { parentAuthGuard, parentUnlockGuard } from './auth.guard';
+import { parentAuthGuard, parentUnlockGuard, studentOrParentAccessGuard } from './auth.guard';
 import { PracticeApi } from './practice-api';
 
 describe('parentAuthGuard', () => {
@@ -19,9 +19,10 @@ describe('parentAuthGuard', () => {
   async function resolveGuardResult(
     guard: CanActivateFn,
     url = '/manage',
+    route = {},
   ): Promise<GuardResult> {
     const result = TestBed.runInInjectionContext(() =>
-      guard({} as Parameters<CanActivateFn>[0], { url } as Parameters<CanActivateFn>[1]),
+      guard(route as Parameters<CanActivateFn>[0], { url } as Parameters<CanActivateFn>[1]),
     );
     return isObservable(result) ? firstValueFrom(result) : result;
   }
@@ -135,5 +136,73 @@ describe('parentAuthGuard', () => {
 
     expect(studentRoutes).toHaveLength(2);
     expect(studentRoutes.every((route) => route.canActivate === undefined)).toBe(true);
+  });
+
+  it('keeps student dashboard route available to direct student sessions', () => {
+    const studentDetail = routes.find((route) => route.path === 'manage/students/:id');
+
+    expect(studentDetail?.canActivate).toEqual([studentOrParentAccessGuard]);
+  });
+
+  it('redirects anonymous student dashboard failures to direct student login', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        {
+          provide: PracticeApi,
+          useValue: { learner: vi.fn(() => throwError(() => new Error('403'))) },
+        },
+        {
+          provide: AuthService,
+          useValue: createAuthMock(signal(null), vi.fn(() => of({ account: null }))),
+        },
+      ],
+    });
+    const router = TestBed.inject(Router);
+
+    const result = await resolveGuardResult(
+      studentOrParentAccessGuard,
+      '/manage/students/3',
+      { paramMap: convertToParamMap({ id: '3' }) },
+    );
+
+    expect(result).toBeInstanceOf(UrlTree);
+    expect(router.serializeUrl(result as UrlTree)).toBe('/student-login?returnUrl=%2Fmanage%2Fstudents%2F3');
+  });
+
+  it('redirects parent household student access failures to home', async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        {
+          provide: PracticeApi,
+          useValue: { learner: vi.fn(() => throwError(() => new Error('403'))) },
+        },
+        {
+          provide: AuthService,
+          useValue: createAuthMock(
+            signal(null),
+            vi.fn(() => of({
+              account: {
+                id: 1,
+                email: 'parent@example.com',
+                display_name: 'Parent',
+                active: true,
+              },
+            })),
+          ),
+        },
+      ],
+    });
+    const router = TestBed.inject(Router);
+
+    const result = await resolveGuardResult(
+      studentOrParentAccessGuard,
+      '/manage/students/3',
+      { paramMap: convertToParamMap({ id: '3' }) },
+    );
+
+    expect(result).toBeInstanceOf(UrlTree);
+    expect(router.serializeUrl(result as UrlTree)).toBe('/home?returnUrl=%2Fmanage%2Fstudents%2F3');
   });
 });
