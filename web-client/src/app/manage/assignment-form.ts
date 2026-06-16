@@ -16,6 +16,13 @@ import {
 } from '../core/practice-api';
 import { PluginSettingsForm } from './plugin-settings-form';
 
+interface PracticeTypeGroup {
+  subject: string;
+  category: string;
+  label: string;
+  plugins: OnlinePlugin[];
+}
+
 @Component({
   selector: 'app-assignment-form',
   imports: [
@@ -64,6 +71,31 @@ export class AssignmentForm implements OnChanges {
     return (this.catalog?.plugins ?? []).filter((plugin) =>
       (plugin.supported_delivery_modes ?? []).includes('web_practice'),
     );
+  }
+
+  protected get practiceTypeGroups(): PracticeTypeGroup[] {
+    const groups = new Map<string, PracticeTypeGroup>();
+    for (const plugin of this.webPracticePlugins) {
+      const subject = plugin.subject || 'Other';
+      const category = plugin.category || 'Other';
+      const key = `${subject}::${category}`;
+      const group = groups.get(key) ?? {
+        subject,
+        category,
+        label: subject === 'Other' && category === 'Other' ? 'Other' : `${subject} / ${category}`,
+        plugins: [],
+      };
+      group.plugins.push(plugin);
+      groups.set(key, group);
+    }
+    return Array.from(groups.values())
+      .map((group) => ({
+        ...group,
+        plugins: [...group.plugins].sort((left, right) => left.title.localeCompare(right.title)),
+      }))
+      .sort((left, right) =>
+        left.subject.localeCompare(right.subject) || left.category.localeCompare(right.category),
+      );
   }
 
   protected get selectedPlugin(): OnlinePlugin | undefined {

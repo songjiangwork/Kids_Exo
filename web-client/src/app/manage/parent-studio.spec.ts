@@ -121,7 +121,7 @@ describe('ParentStudio', () => {
 
     expect(fixture.nativeElement.textContent).toContain('Assign homework');
     expect(fixture.nativeElement.textContent).toContain('Who is this homework for?');
-    expect(fixture.nativeElement.textContent).toContain('Skill');
+    expect(fixture.nativeElement.textContent).toContain('Practice type');
     expect(fixture.nativeElement.textContent).toContain('Description / notes (optional)');
     expect((fixture.componentInstance as any).catalog().plugins.map((plugin: any) => plugin.plugin)).toContain(
       'difference_of_squares',

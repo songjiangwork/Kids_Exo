@@ -36,6 +36,26 @@ const catalog: OnlineCatalog = {
       settings: [],
       supported_delivery_modes: ['web_practice'],
     },
+    {
+      plugin: 'french_alphabet_sounds',
+      title: 'French Alphabet Sounds',
+      description: 'Listen to French letter sounds.',
+      subject: 'French',
+      category: 'Listening',
+      default_locale: 'en-CA',
+      settings: [],
+      supported_delivery_modes: ['web_practice'],
+    },
+    {
+      plugin: 'print_only',
+      title: 'Print Only Practice',
+      description: 'Only available as a printable worksheet.',
+      subject: 'Math',
+      category: 'Worksheets',
+      default_locale: 'en-CA',
+      settings: [],
+      supported_delivery_modes: ['pdf_printable'],
+    },
   ],
 };
 
@@ -60,7 +80,23 @@ describe('AssignmentForm', () => {
     expect(fixture.nativeElement.textContent).toContain('Homework title');
   });
 
-  it('defaults the title to the selected skill name', () => {
+  it('labels the plugin picker as practice type and groups web practice plugins', () => {
+    expect(fixture.nativeElement.textContent).toContain('Practice type');
+    expect(fixture.nativeElement.textContent).not.toContain('Skill');
+
+    const groups = (fixture.componentInstance as any).practiceTypeGroups;
+    expect(groups.map((group: any) => group.label)).toEqual([
+      'French / Listening',
+      'Math / Integer Arithmetic',
+      'Math / Mental Multiplication',
+    ]);
+    expect(groups.find((group: any) => group.label === 'French / Listening').plugins[0].plugin)
+      .toBe('french_alphabet_sounds');
+    expect(groups.flatMap((group: any) => group.plugins.map((plugin: any) => plugin.plugin)))
+      .not.toContain('print_only');
+  });
+
+  it('defaults the title to the selected practice type name', () => {
     expect((fixture.componentInstance as any).title).toBe('Multiply by 11');
 
     (fixture.componentInstance as any).selectPlugin('signed_integer');
@@ -68,11 +104,24 @@ describe('AssignmentForm', () => {
     expect((fixture.componentInstance as any).title).toBe('Signed Integer Addition and Subtraction');
   });
 
-  it('keeps a manually edited title when switching skills', () => {
+  it('keeps a manually edited title when switching practice types', () => {
     (fixture.componentInstance as any).updateTitle('Monday fluency sprint');
     (fixture.componentInstance as any).selectPlugin('signed_integer');
 
     expect((fixture.componentInstance as any).title).toBe('Monday fluency sprint');
+  });
+
+  it('keeps selected value as the internal plugin id and updates plugin settings', () => {
+    (fixture.componentInstance as any).selectPlugin('signed_integer');
+
+    expect((fixture.componentInstance as any).selectedPluginId).toBe('signed_integer');
+    expect((fixture.componentInstance as any).selectedPlugin?.plugin).toBe('signed_integer');
+    expect((fixture.componentInstance as any).pluginSettings).toEqual({});
+
+    (fixture.componentInstance as any).selectPlugin('multiply_by_11');
+
+    expect((fixture.componentInstance as any).selectedPluginId).toBe('multiply_by_11');
+    expect((fixture.componentInstance as any).pluginSettings).toEqual({ multiplicand_digits: [2] });
   });
 
   it('validates title and emits homework request payload', () => {

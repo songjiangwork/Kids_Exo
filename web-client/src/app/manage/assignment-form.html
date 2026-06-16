@@ -9,10 +9,14 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Skill</mat-label>
+        <mat-label>Practice type</mat-label>
         <mat-select [ngModel]="selectedPluginId" (ngModelChange)="selectPlugin($event)">
-          @for (plugin of webPracticePlugins; track plugin.plugin) {
-            <mat-option [value]="plugin.plugin">{{ plugin.title }}</mat-option>
+          @for (group of practiceTypeGroups; track group.label) {
+            <mat-optgroup [label]="group.label">
+              @for (plugin of group.plugins; track plugin.plugin) {
+                <mat-option [value]="plugin.plugin">{{ plugin.title }}</mat-option>
+              }
+            </mat-optgroup>
           }
         </mat-select>
       </mat-form-field>
