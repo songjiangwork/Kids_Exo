@@ -65,6 +65,7 @@ class IncorrectQuestionResponse(BaseModel):
     expected_answer: int | str | dict[str, Any] | None
     submitted_display: str | None = None
     expected_display: str | None = None
+    submitted_work: str | None = None
     answer_type: str | None = None
 
 

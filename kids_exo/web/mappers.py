@@ -120,6 +120,7 @@ def practice_results_response(saved_session) -> PracticeResultsResponse:
                 expected_answer=expected_answer_value(question),
                 submitted_display=submitted_answer_display(attempt, question),
                 expected_display=expected_answer_display(question),
+                submitted_work=submitted_work(attempt),
                 answer_type=question.answer_type,
             )
             for question, attempt in attempts
@@ -143,6 +144,21 @@ def submitted_answer_display(attempt, question=None) -> str | None:
         if choice is not None:
             return choice
     return _display_answer(value)
+
+
+def submitted_work(attempt) -> str | None:
+    value = submitted_answer_value(attempt)
+    if isinstance(value, dict):
+        work = value.get("work")
+        if isinstance(work, str) and work:
+            return work
+    payload = getattr(attempt, "submitted_payload", None) or {}
+    raw = payload.get("raw")
+    if isinstance(raw, dict):
+        work = raw.get("work")
+        if isinstance(work, str) and work:
+            return work
+    return None
 
 
 def expected_answer_display(question) -> str | None:

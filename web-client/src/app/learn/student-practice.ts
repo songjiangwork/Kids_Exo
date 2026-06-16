@@ -6,7 +6,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { PracticeApi, PracticeResults, StudentSession } from '../core/practice-api';
+import { AnswerValue, PracticeApi, PracticeResults, StudentSession } from '../core/practice-api';
 import { AudioPrompt } from './audio-prompt';
 import { PracticeResultsCard } from './practice-results-card';
 import { QuestionRendererHost } from './question-renderer-host';
@@ -42,7 +42,7 @@ export class StudentPractice implements OnInit, OnDestroy {
   protected readonly elapsedSeconds = signal(0);
   protected readonly timerPaused = signal(false);
   protected readonly timerUpdating = signal(false);
-  protected answer: string | number | null = '';
+  protected answer: AnswerValue = '';
   protected readonly scratchPadOpen = signal(false);
   protected readonly scratchResetVersion = signal(0);
 
@@ -93,12 +93,12 @@ export class StudentPractice implements OnInit, OnDestroy {
 
   protected checkAnswer(): void {
     const question = this.question();
-    const normalizedAnswer = this.answer === null ? '' : String(this.answer).trim();
-    if (!question || normalizedAnswer === '' || this.isPracticePaused()) {
+    const submittedAnswer = this.submittableAnswer();
+    if (!question || submittedAnswer === null || this.isPracticePaused()) {
       return;
     }
     this.submitting.set(true);
-    this.api.submitAnswer(this.token, question.identifier, normalizedAnswer).subscribe({
+    this.api.submitAnswer(this.token, question.identifier, submittedAnswer).subscribe({
       next: (result) => {
         if (result.is_correct === true) {
           this.feedback.set('correct');
@@ -122,6 +122,17 @@ export class StudentPractice implements OnInit, OnDestroy {
     }
     this.answer = choiceIndex;
     this.checkAnswer();
+  }
+
+  private submittableAnswer(): Exclude<AnswerValue, null> | null {
+    if (this.answer === null) {
+      return null;
+    }
+    if (typeof this.answer === 'object') {
+      return this.answer;
+    }
+    const normalizedAnswer = String(this.answer).trim();
+    return normalizedAnswer === '' ? null : normalizedAnswer;
   }
 
   protected playQuestionAudio(): void {

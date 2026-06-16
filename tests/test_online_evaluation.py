@@ -134,6 +134,65 @@ class OnlineEvaluationTests(unittest.TestCase):
         self.assertFalse(result.is_correct)
         self.assertEqual(result.normalized_answer, "mama")
 
+    def test_structured_word_problem_accepts_correct_integer_fields_and_work(self) -> None:
+        result = evaluate_answer(
+            "structured_word_problem",
+            {
+                "expected_values": {"chicken_count": 12, "rabbit_count": 8},
+                "field_rules": {
+                    "chicken_count": {"value_type": "integer"},
+                    "rabbit_count": {"value_type": "integer"},
+                },
+            },
+            {
+                "values": {"chicken_count": "12", "rabbit_count": 8},
+                "work": "Assume all are chickens, then adjust by two legs.",
+            },
+        )
+
+        self.assertTrue(result.is_correct)
+        self.assertEqual(
+            result.normalized_answer,
+            {
+                "values": {"chicken_count": 12, "rabbit_count": 8},
+                "work": "Assume all are chickens, then adjust by two legs.",
+            },
+        )
+        self.assertEqual(result.detail["answer_type"], "structured_word_problem")
+        self.assertTrue(result.detail["field_results"]["chicken_count"]["is_correct"])
+        self.assertTrue(result.detail["work_submitted"])
+
+    def test_structured_word_problem_rejects_wrong_integer_fields(self) -> None:
+        result = evaluate_answer(
+            "structured_word_problem",
+            {
+                "expected_values": {"chicken_count": 12, "rabbit_count": 8},
+                "field_rules": {
+                    "chicken_count": {"value_type": "integer"},
+                    "rabbit_count": {"value_type": "integer"},
+                },
+            },
+            {"values": {"chicken_count": 10, "rabbit_count": 10}},
+        )
+
+        self.assertFalse(result.is_correct)
+        self.assertFalse(result.detail["field_results"]["chicken_count"]["is_correct"])
+        self.assertFalse(result.detail["work_submitted"])
+
+    def test_structured_word_problem_rejects_missing_required_field(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Missing required answer field"):
+            evaluate_answer(
+                "structured_word_problem",
+                {
+                    "expected_values": {"chicken_count": 12, "rabbit_count": 8},
+                    "field_rules": {
+                        "chicken_count": {"value_type": "integer"},
+                        "rabbit_count": {"value_type": "integer"},
+                    },
+                },
+                {"values": {"chicken_count": 12}},
+            )
+
     def test_unknown_answer_type_is_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "Unsupported answer_type"):
             evaluate_answer("spelling", {"expected_text": "maman"}, "maman")

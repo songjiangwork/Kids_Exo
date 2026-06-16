@@ -1,0 +1,49 @@
+<section class="word-answer">
+  <div class="fields">
+    @for (field of fields(); track field.key) {
+      <div class="field-row">
+        <mat-form-field appearance="outline">
+          <mat-label>{{ field.label }}</mat-label>
+          <input
+            matInput
+            [inputMode]="field.value_type === 'integer' ? 'numeric' : 'text'"
+            [disabled]="disabled || submitting"
+            [(ngModel)]="values[field.key]"
+            (ngModelChange)="updateAnswer()"
+            (keyup.enter)="submit()"
+          />
+        </mat-form-field>
+        @if (field.unit) {
+          <span class="unit">{{ field.unit }}</span>
+        }
+      </div>
+    }
+  </div>
+
+  @if (workAreaEnabled()) {
+    <mat-form-field appearance="outline" class="work-field">
+      <mat-label>{{ workAreaLabel() }}</mat-label>
+      <textarea
+        matInput
+        rows="4"
+        [disabled]="disabled || submitting"
+        [(ngModel)]="work"
+        (ngModelChange)="updateAnswer()"
+      ></textarea>
+    </mat-form-field>
+  }
+
+  @if (validationMessage) {
+    <p class="validation">{{ validationMessage }}</p>
+  }
+
+  <button
+    mat-flat-button
+    class="check-button"
+    type="button"
+    [disabled]="disabled || submitting"
+    (click)="submit()"
+  >
+    @if (submitting) { Checking... } @else { Check answer }
+  </button>
+</section>

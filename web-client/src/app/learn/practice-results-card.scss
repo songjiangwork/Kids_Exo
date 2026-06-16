@@ -85,3 +85,21 @@
 .missed-question:first-of-type {
   border-top: 0;
 }
+
+.submitted-work {
+  background: rgb(255 253 245 / 80%);
+  border-radius: 12px;
+  margin-top: 8px;
+  padding: 10px 12px;
+}
+
+.submitted-work span {
+  color: var(--teal);
+  font-weight: 800;
+}
+
+.submitted-work p {
+  color: var(--ink);
+  margin: 5px 0 0;
+  white-space: pre-wrap;
+}

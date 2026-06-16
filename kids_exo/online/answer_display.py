@@ -18,6 +18,8 @@ def expected_answer_value(
         return payload["expected_index"]
     if answer_type in TEXT_ANSWER_TYPES and "expected_text" in payload:
         return str(payload["expected_text"])
+    if answer_type == "structured_word_problem" and "expected_values" in payload:
+        return {"values": dict(payload["expected_values"])}
     return legacy_expected_answer
 
 
@@ -55,6 +57,9 @@ def answer_display(
     if value is None:
         return None
     if isinstance(value, dict):
+        values = value.get("values")
+        if isinstance(values, dict):
+            return ", ".join(f"{_humanize_key(key)}: {item}" for key, item in values.items())
         return str(value)
     return str(value)
 
@@ -63,3 +68,7 @@ def value_for_legacy_integer_column(value: AnswerValue) -> int | None:
     if isinstance(value, bool) or not isinstance(value, int):
         return None
     return value
+
+
+def _humanize_key(key: str) -> str:
+    return str(key).replace("_count", "").replace("_", " ").title()

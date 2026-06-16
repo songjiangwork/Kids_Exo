@@ -1,5 +1,6 @@
 from dataclasses import asdict, dataclass, is_dataclass
 from datetime import datetime, timedelta, timezone
+import json
 import secrets
 
 from sqlalchemy import func, select
@@ -985,7 +986,7 @@ class PracticeRepository:
         self,
         token: str,
         question_identifier: str,
-        submitted_answer: str,
+        submitted_answer: str | int | dict,
     ) -> ResponseAttemptEntity:
         with self._session_factory() as database_session:
             practice_session = database_session.scalars(
@@ -1025,9 +1026,9 @@ class PracticeRepository:
             attempt = ResponseAttemptEntity(
                 question_instance_id=question.id,
                 attempt_number=len(question.attempts) + 1,
-                submitted_answer=submitted_answer,
+                submitted_answer=_submitted_answer_for_legacy_text_column(submitted_answer),
                 normalized_answer=normalized_answer,
-                submitted_payload={"raw": submitted_answer},
+                submitted_payload=_submitted_payload(submitted_answer),
                 normalized_payload={"value": evaluation.normalized_answer},
                 evaluation_detail=evaluation.detail,
                 is_correct=evaluation.is_correct,
@@ -1260,6 +1261,24 @@ def _normalized_answer_for_legacy_integer_column(normalized_answer: AnswerValue)
     # Compatibility value for the legacy integer column.
     # Generic answer data is stored in normalized_payload/evaluation_detail.
     return value_for_legacy_integer_column(normalized_answer)
+
+
+def _submitted_answer_for_legacy_text_column(submitted_answer: str | int | dict) -> str:
+    if isinstance(submitted_answer, dict):
+        values = submitted_answer.get("values")
+        if isinstance(values, dict):
+            text = ", ".join(f"{key}={value}" for key, value in values.items())
+        else:
+            text = json.dumps(submitted_answer, ensure_ascii=True, sort_keys=True)
+    else:
+        text = str(submitted_answer)
+    return text[:100]
+
+
+def _submitted_payload(submitted_answer: str | int | dict) -> dict:
+    if isinstance(submitted_answer, dict):
+        return {"raw": submitted_answer}
+    return {"raw": str(submitted_answer)}
 
 
 def _expected_answer_display(question) -> str | None:

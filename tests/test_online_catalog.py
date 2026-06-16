@@ -26,6 +26,7 @@ class OnlinePluginCatalogTests(unittest.TestCase):
                 "near_round_pair_multiplication",
                 "difference_of_squares",
                 "integer_signed_addition_subtraction",
+                "chicken_rabbit_word_problems",
                 "french_alphabet_sounds",
                 "french_common_word_sounds",
             ),
@@ -107,6 +108,7 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         near_round = get_online_plugin("near_round_pair_multiplication")
         difference = get_online_plugin("difference_of_squares")
         signed_integers = get_online_plugin("integer_signed_addition_subtraction")
+        word_problems = get_online_plugin("chicken_rabbit_word_problems")
         french_alphabet = get_online_plugin("french_alphabet_sounds")
         french_common_words = get_online_plugin("french_common_word_sounds")
 
@@ -147,6 +149,12 @@ class OnlinePluginCatalogTests(unittest.TestCase):
             tuple(setting.name for setting in signed_integers.settings),
             ("number_range", "operations"),
         )
+        self.assertEqual(word_problems.subject, "Math")
+        self.assertEqual(word_problems.category, "Word Problems")
+        self.assertEqual(word_problems.title, "Chicken and Rabbit Word Problems")
+        self.assertEqual(word_problems.supported_delivery_modes, ("web_practice",))
+        self.assertEqual(word_problems.answer_types, ("structured_word_problem",))
+        self.assertEqual(tuple(setting.name for setting in word_problems.settings), ("difficulty",))
         self.assertEqual(french_alphabet.subject, "French")
         self.assertEqual(french_alphabet.category, "Pronunciation")
         self.assertEqual(

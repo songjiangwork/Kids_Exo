@@ -56,6 +56,32 @@ describe('QuestionRendererHost', () => {
     expect(fixture.debugElement.queryAll(By.css('.choice-button')).length).toBe(2);
   });
 
+  it('renders structured word problems through the word problem renderer', async () => {
+    const fixture = await createFixture();
+    fixture.componentRef.setInput('question', {
+      identifier: 'question-1',
+      position: 1,
+      total_questions: 1,
+      prompt: 'There are chickens and rabbits.',
+      renderer_type: 'word_problem_answer',
+      public_payload: {
+        answer_schema: {
+          fields: [
+            { key: 'chicken_count', label: 'Chickens', value_type: 'integer', unit: 'items', required: true },
+            { key: 'rabbit_count', label: 'Rabbits', value_type: 'integer', unit: 'items', required: true },
+          ],
+        },
+        work_area: { enabled: true, required: false, label: 'Show your work' },
+      },
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Chickens');
+    expect(fixture.nativeElement.textContent).toContain('Rabbits');
+    expect(fixture.nativeElement.textContent).toContain('Show your work');
+    expect(fixture.nativeElement.querySelector('app-word-problem-answer-renderer')).not.toBeNull();
+  });
+
   it('shows an unsupported message for unknown renderer types', async () => {
     const fixture = await createFixture();
     fixture.componentRef.setInput('question', {

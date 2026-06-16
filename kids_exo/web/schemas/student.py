@@ -28,7 +28,7 @@ class TimerStatusResponse(BaseModel):
 
 
 class AnswerSubmissionRequest(BaseModel):
-    answer: str
+    answer: str | int | dict[str, Any]
 
 
 class AnswerSubmissionResponse(FromDomainModel):

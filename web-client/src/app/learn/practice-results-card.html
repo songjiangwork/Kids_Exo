@@ -14,6 +14,12 @@
           <strong>{{ missed.prompt }}</strong>
           <span>Your answer: {{ missed.submitted_display ?? missed.submitted_answer }}</span>
           <span>Answer: {{ missed.expected_display ?? missed.expected_answer }}</span>
+          @if (missed.submitted_work) {
+            <div class="submitted-work">
+              <span>Your work:</span>
+              <p>{{ missed.submitted_work }}</p>
+            </div>
+          }
         </div>
       }
     </section>

@@ -258,6 +258,39 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertTrue(first.audio_url.startswith("/audio/tts/fr/fr-FR-DeniseNeural/common-words/family/"))
         self.assertTrue(first.audio_url.endswith(".mp3"))
 
+    def test_chicken_rabbit_word_problem_session_generates_structured_questions(self) -> None:
+        session = create_practice_session(
+            OnlineSessionRequest(
+                plugin="chicken_rabbit_word_problems",
+                plugin_settings={"difficulty": ["intro"]},
+                question_count=10,
+                seed=77,
+            )
+        )
+        first = session.questions[0]
+        student_view = session.student_questions()[0]
+        expected_values = first.evaluation_payload["expected_values"]
+
+        self.assertEqual(session.plugin, "chicken_rabbit_word_problems")
+        self.assertEqual(session.subject, "Math")
+        self.assertEqual(session.category, "Word Problems")
+        self.assertEqual(session.skill, "Chicken and Rabbit Word Problems")
+        self.assertEqual(first.renderer_type, "word_problem_answer")
+        self.assertEqual(first.answer_type, "structured_word_problem")
+        self.assertEqual(first.question_type, "word_problem")
+        self.assertIn("answer_schema", first.public_payload)
+        self.assertIn("work_area", first.public_payload)
+        self.assertNotIn("expected_values", first.public_payload)
+        self.assertNotIn("answer_type", student_view.public_payload)
+        self.assertNotIn("evaluation_payload", student_view.public_payload)
+        self.assertEqual(first.evaluation_payload["field_rules"].keys(), expected_values.keys())
+        self.assertTrue(
+            session.evaluate_answer(
+                first.identifier,
+                {"values": expected_values, "work": ""},
+            ).is_correct
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -423,6 +423,43 @@ class PracticeRepositoryTests(unittest.TestCase):
         completed = self.repository.get_completed_results_by_student_token("text-token")
         self.assertEqual(completed.status, "completed")
 
+    def test_persists_structured_word_problem_answer_and_work_in_generic_payload(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        snapshot = create_practice_session(
+            OnlineSessionRequest(
+                plugin="chicken_rabbit_word_problems",
+                plugin_settings={"difficulty": ["intro"]},
+                question_count=10,
+                seed=77,
+            )
+        )
+        self.repository.create_practice_session(
+            learner.id,
+            snapshot,
+            student_token="word-token",
+        )
+        session = self.repository.get_session_by_student_token("word-token")
+        question = session.questions[0]
+        expected_values = question.evaluation_payload["expected_values"]
+
+        attempt = self.repository.submit_answer(
+            "word-token",
+            question.public_identifier,
+            {"values": expected_values, "work": "Assume all are the first type."},
+        )
+
+        self.assertTrue(attempt.is_correct)
+        self.assertIsNone(attempt.normalized_answer)
+        self.assertEqual(
+            attempt.submitted_payload,
+            {"raw": {"values": expected_values, "work": "Assume all are the first type."}},
+        )
+        self.assertEqual(
+            attempt.normalized_payload,
+            {"value": {"values": expected_values, "work": "Assume all are the first type."}},
+        )
+        self.assertTrue(attempt.evaluation_detail["work_submitted"])
+
     def test_tracks_active_elapsed_time_and_settles_stale_timer_on_reopen(self) -> None:
         learner = self.repository.create_learner("Alex")
         self.repository.create_practice_session(

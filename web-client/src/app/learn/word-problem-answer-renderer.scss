@@ -1,0 +1,49 @@
+.word-answer {
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+  margin: 1.5rem auto 0;
+  max-width: 42rem;
+  width: min(100%, 42rem);
+}
+
+.fields {
+  display: grid;
+  gap: 0.8rem;
+  width: 100%;
+}
+
+.field-row {
+  align-items: center;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.unit {
+  color: #687673;
+  font-weight: 700;
+  min-width: 4rem;
+}
+
+.work-field {
+  width: 100%;
+}
+
+.validation {
+  color: #9b2c1d;
+  font-weight: 700;
+  margin: 0;
+}
+
+.check-button {
+  border-radius: 999px;
+  min-width: 13rem;
+}
+
+@media (max-width: 640px) {
+  .field-row {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+}

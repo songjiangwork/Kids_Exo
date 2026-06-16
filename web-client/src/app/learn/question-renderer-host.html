@@ -1,7 +1,7 @@
 @switch (rendererType()) {
   @case ('numeric_answer') {
     <app-numeric-answer-renderer
-      [answer]="answer"
+      [answer]="scalarAnswer()"
       (answerChange)="answerChange.emit($event)"
       [disabled]="disabled"
       [submitting]="submitting"
@@ -22,6 +22,16 @@
       [choices]="question.choices ?? []"
       [disabled]="disabled || submitting"
       (submitChoice)="submitChoice.emit($event)"
+    />
+  }
+
+  @case ('word_problem_answer') {
+    <app-word-problem-answer-renderer
+      [question]="question"
+      [disabled]="disabled"
+      [submitting]="submitting"
+      (answerChange)="answerChange.emit($event)"
+      (submitAnswer)="submitAnswer.emit()"
     />
   }
 

@@ -86,7 +86,11 @@ class PracticeSessionSnapshot:
             for position, question in enumerate(self.questions, start=1)
         )
 
-    def evaluate_answer(self, question_identifier: str, submitted_answer: str) -> AnswerEvaluation:
+    def evaluate_answer(
+        self,
+        question_identifier: str,
+        submitted_answer: str | int | dict[str, Any],
+    ) -> AnswerEvaluation:
         question = self._find_question(question_identifier)
         result = evaluate_answer(
             question.answer_type,

@@ -1,3 +1,6 @@
+from kids_exo.plugins.chicken_rabbit_word_problems.metadata import (
+    PLUGIN_METADATA as CHICKEN_RABBIT_WORD_PROBLEMS,
+)
 from kids_exo.plugins.difference_of_squares.metadata import (
     PLUGIN_METADATA as DIFFERENCE_OF_SQUARES,
 )
@@ -47,6 +50,7 @@ ENABLED_ONLINE_PLUGIN_METADATA = (
     NEAR_ROUND_PAIR,
     DIFFERENCE_OF_SQUARES,
     SIGNED_INTEGER_ADDITION_SUBTRACTION,
+    CHICKEN_RABBIT_WORD_PROBLEMS,
     FRENCH_ALPHABET_SOUNDS,
     FRENCH_COMMON_WORD_SOUNDS,
 )

@@ -204,6 +204,7 @@ export interface IncorrectQuestion {
   expected_answer: AnswerValue;
   submitted_display?: string | null;
   expected_display?: string | null;
+  submitted_work?: string | null;
   answer_type?: string | null;
 }
 
@@ -449,7 +450,7 @@ export class PracticeApi {
     });
   }
 
-  submitAnswer(token: string, questionId: string, answer: string): Observable<AnswerResult> {
+  submitAnswer(token: string, questionId: string, answer: Exclude<AnswerValue, null>): Observable<AnswerResult> {
     return this.http.post<AnswerResult>(
       `/api/student/sessions/${token}/questions/${questionId}/attempts`,
       { answer },
