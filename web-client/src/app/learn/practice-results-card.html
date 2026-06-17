@@ -26,5 +26,5 @@
   } @else {
     <p class="perfect">Every answer was correct.</p>
   }
-  <a mat-flat-button href="/manage">Back to Parent Studio</a>
+  <a mat-flat-button [routerLink]="backUrl">{{ backLabel }}</a>
 </mat-card>

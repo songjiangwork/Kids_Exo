@@ -93,7 +93,7 @@ export class WordProblemAnswerRenderer implements OnChanges {
     for (const field of this.fields()) {
       const raw = (this.values[field.key] ?? '').trim();
       if (field.required !== false && raw === '') {
-        return `${field.label} is required.`;
+        return `Please enter ${field.label}.`;
       }
       if (raw !== '' && field.value_type === 'integer' && !/^-?\d+$/.test(raw)) {
         return `${field.label} must be an integer.`;

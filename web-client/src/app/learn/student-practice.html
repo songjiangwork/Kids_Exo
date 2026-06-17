@@ -8,7 +8,7 @@
   } @else if (question(); as activeQuestion) {
     <div class="practice-header">
       <div>
-        <p class="eyebrow">Mental multiplication</p>
+        <p class="eyebrow">{{ sessionEyebrow() }}</p>
         <p class="counter">Question {{ activeQuestion.position }} of {{ activeQuestion.total_questions }}</p>
       </div>
       @if (session()?.show_timer) {

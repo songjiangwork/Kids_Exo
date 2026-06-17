@@ -46,7 +46,7 @@ describe('WordProblemAnswerRenderer', () => {
     fixture.detectChanges();
 
     expect(submitSpy).not.toHaveBeenCalled();
-    expect(fixture.nativeElement.textContent).toContain('Chickens is required.');
+    expect(fixture.nativeElement.textContent).toContain('Please enter Chickens.');
   });
 
   it('emits structured values and optional work', async () => {

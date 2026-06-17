@@ -278,6 +278,10 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertEqual(first.renderer_type, "word_problem_answer")
         self.assertEqual(first.answer_type, "structured_word_problem")
         self.assertEqual(first.question_type, "word_problem")
+        self.assertNotIn(" things ", first.prompt)
+        self.assertTrue(
+            any(group_label in first.prompt for group_label in ("animals", "vehicles"))
+        )
         self.assertIn("answer_schema", first.public_payload)
         self.assertIn("work_area", first.public_payload)
         self.assertNotIn("expected_values", first.public_payload)

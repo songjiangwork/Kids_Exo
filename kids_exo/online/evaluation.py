@@ -106,12 +106,19 @@ def _evaluate_structured_word_problem(
     if work is None:
         work = ""
     work = str(work).strip()
+    checks = _structured_diagnostic_checks(
+        normalized_values,
+        expected_values,
+        evaluation_payload.get("diagnostic_checks"),
+    )
     return EvaluationResult(
         normalized_answer={"values": normalized_values, "work": work},
         is_correct=all_correct,
         detail={
             "answer_type": "structured_word_problem",
             "field_results": field_results,
+            "checks": checks,
+            "feedback_code": _structured_feedback_code(all_correct, field_results, checks),
             "work_submitted": bool(work),
         },
     )
@@ -132,3 +139,84 @@ def _normalize_structured_field(key: str, value: Any, rule: dict[str, Any]) -> A
         except ValueError as exc:
             raise ValueError(f"Answer field {key} must be an integer") from exc
     raise ValueError(f"Unsupported structured answer field type: {value_type}")
+
+
+def _structured_diagnostic_checks(
+    normalized_values: dict[str, Any],
+    expected_values: dict[str, Any],
+    diagnostic_checks: Any,
+) -> dict[str, Any]:
+    checks: dict[str, Any] = {
+        "values_swapped": _values_are_swapped(normalized_values, expected_values),
+    }
+    if not isinstance(diagnostic_checks, dict):
+        return checks
+
+    if "total_count" in diagnostic_checks:
+        submitted_total_count = sum(
+            value for value in normalized_values.values()
+            if isinstance(value, int) and not isinstance(value, bool)
+        )
+        expected_total_count = diagnostic_checks["total_count"]
+        checks.update(
+            {
+                "submitted_total_count": submitted_total_count,
+                "expected_total_count": expected_total_count,
+                "total_count_matches": submitted_total_count == expected_total_count,
+            }
+        )
+
+    unit_values = diagnostic_checks.get("unit_values")
+    if isinstance(unit_values, dict) and "total_units" in diagnostic_checks:
+        submitted_total_units = sum(
+            normalized_values[key] * unit_value
+            for key, unit_value in unit_values.items()
+            if key in normalized_values
+            and isinstance(normalized_values[key], int)
+            and not isinstance(normalized_values[key], bool)
+            and isinstance(unit_value, int)
+            and not isinstance(unit_value, bool)
+        )
+        expected_total_units = diagnostic_checks["total_units"]
+        checks.update(
+            {
+                "submitted_total_units": submitted_total_units,
+                "expected_total_units": expected_total_units,
+                "total_units_matches": submitted_total_units == expected_total_units,
+                "unit_label": diagnostic_checks.get("unit_label"),
+            }
+        )
+    return checks
+
+
+def _values_are_swapped(
+    normalized_values: dict[str, Any],
+    expected_values: dict[str, Any],
+) -> bool:
+    keys = list(expected_values.keys())
+    if len(keys) != 2:
+        return False
+    first, second = keys
+    return (
+        normalized_values.get(first) == expected_values.get(second)
+        and normalized_values.get(second) == expected_values.get(first)
+        and expected_values.get(first) != expected_values.get(second)
+    )
+
+
+def _structured_feedback_code(
+    is_correct: bool,
+    field_results: dict[str, dict[str, Any]],
+    checks: dict[str, Any],
+) -> str:
+    if is_correct:
+        return "correct"
+    if checks.get("values_swapped") is True:
+        return "values_swapped"
+    if checks.get("total_count_matches") is False:
+        return "total_count_mismatch"
+    if checks.get("total_units_matches") is False:
+        return "total_units_mismatch"
+    if any(not result.get("is_correct") for result in field_results.values()):
+        return "field_value_mismatch"
+    return "field_value_mismatch"

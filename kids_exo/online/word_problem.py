@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 @dataclass(frozen=True)
 class WordProblemContext:
     key: str
+    group_label: str
     container: str
     item_a: str
     item_a_plural: str
@@ -30,6 +31,7 @@ class WordProblemContext:
 INTRO_CONTEXTS = (
     WordProblemContext(
         key="chicken_rabbit",
+        group_label="animals",
         container="in a cage",
         item_a="chicken",
         item_a_plural="chickens",
@@ -41,6 +43,7 @@ INTRO_CONTEXTS = (
     ),
     WordProblemContext(
         key="bicycle_car",
+        group_label="vehicles",
         container="in a parking lot",
         item_a="bicycle",
         item_a_plural="bicycles",
@@ -55,6 +58,7 @@ INTRO_CONTEXTS = (
 MIXED_CONTEXTS = INTRO_CONTEXTS + (
     WordProblemContext(
         key="bee_spider",
+        group_label="creatures",
         container="in a garden",
         item_a="bee",
         item_a_plural="bees",
@@ -66,6 +70,7 @@ MIXED_CONTEXTS = INTRO_CONTEXTS + (
     ),
     WordProblemContext(
         key="pentagon_heptagon",
+        group_label="shapes",
         container="on a worksheet",
         item_a="pentagon",
         item_a_plural="pentagons",
@@ -77,6 +82,7 @@ MIXED_CONTEXTS = INTRO_CONTEXTS + (
     ),
     WordProblemContext(
         key="stool_chair",
+        group_label="pieces of furniture",
         container="in a classroom",
         item_a="three-legged stool",
         item_a_plural="three-legged stools",
@@ -139,7 +145,7 @@ def _create_question(
     first_key = f"{context.item_a.replace('-', ' ').replace(' ', '_')}_count"
     second_key = f"{context.item_b.replace('-', ' ').replace(' ', '_')}_count"
     problem_text = (
-        f"There are {total_count} things {context.container}. Some are "
+        f"There are {total_count} {context.group_label} {context.container}. Some are "
         f"{context.item_a_plural} and some are {context.item_b_plural}. Altogether they "
         f"have {total_units} {context.unit_label}. How many {context.item_a_plural} "
         f"and {context.item_b_plural} are there?"

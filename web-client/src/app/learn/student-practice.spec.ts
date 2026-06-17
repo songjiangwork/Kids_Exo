@@ -49,6 +49,9 @@ describe('StudentPractice', () => {
     const http = TestBed.inject(HttpTestingController);
     http.expectOne('/api/student/sessions/student-token').flush({
       plugin: 'multiply_by_11',
+      subject: 'Math',
+      category: 'Mental Multiplication',
+      skill: 'Multiply by 11',
       status: 'created',
       requested_locale: 'en-CA',
       feedback_mode: 'immediate',
@@ -69,8 +72,63 @@ describe('StudentPractice', () => {
     const { fixture } = await createFixture();
 
     expect(fixture.nativeElement.textContent).toContain('Question 1 of 10');
+    expect(fixture.nativeElement.textContent).toContain('Math · Mental Multiplication');
+    expect(fixture.nativeElement.textContent).not.toContain('Mental multiplication');
     expect(fixture.nativeElement.textContent).toContain('42 x 11');
     expect(fixture.nativeElement.textContent).toContain('Check answer');
+  });
+
+  it('shows word problem session metadata in the practice header', async () => {
+    await TestBed.configureTestingModule({
+      imports: [StudentPractice],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: ActivatedRoute,
+          useValue: { paramMap: of(convertToParamMap({ token: 'word-token' })) },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(StudentPractice);
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/student/sessions/word-token').flush({
+      plugin: 'chicken_rabbit_word_problems',
+      subject: 'Math',
+      category: 'Word Problems',
+      skill: 'Chicken and Rabbit Word Problems',
+      status: 'created',
+      requested_locale: 'en-CA',
+      feedback_mode: 'immediate',
+      show_timer: false,
+      timer_status: 'paused',
+      answered_questions: 0,
+      correct_answers: 0,
+      active_elapsed_seconds: 0,
+      questions: [
+        {
+          identifier: 'question-1',
+          position: 1,
+          total_questions: 10,
+          prompt: 'There are 20 animals in a cage.',
+          renderer_type: 'word_problem_answer',
+          public_payload: {
+            answer_schema: {
+              fields: [
+                { key: 'chicken_count', label: 'Chickens', value_type: 'integer', unit: 'items', required: true },
+              ],
+            },
+            work_area: { enabled: true, required: false, label: 'Show your work' },
+          },
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Math · Word Problems');
+    expect(fixture.nativeElement.textContent).not.toContain('Mental multiplication');
   });
 
   it('supports the short /s/:token route token shape', async () => {

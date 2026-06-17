@@ -178,6 +178,19 @@ export class StudentPractice implements OnInit, OnDestroy {
     return Boolean(this.session()?.show_timer && this.timerPaused());
   }
 
+  protected sessionEyebrow(): string {
+    const session = this.session();
+    if (!session) {
+      return 'Practice';
+    }
+    const subject = this.toDisplayLabel(session.subject);
+    const category = this.toDisplayLabel(session.category);
+    if (subject && category) {
+      return `${subject} · ${category}`;
+    }
+    return this.toDisplayLabel(session.skill) || 'Practice';
+  }
+
   protected scratchPadEnabled(): boolean {
     const question = this.question();
     const tools = question?.public_payload?.['tools'];
@@ -283,5 +296,16 @@ export class StudentPractice implements OnInit, OnDestroy {
 
   private resetScratchPad(): void {
     this.scratchResetVersion.update((version) => version + 1);
+  }
+
+  private toDisplayLabel(value: string | null | undefined): string {
+    if (!value) {
+      return '';
+    }
+    return value
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
   }
 }

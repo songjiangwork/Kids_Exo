@@ -193,6 +193,57 @@ class OnlineEvaluationTests(unittest.TestCase):
                 {"values": {"chicken_count": 12}},
             )
 
+    def test_structured_word_problem_records_total_unit_diagnostics(self) -> None:
+        result = evaluate_answer(
+            "structured_word_problem",
+            {
+                "expected_values": {"chicken_count": 12, "rabbit_count": 8},
+                "field_rules": {
+                    "chicken_count": {"value_type": "integer"},
+                    "rabbit_count": {"value_type": "integer"},
+                },
+                "diagnostic_checks": {
+                    "total_count": 20,
+                    "unit_label": "legs",
+                    "total_units": 56,
+                    "unit_values": {"chicken_count": 2, "rabbit_count": 4},
+                },
+            },
+            {"values": {"chicken_count": 10, "rabbit_count": 10}},
+        )
+
+        self.assertFalse(result.is_correct)
+        self.assertEqual(result.detail["feedback_code"], "total_units_mismatch")
+        self.assertTrue(result.detail["checks"]["total_count_matches"])
+        self.assertFalse(result.detail["checks"]["total_units_matches"])
+        self.assertEqual(result.detail["checks"]["submitted_total_count"], 20)
+        self.assertEqual(result.detail["checks"]["submitted_total_units"], 60)
+        self.assertEqual(result.detail["checks"]["expected_total_units"], 56)
+        self.assertEqual(result.detail["checks"]["unit_label"], "legs")
+
+    def test_structured_word_problem_detects_swapped_values(self) -> None:
+        result = evaluate_answer(
+            "structured_word_problem",
+            {
+                "expected_values": {"chicken_count": 12, "rabbit_count": 8},
+                "field_rules": {
+                    "chicken_count": {"value_type": "integer"},
+                    "rabbit_count": {"value_type": "integer"},
+                },
+                "diagnostic_checks": {
+                    "total_count": 20,
+                    "unit_label": "legs",
+                    "total_units": 56,
+                    "unit_values": {"chicken_count": 2, "rabbit_count": 4},
+                },
+            },
+            {"values": {"chicken_count": 8, "rabbit_count": 12}},
+        )
+
+        self.assertFalse(result.is_correct)
+        self.assertTrue(result.detail["checks"]["values_swapped"])
+        self.assertEqual(result.detail["feedback_code"], "values_swapped")
+
     def test_unknown_answer_type_is_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "Unsupported answer_type"):
             evaluate_answer("spelling", {"expected_text": "maman"}, "maman")
