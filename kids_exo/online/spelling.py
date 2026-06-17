@@ -5,11 +5,13 @@ from kids_exo.online.catalog import get_online_plugin
 from kids_exo.online.french_vocabulary import (
     FRENCH_FAMILY_WORDS,
     FRENCH_FRUIT_WORDS,
+    FRENCH_MEAT_WORDS,
     FRENCH_SCHOOL_WORDS,
     FRENCH_VEGETABLE_WORDS,
     FrenchVocabularyItem,
     french_family_word_audio_url,
     french_fruit_word_audio_url,
+    french_meat_word_audio_url,
     french_school_word_audio_url,
     french_vegetable_word_audio_url,
     french_vocabulary_article_hint,
@@ -87,6 +89,18 @@ def create_french_vegetable_word_spelling_session(request, settings: FrenchCommo
         instruction="Spell each French vegetable word from audio, meaning, or both.",
         topic_tag="vegetable_words",
         audio_url_for_word=french_vegetable_word_audio_url,
+    )
+
+
+def create_french_meat_word_spelling_session(request, settings: FrenchCommonWordSpellingSettings):
+    return _create_french_word_spelling_session(
+        request,
+        settings,
+        words=FRENCH_MEAT_WORDS,
+        title="French Meat Word Spelling",
+        instruction="Spell each French meat word from audio, meaning, or both.",
+        topic_tag="meat_words",
+        audio_url_for_word=french_meat_word_audio_url,
     )
 
 

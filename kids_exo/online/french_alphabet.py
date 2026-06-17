@@ -6,11 +6,13 @@ from kids_exo.online.catalog import get_online_plugin
 from kids_exo.online.french_vocabulary import (
     FRENCH_FAMILY_WORDS,
     FRENCH_FRUIT_WORDS,
+    FRENCH_MEAT_WORDS,
     FRENCH_SCHOOL_WORDS,
     FRENCH_VEGETABLE_WORDS,
     FrenchVocabularyItem,
     french_family_word_audio_url,
     french_fruit_word_audio_url,
+    french_meat_word_audio_url,
     french_school_word_audio_url,
     french_vegetable_word_audio_url,
     french_vocabulary_display_text,
@@ -70,6 +72,9 @@ FRUIT_WORD_STRATEGY_LABELS = {
 }
 VEGETABLE_WORD_STRATEGY_LABELS = {
     "vegetable_words": "vegetable words",
+}
+MEAT_WORD_STRATEGY_LABELS = {
+    "meat_words": "meat words",
 }
 
 FRENCH_ALPHABET_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/alphabet"
@@ -197,6 +202,25 @@ def create_french_vegetable_words_session(request) -> PracticeSessionSnapshot:
     )
 
 
+def create_french_meat_words_session(request) -> PracticeSessionSnapshot:
+    strategies = tuple(request.plugin_settings.get("strategies", ()))
+    if not strategies:
+        strategies = ("meat_words",)
+    unexpected = set(strategies) - set(MEAT_WORD_STRATEGY_LABELS)
+    if unexpected:
+        names = ", ".join(sorted(unexpected))
+        raise ValueError(f"Unsupported French meat words strategy: {names}")
+
+    return _create_word_sound_session(
+        request,
+        strategies,
+        words=FRENCH_MEAT_WORDS,
+        strategy="meat_words",
+        title="French Meat Word Sounds",
+        instruction="Listen to a French meat word, then choose its meaning.",
+    )
+
+
 def _create_word_sound_session(
     request,
     strategies: tuple[str, ...],
@@ -238,6 +262,8 @@ def _question_for_strategy(
 ) -> OnlineQuestionSnapshot:
     if strategy == "letter_name_to_letter":
         items = FRENCH_LETTERS
+    elif strategy == "meat_words":
+        items = FRENCH_MEAT_WORDS
     elif strategy == "vegetable_words":
         items = FRENCH_VEGETABLE_WORDS
     elif strategy == "fruit_words":
@@ -347,6 +373,8 @@ def _audio_url_for_strategy(strategy: str, target: FrenchSoundItem | FrenchVocab
         return french_fruit_word_audio_url(target, include_article=True)
     if strategy == "vegetable_words" and isinstance(target, FrenchVocabularyItem):
         return french_vegetable_word_audio_url(target, include_article=True)
+    if strategy == "meat_words" and isinstance(target, FrenchVocabularyItem):
+        return french_meat_word_audio_url(target, include_article=True)
     if strategy == "school_words" and isinstance(target, FrenchVocabularyItem):
         return french_school_word_audio_url(target, include_article=True)
     return None
@@ -361,4 +389,6 @@ def _skill_tag_for_strategy(strategy: str) -> str:
         return "fruit_word_sounds"
     if strategy == "vegetable_words":
         return "vegetable_word_sounds"
+    if strategy == "meat_words":
+        return "meat_word_sounds"
     return "family_word_sounds"

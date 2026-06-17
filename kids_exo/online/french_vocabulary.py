@@ -25,6 +25,7 @@ FRENCH_FAMILY_WORD_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/common-wor
 FRENCH_SCHOOL_WORD_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/common-words/school"
 FRENCH_FRUIT_WORD_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/common-words/fruit"
 FRENCH_VEGETABLE_WORD_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/common-words/vegetable"
+FRENCH_MEAT_WORD_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/common-words/meat"
 
 
 def _french_noun(
@@ -135,6 +136,21 @@ FRENCH_VEGETABLE_WORDS: tuple[FrenchVocabularyItem, ...] = (
 )
 
 
+FRENCH_MEAT_WORDS: tuple[FrenchVocabularyItem, ...] = (
+    _french_noun("viande", "meat", "viande", gender="feminine", indefinite_article=None, definite_article="la", learning_article="de la"),
+    _french_noun("poulet", "chicken", "poulet", gender="masculine", indefinite_article=None, definite_article="le", learning_article="du"),
+    _french_noun("bœuf", "beef", "boeuf", gender="masculine", indefinite_article=None, definite_article="le", learning_article="du"),
+    _french_noun("porc", "pork", "porc", gender="masculine", indefinite_article=None, definite_article="le", learning_article="du"),
+    _french_noun("agneau", "lamb", "agneau", gender="masculine", indefinite_article=None, definite_article="l'", learning_article="de l'", article_joiner=""),
+    _french_noun("dinde", "turkey", "dinde", gender="feminine", indefinite_article=None, definite_article="la", learning_article="de la"),
+    _french_noun("canard", "duck", "canard", gender="masculine", indefinite_article=None, definite_article="le", learning_article="du"),
+    _french_noun("jambon", "ham", "jambon", gender="masculine", indefinite_article=None, definite_article="le", learning_article="du"),
+    _french_noun("saucisse", "sausage", "saucisse", gender="feminine", indefinite_article="une", definite_article="la", learning_article="une"),
+    _french_noun("bacon", "bacon", "bacon", gender="masculine", indefinite_article=None, definite_article="le", learning_article="du"),
+    _french_noun("steak", "steak", "steak", gender="masculine", indefinite_article="un", definite_article="le", learning_article="un"),
+)
+
+
 def french_vocabulary_display_text(
     item: FrenchVocabularyItem,
     *,
@@ -213,6 +229,14 @@ def french_vegetable_word_audio_url(item: FrenchVocabularyItem, *, include_artic
     return french_vocabulary_audio_url(
         item,
         base_url=FRENCH_VEGETABLE_WORD_AUDIO_BASE_URL,
+        include_article=include_article,
+    )
+
+
+def french_meat_word_audio_url(item: FrenchVocabularyItem, *, include_article: bool = False) -> str | None:
+    return french_vocabulary_audio_url(
+        item,
+        base_url=FRENCH_MEAT_WORD_AUDIO_BASE_URL,
         include_article=include_article,
     )
 

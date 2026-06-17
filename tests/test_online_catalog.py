@@ -36,6 +36,8 @@ class OnlinePluginCatalogTests(unittest.TestCase):
                 "french_fruit_word_spelling",
                 "french_vegetable_word_sounds",
                 "french_vegetable_word_spelling",
+                "french_meat_word_sounds",
+                "french_meat_word_spelling",
             ),
         )
 
@@ -125,6 +127,8 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         french_fruit_spelling = get_online_plugin("french_fruit_word_spelling")
         french_vegetable_words = get_online_plugin("french_vegetable_word_sounds")
         french_vegetable_spelling = get_online_plugin("french_vegetable_word_spelling")
+        french_meat_words = get_online_plugin("french_meat_word_sounds")
+        french_meat_spelling = get_online_plugin("french_meat_word_spelling")
 
         self.assertEqual(distributive.title, "Distributive Property Multiplication")
         self.assertEqual(tuple(setting.name for setting in distributive.settings), ("strategies",))
@@ -234,6 +238,18 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         self.assertEqual(french_vegetable_spelling.category, "Spelling")
         self.assertEqual(french_vegetable_spelling.title, "French Vegetable Word Spelling")
         self.assertEqual(french_vegetable_spelling.answer_types, ("spelling_text",))
+        self.assertEqual(french_meat_words.subject, "French")
+        self.assertEqual(french_meat_words.category, "Pronunciation")
+        self.assertEqual(french_meat_words.title, "French Meat Word Sounds")
+        self.assertEqual(
+            tuple(option.value for option in french_meat_words.settings[0].options),
+            ("meat_words",),
+        )
+        self.assertEqual(french_meat_words.answer_types, ("multiple_choice_index",))
+        self.assertEqual(french_meat_spelling.subject, "French")
+        self.assertEqual(french_meat_spelling.category, "Spelling")
+        self.assertEqual(french_meat_spelling.title, "French Meat Word Spelling")
+        self.assertEqual(french_meat_spelling.answer_types, ("spelling_text",))
 
 
 if __name__ == "__main__":

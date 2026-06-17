@@ -107,6 +107,8 @@ class PracticeWebApiTests(unittest.TestCase):
                 "french_fruit_word_spelling",
                 "french_vegetable_word_sounds",
                 "french_vegetable_word_spelling",
+                "french_meat_word_sounds",
+                "french_meat_word_spelling",
             ],
         )
         plugin = catalog["plugins"][0]
@@ -169,6 +171,20 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(vegetable_spelling["subject"], "French")
         self.assertEqual(vegetable_spelling["category"], "Spelling")
         self.assertEqual(vegetable_spelling["answer_types"], ["spelling_text"])
+        meat_sounds = next(
+            plugin for plugin in catalog["plugins"]
+            if plugin["plugin"] == "french_meat_word_sounds"
+        )
+        self.assertEqual(meat_sounds["subject"], "French")
+        self.assertEqual(meat_sounds["category"], "Pronunciation")
+        self.assertEqual(meat_sounds["answer_types"], ["multiple_choice_index"])
+        meat_spelling = next(
+            plugin for plugin in catalog["plugins"]
+            if plugin["plugin"] == "french_meat_word_spelling"
+        )
+        self.assertEqual(meat_spelling["subject"], "French")
+        self.assertEqual(meat_spelling["category"], "Spelling")
+        self.assertEqual(meat_spelling["answer_types"], ["spelling_text"])
         self.assertEqual(plugin["release_stage"], "published")
         self.assertEqual(
             [setting["name"] for setting in plugin["settings"]],
@@ -1081,6 +1097,48 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertTrue(
             first_question["audio_url"].startswith(
                 "/audio/tts/fr/fr-FR-DeniseNeural/common-words/vegetable/"
+            )
+        )
+        self.assertIn("/with-article/", first_question["audio_url"])
+        self.assertNotIn("expected_answer", student.text)
+
+    def test_french_meat_words_session_exposes_word_meaning_choices(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        response = self.client.post(
+            f"/api/learners/{learner['id']}/sessions",
+            json={
+                "plugin": "french_meat_word_sounds",
+                "plugin_settings": {"strategies": ["meat_words"]},
+                "question_count": 20,
+                "seed": 23,
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        created = response.json()
+        self.assertEqual(created["subject"], "French")
+        self.assertEqual(created["skill"], "French Meat Word Sounds")
+        student = self.client.get(
+            f"/api/student/sessions/{created['student_token']}"
+        )
+        questions = student.json()["questions"]
+        first_question = questions[0]
+
+        self.assertEqual(student.status_code, 200)
+        self.assertEqual(first_question["question_type"], "multiple_choice")
+        self.assertTrue(all("(" in choice and ")" in choice for choice in first_question["choices"]))
+        self.assertTrue(
+            any(
+                choice.startswith(("du ", "de la ", "de l'", "un ", "une "))
+                for question in questions
+                for choice in question["choices"]
+            )
+        )
+        self.assertEqual(first_question["speech_locale"], "fr-FR")
+        self.assertIsNotNone(first_question["speech_text"])
+        self.assertTrue(
+            first_question["audio_url"].startswith(
+                "/audio/tts/fr/fr-FR-DeniseNeural/common-words/meat/"
             )
         )
         self.assertIn("/with-article/", first_question["audio_url"])

@@ -4,6 +4,7 @@ import unittest
 from kids_exo.online.session import OnlineSessionRequest, create_practice_session
 from kids_exo.online.french_vocabulary import (
     FRENCH_FRUIT_WORDS,
+    FRENCH_MEAT_WORDS,
     FRENCH_SCHOOL_WORDS,
     FRENCH_VEGETABLE_WORDS,
     french_vocabulary_article_hint,
@@ -347,6 +348,33 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertIn("/with-article/", first.audio_url)
         self.assertTrue(first.audio_url.endswith(".mp3"))
 
+    def test_french_meat_words_session_generates_word_meaning_choices(self) -> None:
+        session = create_practice_session(
+            OnlineSessionRequest(
+                plugin="french_meat_word_sounds",
+                plugin_settings={"strategies": ["meat_words"]},
+                question_count=20,
+                seed=123,
+            )
+        )
+        first = session.questions[0]
+
+        self.assertEqual(session.plugin, "french_meat_word_sounds")
+        self.assertEqual(session.subject, "French")
+        self.assertEqual(session.category, "Pronunciation")
+        self.assertEqual(session.skill, "French Meat Word Sounds")
+        self.assertEqual({question.strategy for question in session.questions}, {"meat_words"})
+        self.assertEqual(first.question_type, "multiple_choice")
+        all_choices = [choice for question in session.questions for choice in question.choices]
+        self.assertTrue(any(choice.startswith("de la viande ") for choice in all_choices))
+        self.assertTrue(any(choice.startswith("du poulet ") for choice in all_choices))
+        self.assertTrue(any(choice.startswith("de l'agneau ") for choice in all_choices))
+        self.assertEqual(first.speech_locale, "fr-FR")
+        self.assertTrue(any(question.speech_text.startswith(("du ", "de la ", "de l'", "un ", "une ")) for question in session.questions))
+        self.assertTrue(first.audio_url.startswith("/audio/tts/fr/fr-FR-DeniseNeural/common-words/meat/"))
+        self.assertIn("/with-article/", first.audio_url)
+        self.assertTrue(first.audio_url.endswith(".mp3"))
+
     def test_french_vocabulary_article_helpers_format_school_words(self) -> None:
         words = {item.text: item for item in FRENCH_SCHOOL_WORDS}
 
@@ -406,6 +434,22 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertEqual(
             french_vocabulary_display_text(words["pomme de terre"], include_article=True),
             "une pomme de terre",
+        )
+
+    def test_french_vocabulary_article_helpers_format_meat_words(self) -> None:
+        words = {item.text: item for item in FRENCH_MEAT_WORDS}
+
+        self.assertEqual(words["viande"].gender, "feminine")
+        self.assertEqual(words["poulet"].gender, "masculine")
+        self.assertEqual(words["agneau"].learning_article, "de l'")
+        self.assertEqual(
+            french_vocabulary_display_text(words["agneau"], include_article=True),
+            "de l'agneau",
+        )
+        self.assertEqual(french_vocabulary_audio_phrase_slug(words["agneau"]), "de-l-agneau")
+        self.assertEqual(
+            french_vocabulary_display_text(words["bœuf"], include_article=True),
+            "du bœuf",
         )
 
     def test_french_common_word_spelling_generates_dictation_questions(self) -> None:
@@ -544,6 +588,37 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertIn("translation", first.public_payload)
         self.assertIn("audio_url", first.public_payload)
         self.assertIn("/common-words/vegetable/", first.public_payload["audio_url"])
+        self.assertIn("/with-article/", first.public_payload["audio_url"])
+        self.assertIn("article_hint", first.public_payload)
+        self.assertNotIn("expected_text", first.public_payload)
+        self.assertTrue(
+            session.evaluate_answer(
+                first.identifier,
+                {"text": first.evaluation_payload["expected_text"].upper()},
+            ).is_correct
+        )
+
+    def test_french_meat_word_spelling_generates_combined_questions(self) -> None:
+        session = create_practice_session(
+            OnlineSessionRequest(
+                plugin="french_meat_word_spelling",
+                plugin_settings={"strategy": ["combined"]},
+                question_count=20,
+                seed=123,
+            )
+        )
+        first = session.questions[0]
+
+        self.assertEqual(session.plugin, "french_meat_word_spelling")
+        self.assertEqual(session.subject, "French")
+        self.assertEqual(session.category, "Spelling")
+        self.assertEqual(session.skill, "French Meat Word Spelling")
+        self.assertEqual(first.renderer_type, "spelling_answer")
+        self.assertEqual(first.answer_type, "spelling_text")
+        self.assertEqual(first.public_payload["prompt_mode"], "combined")
+        self.assertIn("translation", first.public_payload)
+        self.assertIn("audio_url", first.public_payload)
+        self.assertIn("/common-words/meat/", first.public_payload["audio_url"])
         self.assertIn("/with-article/", first.public_payload["audio_url"])
         self.assertIn("article_hint", first.public_payload)
         self.assertNotIn("expected_text", first.public_payload)
