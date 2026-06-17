@@ -25,6 +25,53 @@
   width: 100%;
 }
 
+.article-hint {
+  align-items: center;
+  display: flex;
+  gap: 0.55rem;
+  justify-content: center;
+}
+
+.article-prefix,
+.article-prefix-box {
+  background: #fff4e6;
+  border: 1px solid #ead9b8;
+  border-radius: 999px;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.article-prefix {
+  padding: 0.35rem 0.75rem;
+}
+
+.grammar-chip {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.spelling-input-row {
+  align-items: stretch;
+  display: flex;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+.article-prefix-box {
+  align-items: center;
+  display: inline-flex;
+  font-size: 1.05rem;
+  margin-bottom: 1.35rem;
+  padding: 0 0.95rem;
+}
+
+.spelling-input-row .spelling-field {
+  flex: 1;
+}
+
 .accent-panel {
   display: grid;
   gap: 0.5rem;
@@ -60,4 +107,16 @@
 
 .check-button {
   min-width: 13rem;
+}
+
+@media (max-width: 520px) {
+  .spelling-input-row {
+    display: grid;
+  }
+
+  .article-prefix-box {
+    justify-self: center;
+    margin-bottom: 0;
+    padding: 0.55rem 0.95rem;
+  }
 }

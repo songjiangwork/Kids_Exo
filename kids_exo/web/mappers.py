@@ -2,6 +2,7 @@ from kids_exo.online.answer_display import (
     AnswerValue,
     answer_display,
     choice_label,
+    expected_answer_display_for_question,
     expected_answer_value_for_question,
     submitted_answer_value_for_attempt,
 )
@@ -169,12 +170,7 @@ def feedback_code(attempt) -> str | None:
 
 
 def expected_answer_display(question) -> str | None:
-    value = expected_answer_value(question)
-    if getattr(question, "answer_type", None) == "multiple_choice_index":
-        choice = _choice_label(question, value)
-        if choice is not None:
-            return choice
-    return _display_answer(value)
+    return expected_answer_display_for_question(question)
 
 
 def _choice_label(question, value: AnswerValue) -> str | None:

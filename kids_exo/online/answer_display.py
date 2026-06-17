@@ -33,6 +33,20 @@ def expected_answer_value_for_question(question) -> AnswerValue:
     )
 
 
+def expected_answer_display_for_question(question) -> str | None:
+    public_payload = getattr(question, "public_payload", None) or {}
+    article_hint = public_payload.get("article_hint")
+    if isinstance(article_hint, dict):
+        full_display_text = article_hint.get("full_display_text")
+        if isinstance(full_display_text, str) and full_display_text:
+            return full_display_text
+    return answer_display(
+        expected_answer_value_for_question(question),
+        choices=tuple(getattr(question, "choices", ()) or ()),
+        answer_type=getattr(question, "answer_type", None),
+    )
+
+
 def submitted_answer_value_for_attempt(attempt) -> AnswerValue:
     payload = getattr(attempt, "normalized_payload", None) or {}
     if "value" in payload:

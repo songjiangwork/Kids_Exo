@@ -9,6 +9,7 @@ from kids_exo.online.french_vocabulary import (
     FrenchVocabularyItem,
     french_family_word_audio_url,
     french_school_word_audio_url,
+    french_vocabulary_display_text,
 )
 from kids_exo.online.models import OnlineQuestionSnapshot, PracticeSessionSnapshot
 
@@ -198,15 +199,13 @@ def _question_for_strategy(
     choices = [target, *distractors]
     rng.shuffle(choices)
     expected_answer = choices.index(target) + 1
-    labels = tuple(
-        choice.label if strategy == "letter_name_to_letter" else f"{choice.label} ({choice.meaning})"
-        for choice in choices
-    )
+    labels = tuple(_choice_label(strategy, choice) for choice in choices)
     prompt = (
         "Listen to the French letter name. Which letter do you hear?"
         if strategy == "letter_name_to_letter"
         else "Listen to the French word. Which word do you hear?"
     )
+    speech_text = _speech_text_for_strategy(strategy, target)
     return OnlineQuestionSnapshot(
         identifier=f"question-{position}",
         prompt=prompt,
@@ -219,13 +218,13 @@ def _question_for_strategy(
         prompt_payload={
             "display_text": prompt,
             "choices": list(labels),
-            "speech_text": target.text,
+            "speech_text": speech_text,
             "speech_locale": "fr-FR",
         },
         public_payload={"tools": {"scratch_pad": False, "audio": True}},
         question_type="multiple_choice",
         choices=labels,
-        speech_text=target.text,
+        speech_text=speech_text,
         speech_locale="fr-FR",
         audio_url=_audio_url_for_strategy(strategy, target),
     )
@@ -270,13 +269,30 @@ def _similar_letters(letter: str) -> frozenset[str]:
     return frozenset((letter,))
 
 
-def _audio_url_for_strategy(strategy: str, target: FrenchSoundItem) -> str | None:
+def _choice_label(strategy: str, choice: FrenchSoundItem | FrenchVocabularyItem) -> str:
+    if strategy == "letter_name_to_letter":
+        return choice.label
+    if isinstance(choice, FrenchVocabularyItem):
+        display_text = french_vocabulary_display_text(choice, include_article=True)
+        return f"{display_text} ({choice.meaning})"
+    return choice.label
+
+
+def _speech_text_for_strategy(strategy: str, target: FrenchSoundItem | FrenchVocabularyItem) -> str:
+    if strategy == "letter_name_to_letter":
+        return target.text
+    if isinstance(target, FrenchVocabularyItem):
+        return french_vocabulary_display_text(target, include_article=True)
+    return target.text
+
+
+def _audio_url_for_strategy(strategy: str, target: FrenchSoundItem | FrenchVocabularyItem) -> str | None:
     if strategy == "letter_name_to_letter":
         return f"{FRENCH_ALPHABET_AUDIO_BASE_URL}/{target.text.lower()}.mp3"
     if strategy == "family_words" and isinstance(target, FrenchVocabularyItem):
-        return french_family_word_audio_url(target)
+        return french_family_word_audio_url(target, include_article=True)
     if strategy == "school_words" and isinstance(target, FrenchVocabularyItem):
-        return french_school_word_audio_url(target)
+        return french_school_word_audio_url(target, include_article=True)
     return None
 
 

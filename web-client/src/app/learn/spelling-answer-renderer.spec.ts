@@ -2,7 +2,10 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SpellingAnswerRenderer } from './spelling-answer-renderer';
 
 describe('SpellingAnswerRenderer', () => {
-  async function createFixture(promptMode = 'combined'): Promise<ComponentFixture<SpellingAnswerRenderer>> {
+  async function createFixture(
+    promptMode = 'combined',
+    publicPayload: Record<string, unknown> = {},
+  ): Promise<ComponentFixture<SpellingAnswerRenderer>> {
     await TestBed.configureTestingModule({
       imports: [SpellingAnswerRenderer],
     }).compileComponents();
@@ -19,6 +22,7 @@ describe('SpellingAnswerRenderer', () => {
         translation: promptMode === 'dictation' ? undefined : 'brother',
         audio_url: promptMode === 'translation' ? undefined : '/audio/frere.mp3',
         accent_keys: ['é', 'è', 'œ', '-'],
+        ...publicPayload,
       },
     });
     fixture.detectChanges();
@@ -87,6 +91,36 @@ describe('SpellingAnswerRenderer', () => {
     fixture.nativeElement.querySelector('.check-button').click();
 
     expect(answerSpy).toHaveBeenLastCalledWith({ text: 'frère' });
+    expect(submitSpy).toHaveBeenCalled();
+  });
+
+  it('shows article prefix without including it in the submitted answer', async () => {
+    const fixture = await createFixture('translation', {
+      article_hint: {
+        article: 'une',
+        gender: 'feminine',
+        number: 'singular',
+        display_text: 'une',
+        full_display_text: 'une école',
+        mode: 'prefix',
+        teaches_gender: true,
+      },
+      translation: 'school',
+    });
+    const answerSpy = vi.spyOn(fixture.componentInstance.answerChange, 'emit');
+    const submitSpy = vi.spyOn(fixture.componentInstance.submitAnswer, 'emit');
+    const input = fixture.nativeElement.querySelector('input') as HTMLInputElement;
+
+    expect(fixture.nativeElement.textContent).toContain('une');
+    expect(fixture.nativeElement.textContent).toContain('feminine');
+
+    input.value = 'école';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('.check-button').click();
+
+    expect(answerSpy).toHaveBeenLastCalledWith({ text: 'école' });
+    expect(answerSpy).not.toHaveBeenCalledWith({ text: 'une école' });
     expect(submitSpy).toHaveBeenCalled();
   });
 

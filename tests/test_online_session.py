@@ -2,6 +2,11 @@ from dataclasses import asdict
 import unittest
 
 from kids_exo.online.session import OnlineSessionRequest, create_practice_session
+from kids_exo.online.french_vocabulary import (
+    FRENCH_SCHOOL_WORDS,
+    french_vocabulary_article_hint,
+    french_vocabulary_display_text,
+)
 
 
 class OnlinePracticeSessionTests(unittest.TestCase):
@@ -277,10 +282,42 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertEqual(len({question.speech_text for question in session.questions}), 10)
         self.assertEqual(first.question_type, "multiple_choice")
         self.assertTrue(all("(" in choice and ")" in choice for choice in first.choices))
+        all_choices = [choice for question in session.questions for choice in question.choices]
+        self.assertTrue(any(choice.startswith("une école ") for choice in all_choices))
+        self.assertTrue(any(choice.startswith("un livre ") for choice in all_choices))
         self.assertEqual(first.speech_locale, "fr-FR")
         self.assertIsNotNone(first.speech_text)
+        self.assertTrue(any(question.speech_text.startswith(("un ", "une ")) for question in session.questions))
         self.assertTrue(first.audio_url.startswith("/audio/tts/fr/fr-FR-DeniseNeural/common-words/school/"))
         self.assertTrue(first.audio_url.endswith(".mp3"))
+
+    def test_french_vocabulary_article_helpers_format_school_words(self) -> None:
+        words = {item.text: item for item in FRENCH_SCHOOL_WORDS}
+
+        self.assertEqual(words["école"].gender, "feminine")
+        self.assertEqual(words["livre"].gender, "masculine")
+        self.assertEqual(words["règle"].learning_article, "une")
+        self.assertEqual(words["bureau"].learning_article, "un")
+        self.assertEqual(
+            french_vocabulary_display_text(words["école"], include_article=True),
+            "une école",
+        )
+        self.assertEqual(
+            french_vocabulary_display_text(words["livre"], include_article=True),
+            "un livre",
+        )
+        self.assertEqual(
+            french_vocabulary_article_hint(words["école"]),
+            {
+                "article": "une",
+                "gender": "feminine",
+                "number": "singular",
+                "display_text": "une",
+                "full_display_text": "une école",
+                "mode": "prefix",
+                "teaches_gender": True,
+            },
+        )
 
     def test_french_common_word_spelling_generates_dictation_questions(self) -> None:
         session = create_practice_session(
@@ -302,7 +339,13 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertIn("audio_url", first.public_payload)
         self.assertNotIn("translation", first.public_payload)
         self.assertNotIn("expected_text", first.public_payload)
-        self.assertEqual(first.evaluation_payload["expected_text"], first.speech_text)
+        self.assertIsNotNone(first.public_payload["article_hint"])
+        self.assertEqual(first.public_payload["article_hint"]["full_display_text"], first.speech_text)
+        self.assertEqual(
+            first.public_payload["speech_text"],
+            first.speech_text,
+        )
+        self.assertNotEqual(first.evaluation_payload["expected_text"], first.speech_text)
         self.assertTrue(
             session.evaluate_answer(
                 first.identifier,
@@ -326,6 +369,8 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertNotIn("audio_url", first.public_payload)
         self.assertIsNone(first.audio_url)
         self.assertNotIn("expected_text", first.public_payload)
+        self.assertIn("article_hint", first.public_payload)
+        self.assertIn("full_display_text", first.public_payload["article_hint"])
 
     def test_french_school_word_spelling_generates_combined_questions(self) -> None:
         session = create_practice_session(
@@ -348,6 +393,14 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertIn("translation", first.public_payload)
         self.assertIn("audio_url", first.public_payload)
         self.assertIn("/common-words/school/", first.public_payload["audio_url"])
+        self.assertIn("/with-article/", first.public_payload["audio_url"])
+        article_question = next(
+            question for question in session.questions if question.public_payload["article_hint"]
+        )
+        self.assertEqual(
+            article_question.public_payload["article_hint"]["full_display_text"],
+            article_question.speech_text,
+        )
         self.assertNotIn("expected_text", first.public_payload)
 
     def test_french_common_word_spelling_generates_combined_questions(self) -> None:

@@ -8,6 +8,8 @@ from kids_exo.online.french_vocabulary import (
     FrenchVocabularyItem,
     french_family_word_audio_url,
     french_school_word_audio_url,
+    french_vocabulary_article_hint,
+    french_vocabulary_display_text,
 )
 from kids_exo.online.models import OnlineQuestionSnapshot, PracticeSessionSnapshot
 from kids_exo.plugins.french_common_word_spelling.settings import (
@@ -123,6 +125,7 @@ def _spelling_question(
 ) -> OnlineQuestionSnapshot:
     prompt = _prompt_for_strategy(strategy)
     public_payload = _public_payload_for_strategy(strategy, target, audio_url_for_word)
+    speech_text = french_vocabulary_display_text(target, include_article=True)
     return OnlineQuestionSnapshot(
         identifier=f"question-{position}",
         prompt=prompt,
@@ -141,7 +144,7 @@ def _spelling_question(
         prompt_payload=dict(public_payload),
         public_payload=public_payload,
         question_type="spelling",
-        speech_text=target.text if strategy in {"dictation", "combined"} else None,
+        speech_text=speech_text if strategy in {"dictation", "combined"} else None,
         speech_locale=target.language if strategy in {"dictation", "combined"} else None,
         audio_url=public_payload.get("audio_url"),
     )
@@ -164,6 +167,7 @@ def _public_payload_for_strategy(
         "prompt_mode": strategy,
         "language": target.language,
         "input_label": "French word",
+        "article_hint": french_vocabulary_article_hint(target),
         "accent_keys": list(FRENCH_ACCENT_KEYS),
         "tools": {"scratch_pad": False, "audio": strategy in {"dictation", "combined"}},
     }
@@ -171,7 +175,7 @@ def _public_payload_for_strategy(
         payload["translation"] = target.meaning
         payload["translation_locale"] = "en-CA"
     if strategy in {"dictation", "combined"}:
-        payload["audio_url"] = audio_url_for_word(target)
-        payload["speech_text"] = target.text
+        payload["audio_url"] = audio_url_for_word(target, include_article=True)
+        payload["speech_text"] = french_vocabulary_display_text(target, include_article=True)
         payload["speech_locale"] = target.language
     return payload

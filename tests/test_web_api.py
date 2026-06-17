@@ -877,7 +877,8 @@ class PracticeWebApiTests(unittest.TestCase):
         student = self.client.get(
             f"/api/student/sessions/{created['student_token']}"
         )
-        first_question = student.json()["questions"][0]
+        questions = student.json()["questions"]
+        first_question = questions[0]
 
         self.assertEqual(student.status_code, 200)
         self.assertEqual(first_question["question_type"], "multiple_choice")
@@ -906,11 +907,19 @@ class PracticeWebApiTests(unittest.TestCase):
         student = self.client.get(
             f"/api/student/sessions/{created['student_token']}"
         )
-        first_question = student.json()["questions"][0]
+        questions = student.json()["questions"]
+        first_question = questions[0]
 
         self.assertEqual(student.status_code, 200)
         self.assertEqual(first_question["question_type"], "multiple_choice")
         self.assertTrue(all("(" in choice and ")" in choice for choice in first_question["choices"]))
+        self.assertTrue(
+            any(
+                choice.startswith(("un ", "une ", "des "))
+                for question in questions
+                for choice in question["choices"]
+            )
+        )
         self.assertEqual(first_question["speech_locale"], "fr-FR")
         self.assertIsNotNone(first_question["speech_text"])
         self.assertTrue(
@@ -939,11 +948,19 @@ class PracticeWebApiTests(unittest.TestCase):
         student = self.client.get(
             f"/api/student/sessions/{created['student_token']}"
         )
-        first_question = student.json()["questions"][0]
+        questions = student.json()["questions"]
+        first_question = questions[0]
 
         self.assertEqual(student.status_code, 200)
         self.assertEqual(first_question["question_type"], "multiple_choice")
         self.assertTrue(all("(" in choice and ")" in choice for choice in first_question["choices"]))
+        self.assertTrue(
+            any(
+                choice.startswith(("un ", "une "))
+                for question in questions
+                for choice in question["choices"]
+            )
+        )
         self.assertEqual(first_question["speech_locale"], "fr-FR")
         self.assertIsNotNone(first_question["speech_text"])
         self.assertTrue(
@@ -1248,6 +1265,7 @@ class PracticeWebApiTests(unittest.TestCase):
         )
         first_question = created["questions"][0]
         first_expected = expected_session.questions[0].evaluation_payload["expected_text"]
+        first_expected_display = expected_session.questions[0].public_payload["article_hint"]["full_display_text"]
         wrong_answer = first_expected.replace("è", "e").replace("é", "e")
         if wrong_answer == first_expected:
             wrong_answer = f"{first_expected}x"
@@ -1270,6 +1288,7 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(created["category"], "Spelling")
         self.assertEqual(first_question["renderer_type"], "spelling_answer")
         self.assertIn("translation", first_question["public_payload"])
+        self.assertIn("article_hint", first_question["public_payload"])
         self.assertNotIn("expected_text", first_question["public_payload"])
         self.assertEqual(first_response.status_code, 200)
         self.assertFalse(first_response.json()["is_correct"])
@@ -1278,7 +1297,7 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(missed["submitted_answer"], {"text": wrong_answer})
         self.assertEqual(missed["expected_answer"], {"text": first_expected})
         self.assertEqual(missed["submitted_display"], wrong_answer)
-        self.assertEqual(missed["expected_display"], first_expected)
+        self.assertEqual(missed["expected_display"], first_expected_display)
         self.assertIsNotNone(missed["feedback_code"])
 
     def test_deferred_feedback_does_not_reveal_correctness_on_submission(self) -> None:

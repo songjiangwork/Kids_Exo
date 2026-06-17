@@ -5,6 +5,16 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { AnswerValue, StudentQuestion } from '../core/practice-api';
 
+interface ArticleHint {
+  article: string;
+  gender?: string;
+  number?: string;
+  display_text?: string;
+  full_display_text?: string;
+  mode?: string;
+  teaches_gender?: boolean;
+}
+
 @Component({
   selector: 'app-spelling-answer-renderer',
   imports: [
@@ -56,6 +66,15 @@ export class SpellingAnswerRenderer {
 
   protected audioUrl(): string {
     return this.payloadString('audio_url');
+  }
+
+  protected articleHint(): ArticleHint | null {
+    const value = this.question.public_payload?.['article_hint'];
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return null;
+    }
+    const article = (value as Record<string, unknown>)['article'];
+    return typeof article === 'string' && article ? { ...(value as ArticleHint), article } : null;
   }
 
   protected accentKeys(): string[] {

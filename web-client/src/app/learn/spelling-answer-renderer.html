@@ -9,19 +9,33 @@
     </button>
   }
 
-  <mat-form-field appearance="outline" class="spelling-field">
-    <mat-label>{{ inputLabel() }}</mat-label>
-    <input
-      #spellingInput
-      matInput
-      autocomplete="off"
-      spellcheck="false"
-      [disabled]="disabled || submitting"
-      [(ngModel)]="text"
-      (ngModelChange)="updateAnswer()"
-      (keyup.enter)="submit()"
-    />
-  </mat-form-field>
+  @if (articleHint(); as hint) {
+    <div class="article-hint" data-testid="article-hint">
+      <span class="article-prefix">{{ hint.article }}</span>
+      @if (hint.gender && hint.teaches_gender) {
+        <span class="grammar-chip">{{ hint.gender }}</span>
+      }
+    </div>
+  }
+
+  <div class="spelling-input-row">
+    @if (articleHint(); as hint) {
+      <span class="article-prefix-box" aria-hidden="true">{{ hint.article }}</span>
+    }
+    <mat-form-field appearance="outline" class="spelling-field">
+      <mat-label>{{ inputLabel() }}</mat-label>
+      <input
+        #spellingInput
+        matInput
+        autocomplete="off"
+        spellcheck="false"
+        [disabled]="disabled || submitting"
+        [(ngModel)]="text"
+        (ngModelChange)="updateAnswer()"
+        (keyup.enter)="submit()"
+      />
+    </mat-form-field>
+  </div>
 
   @if (accentKeys().length) {
     <div class="accent-panel" aria-label="Special characters">

@@ -68,6 +68,32 @@ describe('PracticeResultsCard', () => {
     expect(fixture.nativeElement.textContent).not.toContain('[object Object]');
   });
 
+  it('displays spelling correct answers with article when provided', async () => {
+    const fixture = await createFixture();
+    fixture.componentRef.setInput('results', {
+      status: 'completed',
+      total_questions: 1,
+      answered_questions: 1,
+      correct_answers: 0,
+      elapsed_seconds: null,
+      incorrect_questions: [
+        {
+          prompt: 'Spell the French word for: school',
+          submitted_answer: { text: 'ecole' },
+          expected_answer: { text: 'école' },
+          submitted_display: 'ecole',
+          expected_display: 'une école',
+          feedback_code: 'missing_or_wrong_accents',
+          answer_type: 'spelling_text',
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Correct: une école');
+    expect(fixture.nativeElement.textContent).not.toContain('Correct: école');
+  });
+
   it('defaults the back button to home instead of parent studio', async () => {
     const fixture = await createFixture();
     fixture.componentRef.setInput('results', {

@@ -10,6 +10,7 @@ from kids_exo.auth.passwords import hash_password, verify_password
 from kids_exo.online.answer_display import (
     AnswerValue,
     answer_display,
+    expected_answer_display_for_question,
     expected_answer_value_for_question,
     submitted_answer_value_for_attempt,
     value_for_legacy_integer_column,
@@ -1282,8 +1283,4 @@ def _submitted_payload(submitted_answer: str | int | dict) -> dict:
 
 
 def _expected_answer_display(question) -> str | None:
-    return answer_display(
-        expected_answer_value_for_question(question),
-        choices=tuple(getattr(question, "choices", ()) or ()),
-        answer_type=getattr(question, "answer_type", None),
-    )
+    return expected_answer_display_for_question(question)
