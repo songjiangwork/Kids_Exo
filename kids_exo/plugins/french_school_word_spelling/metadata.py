@@ -7,11 +7,11 @@ from kids_exo.plugins.metadata import (
 
 
 PLUGIN_METADATA = PluginMetadata(
-    plugin="french_common_word_spelling",
+    plugin="french_school_word_spelling",
     subject="French",
     category="Spelling",
-    title="French Family Word Spelling",
-    description="Practice spelling French family words from audio, English meaning, or both.",
+    title="French School Word Spelling",
+    description="Practice spelling French school words from audio, English meaning, or both.",
     default_locale="en-CA",
     locale_coverage=(LocaleCoverage("en-CA", ("practice",)),),
     settings=(

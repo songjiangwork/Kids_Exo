@@ -5,8 +5,10 @@ from kids_exo.localization import LocalizedPresentation, LocalizedText
 from kids_exo.online.catalog import get_online_plugin
 from kids_exo.online.french_vocabulary import (
     FRENCH_FAMILY_WORDS,
+    FRENCH_SCHOOL_WORDS,
     FrenchVocabularyItem,
     french_family_word_audio_url,
+    french_school_word_audio_url,
 )
 from kids_exo.online.models import OnlineQuestionSnapshot, PracticeSessionSnapshot
 
@@ -54,6 +56,9 @@ STRATEGY_LABELS = {
 
 WORD_STRATEGY_LABELS = {
     "family_words": "family words",
+}
+SCHOOL_WORD_STRATEGY_LABELS = {
+    "school_words": "school words",
 }
 
 FRENCH_ALPHABET_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/alphabet"
@@ -114,8 +119,47 @@ def create_french_common_words_session(request) -> PracticeSessionSnapshot:
         names = ", ".join(sorted(unexpected))
         raise ValueError(f"Unsupported French common words strategy: {names}")
 
+    return _create_word_sound_session(
+        request,
+        strategies,
+        words=FRENCH_FAMILY_WORDS,
+        strategy="family_words",
+        title="French Family Word Sounds",
+        instruction="Listen to a French family word, then choose its meaning.",
+    )
+
+
+def create_french_school_words_session(request) -> PracticeSessionSnapshot:
+    strategies = tuple(request.plugin_settings.get("strategies", ()))
+    if not strategies:
+        strategies = ("school_words",)
+    unexpected = set(strategies) - set(SCHOOL_WORD_STRATEGY_LABELS)
+    if unexpected:
+        names = ", ".join(sorted(unexpected))
+        raise ValueError(f"Unsupported French school words strategy: {names}")
+
+    return _create_word_sound_session(
+        request,
+        strategies,
+        words=FRENCH_SCHOOL_WORDS,
+        strategy="school_words",
+        title="French School Word Sounds",
+        instruction="Listen to a French school word, then choose its meaning.",
+    )
+
+
+def _create_word_sound_session(
+    request,
+    strategies: tuple[str, ...],
+    *,
+    words: tuple[FrenchVocabularyItem, ...],
+    strategy: str,
+    title: str,
+    instruction: str,
+) -> PracticeSessionSnapshot:
+    descriptor = get_online_plugin(request.plugin)
     rng = random.Random(request.seed)
-    questions = _family_word_questions(request.question_count, rng)
+    questions = _word_questions(request.question_count, rng, words, strategy)
     return PracticeSessionSnapshot(
         plugin=request.plugin,
         subject=descriptor.subject,
@@ -127,9 +171,9 @@ def create_french_common_words_session(request) -> PracticeSessionSnapshot:
         show_timer=request.show_timer,
         seed=request.seed,
         presentation=LocalizedPresentation(
-            heading=LocalizedText("French Common Word Sounds", "en-CA", False),
+            heading=LocalizedText(title, "en-CA", False),
             instructions=(
-                LocalizedText("Listen to a French family word, then choose its meaning.", "en-CA", False),
+                LocalizedText(instruction, "en-CA", False),
                 LocalizedText("Say the word softly after the audio if you want extra practice.", "en-CA", False),
             ),
         ),
@@ -143,7 +187,12 @@ def _question_for_strategy(
     rng: random.Random,
     target: FrenchSoundItem | FrenchVocabularyItem | None = None,
 ) -> OnlineQuestionSnapshot:
-    items = FRENCH_LETTERS if strategy == "letter_name_to_letter" else FRENCH_FAMILY_WORDS
+    if strategy == "letter_name_to_letter":
+        items = FRENCH_LETTERS
+    elif strategy == "school_words":
+        items = FRENCH_SCHOOL_WORDS
+    else:
+        items = FRENCH_FAMILY_WORDS
     target = target or rng.choice(items)
     distractors = rng.sample(_distractor_pool(strategy, target, items), 3)
     choices = [target, *distractors]
@@ -156,7 +205,7 @@ def _question_for_strategy(
     prompt = (
         "Listen to the French letter name. Which letter do you hear?"
         if strategy == "letter_name_to_letter"
-        else "Listen to the French family word. Which word do you hear?"
+        else "Listen to the French word. Which word do you hear?"
     )
     return OnlineQuestionSnapshot(
         identifier=f"question-{position}",
@@ -182,17 +231,19 @@ def _question_for_strategy(
     )
 
 
-def _family_word_questions(
+def _word_questions(
     question_count: int,
     rng: random.Random,
+    words: tuple[FrenchVocabularyItem, ...],
+    strategy: str,
 ) -> tuple[OnlineQuestionSnapshot, ...]:
-    targets: list[FrenchSoundItem] = []
+    targets: list[FrenchVocabularyItem] = []
     while len(targets) < question_count:
-        shuffled = list(FRENCH_FAMILY_WORDS)
+        shuffled = list(words)
         rng.shuffle(shuffled)
         targets.extend(shuffled)
     return tuple(
-        _question_for_strategy("family_words", position, rng, target)
+        _question_for_strategy(strategy, position, rng, target)
         for position, target in enumerate(targets[:question_count], start=1)
     )
 
@@ -224,8 +275,14 @@ def _audio_url_for_strategy(strategy: str, target: FrenchSoundItem) -> str | Non
         return f"{FRENCH_ALPHABET_AUDIO_BASE_URL}/{target.text.lower()}.mp3"
     if strategy == "family_words" and isinstance(target, FrenchVocabularyItem):
         return french_family_word_audio_url(target)
+    if strategy == "school_words" and isinstance(target, FrenchVocabularyItem):
+        return french_school_word_audio_url(target)
     return None
 
 
 def _skill_tag_for_strategy(strategy: str) -> str:
-    return "alphabet_sounds" if strategy == "letter_name_to_letter" else "common_word_sounds"
+    if strategy == "letter_name_to_letter":
+        return "alphabet_sounds"
+    if strategy == "school_words":
+        return "school_word_sounds"
+    return "family_word_sounds"

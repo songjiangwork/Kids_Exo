@@ -1,1 +1,1 @@
-"""French Common Word Sounds plugin metadata."""
+"""French Family Word Sounds plugin metadata."""

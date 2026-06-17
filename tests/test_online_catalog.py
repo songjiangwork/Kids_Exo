@@ -30,6 +30,8 @@ class OnlinePluginCatalogTests(unittest.TestCase):
                 "french_alphabet_sounds",
                 "french_common_word_sounds",
                 "french_common_word_spelling",
+                "french_school_word_sounds",
+                "french_school_word_spelling",
             ),
         )
 
@@ -113,6 +115,8 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         french_alphabet = get_online_plugin("french_alphabet_sounds")
         french_common_words = get_online_plugin("french_common_word_sounds")
         french_spelling = get_online_plugin("french_common_word_spelling")
+        french_school_words = get_online_plugin("french_school_word_sounds")
+        french_school_spelling = get_online_plugin("french_school_word_spelling")
 
         self.assertEqual(distributive.title, "Distributive Property Multiplication")
         self.assertEqual(tuple(setting.name for setting in distributive.settings), ("strategies",))
@@ -170,7 +174,7 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         self.assertEqual(french_alphabet.answer_types, ("multiple_choice_index",))
         self.assertEqual(french_common_words.subject, "French")
         self.assertEqual(french_common_words.category, "Pronunciation")
-        self.assertEqual(french_common_words.title, "French Common Word Sounds")
+        self.assertEqual(french_common_words.title, "French Family Word Sounds")
         self.assertEqual(
             tuple(option.value for option in french_common_words.settings[0].options),
             ("family_words",),
@@ -178,7 +182,7 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         self.assertEqual(french_common_words.answer_types, ("multiple_choice_index",))
         self.assertEqual(french_spelling.subject, "French")
         self.assertEqual(french_spelling.category, "Spelling")
-        self.assertEqual(french_spelling.title, "French Common Word Spelling")
+        self.assertEqual(french_spelling.title, "French Family Word Spelling")
         self.assertEqual(french_spelling.answer_types, ("spelling_text",))
         self.assertEqual(french_spelling.supported_delivery_modes, ("web_practice",))
         self.assertEqual(tuple(setting.name for setting in french_spelling.settings), ("strategy",))
@@ -186,6 +190,18 @@ class OnlinePluginCatalogTests(unittest.TestCase):
             tuple(option.value for option in french_spelling.settings[0].options),
             ("dictation", "translation", "combined"),
         )
+        self.assertEqual(french_school_words.subject, "French")
+        self.assertEqual(french_school_words.category, "Pronunciation")
+        self.assertEqual(french_school_words.title, "French School Word Sounds")
+        self.assertEqual(
+            tuple(option.value for option in french_school_words.settings[0].options),
+            ("school_words",),
+        )
+        self.assertEqual(french_school_words.answer_types, ("multiple_choice_index",))
+        self.assertEqual(french_school_spelling.subject, "French")
+        self.assertEqual(french_school_spelling.category, "Spelling")
+        self.assertEqual(french_school_spelling.title, "French School Word Spelling")
+        self.assertEqual(french_school_spelling.answer_types, ("spelling_text",))
 
 
 if __name__ == "__main__":

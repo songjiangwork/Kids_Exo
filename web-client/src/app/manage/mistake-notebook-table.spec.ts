@@ -24,7 +24,7 @@ describe('MistakeNotebookTable', () => {
       },
       {
         plugin: 'french_common_word_sounds',
-        title: 'French Common Word Sounds',
+        title: 'French Family Word Sounds',
         prompt: 'Listen and choose',
         expected_answer: 1,
         last_submitted_answer: 2,
@@ -52,7 +52,7 @@ describe('MistakeNotebookTable', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Multiply by 11');
-    expect(fixture.nativeElement.textContent).not.toContain('French Common Word Sounds');
+    expect(fixture.nativeElement.textContent).not.toContain('French Family Word Sounds');
 
     const emitted: string[] = [];
     fixture.componentInstance.createPracticeFromPlugin.subscribe((plugin) => emitted.push(plugin));

@@ -101,6 +101,8 @@ class PracticeWebApiTests(unittest.TestCase):
                 "french_alphabet_sounds",
                 "french_common_word_sounds",
                 "french_common_word_spelling",
+                "french_school_word_sounds",
+                "french_school_word_spelling",
             ],
         )
         plugin = catalog["plugins"][0]
@@ -121,6 +123,20 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(spelling["subject"], "French")
         self.assertEqual(spelling["category"], "Spelling")
         self.assertEqual(spelling["answer_types"], ["spelling_text"])
+        school_sounds = next(
+            plugin for plugin in catalog["plugins"]
+            if plugin["plugin"] == "french_school_word_sounds"
+        )
+        self.assertEqual(school_sounds["subject"], "French")
+        self.assertEqual(school_sounds["category"], "Pronunciation")
+        self.assertEqual(school_sounds["answer_types"], ["multiple_choice_index"])
+        school_spelling = next(
+            plugin for plugin in catalog["plugins"]
+            if plugin["plugin"] == "french_school_word_spelling"
+        )
+        self.assertEqual(school_spelling["subject"], "French")
+        self.assertEqual(school_spelling["category"], "Spelling")
+        self.assertEqual(school_spelling["answer_types"], ["spelling_text"])
         self.assertEqual(plugin["release_stage"], "published")
         self.assertEqual(
             [setting["name"] for setting in plugin["settings"]],
@@ -886,7 +902,7 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         created = response.json()
         self.assertEqual(created["subject"], "French")
-        self.assertEqual(created["skill"], "French Common Word Sounds")
+        self.assertEqual(created["skill"], "French Family Word Sounds")
         student = self.client.get(
             f"/api/student/sessions/{created['student_token']}"
         )
@@ -900,6 +916,39 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertTrue(
             first_question["audio_url"].startswith(
                 "/audio/tts/fr/fr-FR-DeniseNeural/common-words/family/"
+            )
+        )
+        self.assertNotIn("expected_answer", student.text)
+
+    def test_french_school_words_session_exposes_word_meaning_choices(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        response = self.client.post(
+            f"/api/learners/{learner['id']}/sessions",
+            json={
+                "plugin": "french_school_word_sounds",
+                "plugin_settings": {"strategies": ["school_words"]},
+                "question_count": 10,
+                "seed": 23,
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        created = response.json()
+        self.assertEqual(created["subject"], "French")
+        self.assertEqual(created["skill"], "French School Word Sounds")
+        student = self.client.get(
+            f"/api/student/sessions/{created['student_token']}"
+        )
+        first_question = student.json()["questions"][0]
+
+        self.assertEqual(student.status_code, 200)
+        self.assertEqual(first_question["question_type"], "multiple_choice")
+        self.assertTrue(all("(" in choice and ")" in choice for choice in first_question["choices"]))
+        self.assertEqual(first_question["speech_locale"], "fr-FR")
+        self.assertIsNotNone(first_question["speech_text"])
+        self.assertTrue(
+            first_question["audio_url"].startswith(
+                "/audio/tts/fr/fr-FR-DeniseNeural/common-words/school/"
             )
         )
         self.assertNotIn("expected_answer", student.text)

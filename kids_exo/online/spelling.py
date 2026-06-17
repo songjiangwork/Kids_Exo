@@ -4,8 +4,10 @@ from kids_exo.localization import LocalizedPresentation, LocalizedText
 from kids_exo.online.catalog import get_online_plugin
 from kids_exo.online.french_vocabulary import (
     FRENCH_FAMILY_WORDS,
+    FRENCH_SCHOOL_WORDS,
     FrenchVocabularyItem,
     french_family_word_audio_url,
+    french_school_word_audio_url,
 )
 from kids_exo.online.models import OnlineQuestionSnapshot, PracticeSessionSnapshot
 from kids_exo.plugins.french_common_word_spelling.settings import (
@@ -35,11 +37,44 @@ FRENCH_ACCENT_KEYS = (
 
 
 def create_french_common_word_spelling_session(request, settings: FrenchCommonWordSpellingSettings):
+    return _create_french_word_spelling_session(
+        request,
+        settings,
+        words=FRENCH_FAMILY_WORDS,
+        title="French Family Word Spelling",
+        instruction="Spell each French family word from audio, meaning, or both.",
+        topic_tag="family_words",
+        audio_url_for_word=french_family_word_audio_url,
+    )
+
+
+def create_french_school_word_spelling_session(request, settings: FrenchCommonWordSpellingSettings):
+    return _create_french_word_spelling_session(
+        request,
+        settings,
+        words=FRENCH_SCHOOL_WORDS,
+        title="French School Word Spelling",
+        instruction="Spell each French school word from audio, meaning, or both.",
+        topic_tag="school_words",
+        audio_url_for_word=french_school_word_audio_url,
+    )
+
+
+def _create_french_word_spelling_session(
+    request,
+    settings: FrenchCommonWordSpellingSettings,
+    *,
+    words: tuple[FrenchVocabularyItem, ...],
+    title: str,
+    instruction: str,
+    topic_tag: str,
+    audio_url_for_word,
+):
     descriptor = get_online_plugin(request.plugin)
     rng = random.Random(request.seed)
-    targets = _family_word_targets(request.question_count, rng)
+    targets = _word_targets(request.question_count, rng, words)
     questions = tuple(
-        _spelling_question(settings.strategy, target, position)
+        _spelling_question(settings.strategy, target, position, topic_tag, audio_url_for_word)
         for position, target in enumerate(targets, start=1)
     )
     return PracticeSessionSnapshot(
@@ -53,10 +88,10 @@ def create_french_common_word_spelling_session(request, settings: FrenchCommonWo
         show_timer=request.show_timer,
         seed=request.seed,
         presentation=LocalizedPresentation(
-            heading=LocalizedText("French Common Word Spelling", "en-CA", False),
+            heading=LocalizedText(title, "en-CA", False),
             instructions=(
                 LocalizedText(
-                    "Spell each French family word from audio, meaning, or both.",
+                    instruction,
                     "en-CA",
                     False,
                 ),
@@ -66,10 +101,14 @@ def create_french_common_word_spelling_session(request, settings: FrenchCommonWo
     )
 
 
-def _family_word_targets(question_count: int, rng: random.Random) -> list[FrenchVocabularyItem]:
+def _word_targets(
+    question_count: int,
+    rng: random.Random,
+    words: tuple[FrenchVocabularyItem, ...],
+) -> list[FrenchVocabularyItem]:
     targets: list[FrenchVocabularyItem] = []
     while len(targets) < question_count:
-        shuffled = list(FRENCH_FAMILY_WORDS)
+        shuffled = list(words)
         rng.shuffle(shuffled)
         targets.extend(shuffled)
     return targets[:question_count]
@@ -79,14 +118,16 @@ def _spelling_question(
     strategy: str,
     target: FrenchVocabularyItem,
     position: int,
+    topic_tag: str,
+    audio_url_for_word,
 ) -> OnlineQuestionSnapshot:
     prompt = _prompt_for_strategy(strategy)
-    public_payload = _public_payload_for_strategy(strategy, target)
+    public_payload = _public_payload_for_strategy(strategy, target, audio_url_for_word)
     return OnlineQuestionSnapshot(
         identifier=f"question-{position}",
         prompt=prompt,
         strategy=strategy,
-        skill_tags=("french", "spelling", "common_words", strategy),
+        skill_tags=("french", "spelling", topic_tag, strategy),
         renderer_type="spelling_answer",
         answer_type="spelling_text",
         evaluation_payload={
@@ -117,6 +158,7 @@ def _prompt_for_strategy(strategy: str) -> str:
 def _public_payload_for_strategy(
     strategy: str,
     target: FrenchVocabularyItem,
+    audio_url_for_word,
 ) -> dict:
     payload = {
         "prompt_mode": strategy,
@@ -129,7 +171,7 @@ def _public_payload_for_strategy(
         payload["translation"] = target.meaning
         payload["translation_locale"] = "en-CA"
     if strategy in {"dictation", "combined"}:
-        payload["audio_url"] = french_family_word_audio_url(target)
+        payload["audio_url"] = audio_url_for_word(target)
         payload["speech_text"] = target.text
         payload["speech_locale"] = target.language
     return payload
