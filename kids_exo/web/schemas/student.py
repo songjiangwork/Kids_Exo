@@ -7,6 +7,7 @@ from kids_exo.web.schemas.session import StudentQuestionResponse
 
 
 class StudentSessionResponse(BaseModel):
+    student_id: int
     plugin: str
     subject: str
     category: str

@@ -4,7 +4,12 @@
   } @else if (error()) {
     <mat-card class="message-card"><p>{{ error() }}</p></mat-card>
   } @else if (complete() && results(); as finalResults) {
-    <app-practice-results-card [results]="finalResults" [showTimer]="session()?.show_timer ?? false" />
+    <app-practice-results-card
+      [results]="finalResults"
+      [showTimer]="session()?.show_timer ?? false"
+      [backUrl]="studentDashboardUrl()"
+      backLabel="Back to Student Dashboard"
+    />
   } @else if (question(); as activeQuestion) {
     <div class="practice-header">
       <div>

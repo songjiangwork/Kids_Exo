@@ -48,6 +48,7 @@ describe('StudentPractice', () => {
     fixture.detectChanges();
     const http = TestBed.inject(HttpTestingController);
     http.expectOne('/api/student/sessions/student-token').flush({
+      student_id: 3,
       plugin: 'multiply_by_11',
       subject: 'Math',
       category: 'Mental Multiplication',
@@ -483,6 +484,10 @@ describe('StudentPractice', () => {
     expect(fixture.nativeElement.textContent).toContain('42 x 11');
     expect(fixture.nativeElement.textContent).toContain('Your answer: 0');
     expect(fixture.nativeElement.textContent).toContain('Answer: 462');
+    expect(fixture.nativeElement.textContent).toContain('Back to Student Dashboard');
+    expect((fixture.nativeElement.querySelector('.finish-card a') as HTMLAnchorElement).getAttribute('href')).toBe(
+      '/manage/students/3',
+    );
   });
 
   it('clears scratch notes when moving to the next question', async () => {

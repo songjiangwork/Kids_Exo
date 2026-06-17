@@ -196,6 +196,7 @@ def student_session_response(saved_session) -> StudentSessionResponse:
         if question.attempts
     ]
     return StudentSessionResponse(
+        student_id=saved_session.learner_id,
         plugin=saved_session.plugin,
         subject=saved_session.subject,
         category=saved_session.category,

@@ -201,6 +201,11 @@ export class StudentPractice implements OnInit, OnDestroy {
     return this.session()?.subject !== 'French';
   }
 
+  protected studentDashboardUrl(): string {
+    const studentId = this.session()?.student_id;
+    return studentId ? `/manage/students/${studentId}` : '/home';
+  }
+
   protected toggleScratchPad(): void {
     this.scratchPadOpen.update((isOpen) => !isOpen);
   }

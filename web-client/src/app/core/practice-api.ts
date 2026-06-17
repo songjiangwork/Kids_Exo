@@ -226,6 +226,7 @@ export interface PrintableWorksheetChoice {
 }
 
 export interface StudentSession {
+  student_id: number;
   plugin: string;
   subject: string;
   category: string;
