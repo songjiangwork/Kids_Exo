@@ -32,6 +32,8 @@ class OnlinePluginCatalogTests(unittest.TestCase):
                 "french_common_word_spelling",
                 "french_school_word_sounds",
                 "french_school_word_spelling",
+                "french_fruit_word_sounds",
+                "french_fruit_word_spelling",
             ),
         )
 
@@ -117,6 +119,8 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         french_spelling = get_online_plugin("french_common_word_spelling")
         french_school_words = get_online_plugin("french_school_word_sounds")
         french_school_spelling = get_online_plugin("french_school_word_spelling")
+        french_fruit_words = get_online_plugin("french_fruit_word_sounds")
+        french_fruit_spelling = get_online_plugin("french_fruit_word_spelling")
 
         self.assertEqual(distributive.title, "Distributive Property Multiplication")
         self.assertEqual(tuple(setting.name for setting in distributive.settings), ("strategies",))
@@ -202,6 +206,18 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         self.assertEqual(french_school_spelling.category, "Spelling")
         self.assertEqual(french_school_spelling.title, "French School Word Spelling")
         self.assertEqual(french_school_spelling.answer_types, ("spelling_text",))
+        self.assertEqual(french_fruit_words.subject, "French")
+        self.assertEqual(french_fruit_words.category, "Pronunciation")
+        self.assertEqual(french_fruit_words.title, "French Fruit Word Sounds")
+        self.assertEqual(
+            tuple(option.value for option in french_fruit_words.settings[0].options),
+            ("fruit_words",),
+        )
+        self.assertEqual(french_fruit_words.answer_types, ("multiple_choice_index",))
+        self.assertEqual(french_fruit_spelling.subject, "French")
+        self.assertEqual(french_fruit_spelling.category, "Spelling")
+        self.assertEqual(french_fruit_spelling.title, "French Fruit Word Spelling")
+        self.assertEqual(french_fruit_spelling.answer_types, ("spelling_text",))
 
 
 if __name__ == "__main__":

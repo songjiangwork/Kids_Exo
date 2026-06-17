@@ -23,6 +23,7 @@ class FrenchVocabularyItem:
 
 FRENCH_FAMILY_WORD_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/common-words/family"
 FRENCH_SCHOOL_WORD_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/common-words/school"
+FRENCH_FRUIT_WORD_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/common-words/fruit"
 
 
 def _french_noun(
@@ -93,6 +94,25 @@ FRENCH_SCHOOL_WORDS: tuple[FrenchVocabularyItem, ...] = (
 )
 
 
+FRENCH_FRUIT_WORDS: tuple[FrenchVocabularyItem, ...] = (
+    _french_noun("pomme", "apple", "pomme", gender="feminine", indefinite_article="une", definite_article="la", learning_article="une"),
+    _french_noun("banane", "banana", "banane", gender="feminine", indefinite_article="une", definite_article="la", learning_article="une"),
+    _french_noun("orange", "orange", "orange", gender="feminine", indefinite_article="une", definite_article="l'", learning_article="une"),
+    _french_noun("poire", "pear", "poire", gender="feminine", indefinite_article="une", definite_article="la", learning_article="une"),
+    _french_noun("fraise", "strawberry", "fraise", gender="feminine", indefinite_article="une", definite_article="la", learning_article="une"),
+    _french_noun("cerise", "cherry", "cerise", gender="feminine", indefinite_article="une", definite_article="la", learning_article="une"),
+    _french_noun("pêche", "peach", "peche", gender="feminine", indefinite_article="une", definite_article="la", learning_article="une"),
+    _french_noun("abricot", "apricot", "abricot", gender="masculine", indefinite_article="un", definite_article="l'", learning_article="un"),
+    _french_noun("prune", "plum", "prune", gender="feminine", indefinite_article="une", definite_article="la", learning_article="une"),
+    _french_noun("citron", "lemon", "citron", gender="masculine", indefinite_article="un", definite_article="le", learning_article="un"),
+    _french_noun("melon", "melon", "melon", gender="masculine", indefinite_article="un", definite_article="le", learning_article="un"),
+    _french_noun("pastèque", "watermelon", "pasteque", gender="feminine", indefinite_article="une", definite_article="la", learning_article="une"),
+    _french_noun("ananas", "pineapple", "ananas", gender="masculine", indefinite_article="un", definite_article="l'", learning_article="un"),
+    _french_noun("framboise", "raspberry", "framboise", gender="feminine", indefinite_article="une", definite_article="la", learning_article="une"),
+    _french_noun("myrtille", "blueberry", "myrtille", gender="feminine", indefinite_article="une", definite_article="la", learning_article="une"),
+)
+
+
 def french_vocabulary_display_text(
     item: FrenchVocabularyItem,
     *,
@@ -143,6 +163,14 @@ def french_school_word_audio_url(item: FrenchVocabularyItem, *, include_article:
     return french_vocabulary_audio_url(
         item,
         base_url=FRENCH_SCHOOL_WORD_AUDIO_BASE_URL,
+        include_article=include_article,
+    )
+
+
+def french_fruit_word_audio_url(item: FrenchVocabularyItem, *, include_article: bool = False) -> str | None:
+    return french_vocabulary_audio_url(
+        item,
+        base_url=FRENCH_FRUIT_WORD_AUDIO_BASE_URL,
         include_article=include_article,
     )
 

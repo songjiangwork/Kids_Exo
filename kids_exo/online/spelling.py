@@ -4,9 +4,11 @@ from kids_exo.localization import LocalizedPresentation, LocalizedText
 from kids_exo.online.catalog import get_online_plugin
 from kids_exo.online.french_vocabulary import (
     FRENCH_FAMILY_WORDS,
+    FRENCH_FRUIT_WORDS,
     FRENCH_SCHOOL_WORDS,
     FrenchVocabularyItem,
     french_family_word_audio_url,
+    french_fruit_word_audio_url,
     french_school_word_audio_url,
     french_vocabulary_article_hint,
     french_vocabulary_display_text,
@@ -59,6 +61,18 @@ def create_french_school_word_spelling_session(request, settings: FrenchCommonWo
         instruction="Spell each French school word from audio, meaning, or both.",
         topic_tag="school_words",
         audio_url_for_word=french_school_word_audio_url,
+    )
+
+
+def create_french_fruit_word_spelling_session(request, settings: FrenchCommonWordSpellingSettings):
+    return _create_french_word_spelling_session(
+        request,
+        settings,
+        words=FRENCH_FRUIT_WORDS,
+        title="French Fruit Word Spelling",
+        instruction="Spell each French fruit word from audio, meaning, or both.",
+        topic_tag="fruit_words",
+        audio_url_for_word=french_fruit_word_audio_url,
     )
 
 

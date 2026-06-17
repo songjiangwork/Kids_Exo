@@ -13,6 +13,12 @@ from kids_exo.plugins.french_common_word_sounds.metadata import (
 from kids_exo.plugins.french_common_word_spelling.metadata import (
     PLUGIN_METADATA as FRENCH_COMMON_WORD_SPELLING,
 )
+from kids_exo.plugins.french_fruit_word_sounds.metadata import (
+    PLUGIN_METADATA as FRENCH_FRUIT_WORD_SOUNDS,
+)
+from kids_exo.plugins.french_fruit_word_spelling.metadata import (
+    PLUGIN_METADATA as FRENCH_FRUIT_WORD_SPELLING,
+)
 from kids_exo.plugins.french_school_word_sounds.metadata import (
     PLUGIN_METADATA as FRENCH_SCHOOL_WORD_SOUNDS,
 )
@@ -65,4 +71,6 @@ ENABLED_ONLINE_PLUGIN_METADATA = (
     FRENCH_COMMON_WORD_SPELLING,
     FRENCH_SCHOOL_WORD_SOUNDS,
     FRENCH_SCHOOL_WORD_SPELLING,
+    FRENCH_FRUIT_WORD_SOUNDS,
+    FRENCH_FRUIT_WORD_SPELLING,
 )

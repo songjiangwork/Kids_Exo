@@ -3,6 +3,7 @@ import unittest
 
 from kids_exo.online.session import OnlineSessionRequest, create_practice_session
 from kids_exo.online.french_vocabulary import (
+    FRENCH_FRUIT_WORDS,
     FRENCH_SCHOOL_WORDS,
     french_vocabulary_article_hint,
     french_vocabulary_display_text,
@@ -291,6 +292,32 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertTrue(first.audio_url.startswith("/audio/tts/fr/fr-FR-DeniseNeural/common-words/school/"))
         self.assertTrue(first.audio_url.endswith(".mp3"))
 
+    def test_french_fruit_words_session_generates_word_meaning_choices(self) -> None:
+        session = create_practice_session(
+            OnlineSessionRequest(
+                plugin="french_fruit_word_sounds",
+                plugin_settings={"strategies": ["fruit_words"]},
+                question_count=20,
+                seed=123,
+            )
+        )
+        first = session.questions[0]
+
+        self.assertEqual(session.plugin, "french_fruit_word_sounds")
+        self.assertEqual(session.subject, "French")
+        self.assertEqual(session.category, "Pronunciation")
+        self.assertEqual(session.skill, "French Fruit Word Sounds")
+        self.assertEqual({question.strategy for question in session.questions}, {"fruit_words"})
+        self.assertEqual(first.question_type, "multiple_choice")
+        all_choices = [choice for question in session.questions for choice in question.choices]
+        self.assertTrue(any(choice.startswith("une pomme ") for choice in all_choices))
+        self.assertTrue(any(choice.startswith("un citron ") for choice in all_choices))
+        self.assertEqual(first.speech_locale, "fr-FR")
+        self.assertTrue(any(question.speech_text.startswith(("un ", "une ")) for question in session.questions))
+        self.assertTrue(first.audio_url.startswith("/audio/tts/fr/fr-FR-DeniseNeural/common-words/fruit/"))
+        self.assertIn("/with-article/", first.audio_url)
+        self.assertTrue(first.audio_url.endswith(".mp3"))
+
     def test_french_vocabulary_article_helpers_format_school_words(self) -> None:
         words = {item.text: item for item in FRENCH_SCHOOL_WORDS}
 
@@ -317,6 +344,22 @@ class OnlinePracticeSessionTests(unittest.TestCase):
                 "mode": "prefix",
                 "teaches_gender": True,
             },
+        )
+
+    def test_french_vocabulary_article_helpers_format_fruit_words(self) -> None:
+        words = {item.text: item for item in FRENCH_FRUIT_WORDS}
+
+        self.assertEqual(words["pomme"].gender, "feminine")
+        self.assertEqual(words["citron"].gender, "masculine")
+        self.assertEqual(words["pastèque"].learning_article, "une")
+        self.assertEqual(words["ananas"].learning_article, "un")
+        self.assertEqual(
+            french_vocabulary_display_text(words["pomme"], include_article=True),
+            "une pomme",
+        )
+        self.assertEqual(
+            french_vocabulary_display_text(words["citron"], include_article=True),
+            "un citron",
         )
 
     def test_french_common_word_spelling_generates_dictation_questions(self) -> None:
@@ -402,6 +445,37 @@ class OnlinePracticeSessionTests(unittest.TestCase):
             article_question.speech_text,
         )
         self.assertNotIn("expected_text", first.public_payload)
+
+    def test_french_fruit_word_spelling_generates_combined_questions(self) -> None:
+        session = create_practice_session(
+            OnlineSessionRequest(
+                plugin="french_fruit_word_spelling",
+                plugin_settings={"strategy": ["combined"]},
+                question_count=10,
+                seed=123,
+            )
+        )
+        first = session.questions[0]
+
+        self.assertEqual(session.plugin, "french_fruit_word_spelling")
+        self.assertEqual(session.subject, "French")
+        self.assertEqual(session.category, "Spelling")
+        self.assertEqual(session.skill, "French Fruit Word Spelling")
+        self.assertEqual(first.renderer_type, "spelling_answer")
+        self.assertEqual(first.answer_type, "spelling_text")
+        self.assertEqual(first.public_payload["prompt_mode"], "combined")
+        self.assertIn("translation", first.public_payload)
+        self.assertIn("audio_url", first.public_payload)
+        self.assertIn("/common-words/fruit/", first.public_payload["audio_url"])
+        self.assertIn("/with-article/", first.public_payload["audio_url"])
+        self.assertIn("article_hint", first.public_payload)
+        self.assertNotIn("expected_text", first.public_payload)
+        self.assertTrue(
+            session.evaluate_answer(
+                first.identifier,
+                {"text": first.evaluation_payload["expected_text"].upper()},
+            ).is_correct
+        )
 
     def test_french_common_word_spelling_generates_combined_questions(self) -> None:
         session = create_practice_session(
