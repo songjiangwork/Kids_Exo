@@ -34,6 +34,8 @@ class OnlinePluginCatalogTests(unittest.TestCase):
                 "french_school_word_spelling",
                 "french_fruit_word_sounds",
                 "french_fruit_word_spelling",
+                "french_vegetable_word_sounds",
+                "french_vegetable_word_spelling",
             ),
         )
 
@@ -121,6 +123,8 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         french_school_spelling = get_online_plugin("french_school_word_spelling")
         french_fruit_words = get_online_plugin("french_fruit_word_sounds")
         french_fruit_spelling = get_online_plugin("french_fruit_word_spelling")
+        french_vegetable_words = get_online_plugin("french_vegetable_word_sounds")
+        french_vegetable_spelling = get_online_plugin("french_vegetable_word_spelling")
 
         self.assertEqual(distributive.title, "Distributive Property Multiplication")
         self.assertEqual(tuple(setting.name for setting in distributive.settings), ("strategies",))
@@ -218,6 +222,18 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         self.assertEqual(french_fruit_spelling.category, "Spelling")
         self.assertEqual(french_fruit_spelling.title, "French Fruit Word Spelling")
         self.assertEqual(french_fruit_spelling.answer_types, ("spelling_text",))
+        self.assertEqual(french_vegetable_words.subject, "French")
+        self.assertEqual(french_vegetable_words.category, "Pronunciation")
+        self.assertEqual(french_vegetable_words.title, "French Vegetable Word Sounds")
+        self.assertEqual(
+            tuple(option.value for option in french_vegetable_words.settings[0].options),
+            ("vegetable_words",),
+        )
+        self.assertEqual(french_vegetable_words.answer_types, ("multiple_choice_index",))
+        self.assertEqual(french_vegetable_spelling.subject, "French")
+        self.assertEqual(french_vegetable_spelling.category, "Spelling")
+        self.assertEqual(french_vegetable_spelling.title, "French Vegetable Word Spelling")
+        self.assertEqual(french_vegetable_spelling.answer_types, ("spelling_text",))
 
 
 if __name__ == "__main__":

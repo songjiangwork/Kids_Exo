@@ -25,6 +25,12 @@ from kids_exo.plugins.french_school_word_sounds.metadata import (
 from kids_exo.plugins.french_school_word_spelling.metadata import (
     PLUGIN_METADATA as FRENCH_SCHOOL_WORD_SPELLING,
 )
+from kids_exo.plugins.french_vegetable_word_sounds.metadata import (
+    PLUGIN_METADATA as FRENCH_VEGETABLE_WORD_SOUNDS,
+)
+from kids_exo.plugins.french_vegetable_word_spelling.metadata import (
+    PLUGIN_METADATA as FRENCH_VEGETABLE_WORD_SPELLING,
+)
 from kids_exo.plugins.integer_multiplication_distributive.metadata import (
     PLUGIN_METADATA as DISTRIBUTIVE_PROPERTY,
 )
@@ -73,4 +79,6 @@ ENABLED_ONLINE_PLUGIN_METADATA = (
     FRENCH_SCHOOL_WORD_SPELLING,
     FRENCH_FRUIT_WORD_SOUNDS,
     FRENCH_FRUIT_WORD_SPELLING,
+    FRENCH_VEGETABLE_WORD_SOUNDS,
+    FRENCH_VEGETABLE_WORD_SPELLING,
 )

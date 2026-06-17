@@ -24,6 +24,7 @@ class FrenchVocabularyItem:
 FRENCH_FAMILY_WORD_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/common-words/family"
 FRENCH_SCHOOL_WORD_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/common-words/school"
 FRENCH_FRUIT_WORD_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/common-words/fruit"
+FRENCH_VEGETABLE_WORD_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/common-words/vegetable"
 
 
 def _french_noun(
@@ -35,6 +36,7 @@ def _french_noun(
     indefinite_article: str | None,
     definite_article: str | None,
     learning_article: str | None,
+    article_joiner: str = " ",
     number: str = "singular",
     teaches_gender: bool = True,
 ) -> FrenchVocabularyItem:
@@ -48,6 +50,7 @@ def _french_noun(
         indefinite_article=indefinite_article,
         definite_article=definite_article,
         learning_article=learning_article,
+        article_joiner=article_joiner,
         teaches_gender=teaches_gender,
     )
 
@@ -113,6 +116,25 @@ FRENCH_FRUIT_WORDS: tuple[FrenchVocabularyItem, ...] = (
 )
 
 
+FRENCH_VEGETABLE_WORDS: tuple[FrenchVocabularyItem, ...] = (
+    _french_noun("carotte", "carrot", "carotte", gender="feminine", indefinite_article="une", definite_article="la", learning_article="une"),
+    _french_noun("pomme de terre", "potato", "pomme-de-terre", gender="feminine", indefinite_article="une", definite_article="la", learning_article="une"),
+    _french_noun("tomate", "tomato", "tomate", gender="feminine", indefinite_article="une", definite_article="la", learning_article="une"),
+    _french_noun("concombre", "cucumber", "concombre", gender="masculine", indefinite_article="un", definite_article="le", learning_article="un"),
+    _french_noun("oignon", "onion", "oignon", gender="masculine", indefinite_article="un", definite_article="l'", learning_article="un"),
+    _french_noun("ail", "garlic", "ail", gender="masculine", indefinite_article=None, definite_article="l'", learning_article="de l'", article_joiner=""),
+    _french_noun("poivron", "bell pepper", "poivron", gender="masculine", indefinite_article="un", definite_article="le", learning_article="un"),
+    _french_noun("brocoli", "broccoli", "brocoli", gender="masculine", indefinite_article="un", definite_article="le", learning_article="un"),
+    _french_noun("chou-fleur", "cauliflower", "chou-fleur", gender="masculine", indefinite_article="un", definite_article="le", learning_article="un"),
+    _french_noun("courgette", "zucchini", "courgette", gender="feminine", indefinite_article="une", definite_article="la", learning_article="une"),
+    _french_noun("aubergine", "eggplant", "aubergine", gender="feminine", indefinite_article="une", definite_article="l'", learning_article="une"),
+    _french_noun("laitue", "lettuce", "laitue", gender="feminine", indefinite_article="une", definite_article="la", learning_article="une"),
+    _french_noun("épinards", "spinach", "epinards", gender="masculine", number="plural", indefinite_article="des", definite_article="les", learning_article="des", teaches_gender=False),
+    _french_noun("petits pois", "peas", "petits-pois", gender="masculine", number="plural", indefinite_article="des", definite_article="les", learning_article="des", teaches_gender=False),
+    _french_noun("haricot vert", "green bean", "haricot-vert", gender="masculine", indefinite_article="un", definite_article="le", learning_article="un"),
+)
+
+
 def french_vocabulary_display_text(
     item: FrenchVocabularyItem,
     *,
@@ -146,9 +168,21 @@ def french_vocabulary_audio_url(
     if not item.audio_slug:
         return None
     if include_article and item.learning_article:
-        phrase_slug = f"{item.learning_article}-{item.audio_slug}"
+        phrase_slug = french_vocabulary_audio_phrase_slug(item)
         return f"{base_url}/with-article/{phrase_slug}.mp3"
     return f"{base_url}/{item.audio_slug}.mp3"
+
+
+def french_vocabulary_audio_phrase_slug(item: FrenchVocabularyItem) -> str:
+    if not item.learning_article:
+        return item.audio_slug or item.text
+    article_slug = (
+        item.learning_article.replace("'", "")
+        .replace("’", "")
+        .replace(" ", "-")
+        .strip("-")
+    )
+    return f"{article_slug}-{item.audio_slug}"
 
 
 def french_family_word_audio_url(item: FrenchVocabularyItem, *, include_article: bool = False) -> str | None:
@@ -171,6 +205,14 @@ def french_fruit_word_audio_url(item: FrenchVocabularyItem, *, include_article: 
     return french_vocabulary_audio_url(
         item,
         base_url=FRENCH_FRUIT_WORD_AUDIO_BASE_URL,
+        include_article=include_article,
+    )
+
+
+def french_vegetable_word_audio_url(item: FrenchVocabularyItem, *, include_article: bool = False) -> str | None:
+    return french_vocabulary_audio_url(
+        item,
+        base_url=FRENCH_VEGETABLE_WORD_AUDIO_BASE_URL,
         include_article=include_article,
     )
 

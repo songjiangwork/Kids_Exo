@@ -6,10 +6,12 @@ from kids_exo.online.french_vocabulary import (
     FRENCH_FAMILY_WORDS,
     FRENCH_FRUIT_WORDS,
     FRENCH_SCHOOL_WORDS,
+    FRENCH_VEGETABLE_WORDS,
     FrenchVocabularyItem,
     french_family_word_audio_url,
     french_fruit_word_audio_url,
     french_school_word_audio_url,
+    french_vegetable_word_audio_url,
     french_vocabulary_article_hint,
     french_vocabulary_display_text,
 )
@@ -73,6 +75,18 @@ def create_french_fruit_word_spelling_session(request, settings: FrenchCommonWor
         instruction="Spell each French fruit word from audio, meaning, or both.",
         topic_tag="fruit_words",
         audio_url_for_word=french_fruit_word_audio_url,
+    )
+
+
+def create_french_vegetable_word_spelling_session(request, settings: FrenchCommonWordSpellingSettings):
+    return _create_french_word_spelling_session(
+        request,
+        settings,
+        words=FRENCH_VEGETABLE_WORDS,
+        title="French Vegetable Word Spelling",
+        instruction="Spell each French vegetable word from audio, meaning, or both.",
+        topic_tag="vegetable_words",
+        audio_url_for_word=french_vegetable_word_audio_url,
     )
 
 
