@@ -66,6 +66,7 @@ class IncorrectQuestionResponse(BaseModel):
     submitted_display: str | None = None
     expected_display: str | None = None
     submitted_work: str | None = None
+    feedback_code: str | None = None
     answer_type: str | None = None
 
 

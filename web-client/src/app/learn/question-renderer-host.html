@@ -35,6 +35,16 @@
     />
   }
 
+  @case ('spelling_answer') {
+    <app-spelling-answer-renderer
+      [question]="question"
+      [disabled]="disabled"
+      [submitting]="submitting"
+      (answerChange)="answerChange.emit($event)"
+      (submitAnswer)="submitAnswer.emit()"
+    />
+  }
+
   @default {
     <p class="error">This question type is not supported yet.</p>
   }

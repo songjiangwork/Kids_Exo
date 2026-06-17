@@ -100,6 +100,7 @@ class PracticeWebApiTests(unittest.TestCase):
                 "chicken_rabbit_word_problems",
                 "french_alphabet_sounds",
                 "french_common_word_sounds",
+                "french_common_word_spelling",
             ],
         )
         plugin = catalog["plugins"][0]
@@ -113,6 +114,13 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertEqual(word_problem["subject"], "Math")
         self.assertEqual(word_problem["category"], "Word Problems")
         self.assertEqual(word_problem["answer_types"], ["structured_word_problem"])
+        spelling = next(
+            plugin for plugin in catalog["plugins"]
+            if plugin["plugin"] == "french_common_word_spelling"
+        )
+        self.assertEqual(spelling["subject"], "French")
+        self.assertEqual(spelling["category"], "Spelling")
+        self.assertEqual(spelling["answer_types"], ["spelling_text"])
         self.assertEqual(plugin["release_stage"], "published")
         self.assertEqual(
             [setting["name"] for setting in plugin["settings"]],
@@ -1169,6 +1177,60 @@ class PracticeWebApiTests(unittest.TestCase):
         self.assertIn(":", missed["submitted_display"])
         self.assertIn(":", missed["expected_display"])
         self.assertEqual(missed["submitted_work"], "I tried assuming all were chickens.")
+
+    def test_student_can_submit_and_review_spelling_answers(self) -> None:
+        learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()
+        created = self.client.post(
+            f"/api/learners/{learner['id']}/sessions",
+            json={
+                "plugin": "french_common_word_spelling",
+                "plugin_settings": {"strategy": ["translation"]},
+                "question_count": 10,
+                "seed": 123,
+            },
+        ).json()
+        expected_session = create_practice_session(
+            OnlineSessionRequest(
+                plugin="french_common_word_spelling",
+                plugin_settings={"strategy": ["translation"]},
+                question_count=10,
+                seed=123,
+            )
+        )
+        first_question = created["questions"][0]
+        first_expected = expected_session.questions[0].evaluation_payload["expected_text"]
+        wrong_answer = first_expected.replace("è", "e").replace("é", "e")
+        if wrong_answer == first_expected:
+            wrong_answer = f"{first_expected}x"
+
+        first_response = self.client.post(
+            f"/api/student/sessions/{created['student_token']}/questions/{first_question['identifier']}/attempts",
+            json={"answer": {"text": wrong_answer}},
+        )
+        for created_question, expected_question in zip(created["questions"][1:], expected_session.questions[1:]):
+            response = self.client.post(
+                f"/api/student/sessions/{created['student_token']}/questions/{created_question['identifier']}/attempts",
+                json={"answer": {"text": expected_question.evaluation_payload["expected_text"]}},
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.json()["is_correct"])
+        results = self.client.get(f"/api/student/sessions/{created['student_token']}/results").json()
+
+        self.assertEqual(created["plugin"], "french_common_word_spelling")
+        self.assertEqual(created["subject"], "French")
+        self.assertEqual(created["category"], "Spelling")
+        self.assertEqual(first_question["renderer_type"], "spelling_answer")
+        self.assertIn("translation", first_question["public_payload"])
+        self.assertNotIn("expected_text", first_question["public_payload"])
+        self.assertEqual(first_response.status_code, 200)
+        self.assertFalse(first_response.json()["is_correct"])
+        missed = results["incorrect_questions"][0]
+        self.assertEqual(missed["answer_type"], "spelling_text")
+        self.assertEqual(missed["submitted_answer"], {"text": wrong_answer})
+        self.assertEqual(missed["expected_answer"], {"text": first_expected})
+        self.assertEqual(missed["submitted_display"], wrong_answer)
+        self.assertEqual(missed["expected_display"], first_expected)
+        self.assertIsNotNone(missed["feedback_code"])
 
     def test_deferred_feedback_does_not_reveal_correctness_on_submission(self) -> None:
         learner = self.client.post("/api/learners", json={"nickname": "Alex"}).json()

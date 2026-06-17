@@ -1,0 +1,63 @@
+.spelling-answer {
+  display: grid;
+  gap: 1rem;
+  justify-items: center;
+  margin: 1.5rem auto 0;
+  max-width: 36rem;
+  width: min(100%, 36rem);
+}
+
+.translation {
+  background: #fff4e6;
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: 1.15rem;
+  margin: 0;
+  padding: 0.7rem 1rem;
+}
+
+.audio-button,
+.check-button {
+  border-radius: 999px;
+}
+
+.spelling-field {
+  width: 100%;
+}
+
+.accent-panel {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+  width: 100%;
+}
+
+.accent-panel span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.accent-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: center;
+}
+
+.accent-keys button {
+  min-width: 2.5rem;
+  padding: 0 0.7rem;
+}
+
+.validation {
+  color: #9b2c1d;
+  font-weight: 700;
+  margin: 0;
+}
+
+.check-button {
+  min-width: 13rem;
+}

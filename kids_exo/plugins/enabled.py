@@ -10,6 +10,9 @@ from kids_exo.plugins.french_alphabet_sounds.metadata import (
 from kids_exo.plugins.french_common_word_sounds.metadata import (
     PLUGIN_METADATA as FRENCH_COMMON_WORD_SOUNDS,
 )
+from kids_exo.plugins.french_common_word_spelling.metadata import (
+    PLUGIN_METADATA as FRENCH_COMMON_WORD_SPELLING,
+)
 from kids_exo.plugins.integer_multiplication_distributive.metadata import (
     PLUGIN_METADATA as DISTRIBUTIVE_PROPERTY,
 )
@@ -53,4 +56,5 @@ ENABLED_ONLINE_PLUGIN_METADATA = (
     CHICKEN_RABBIT_WORD_PROBLEMS,
     FRENCH_ALPHABET_SOUNDS,
     FRENCH_COMMON_WORD_SOUNDS,
+    FRENCH_COMMON_WORD_SPELLING,
 )

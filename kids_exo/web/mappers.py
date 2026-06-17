@@ -121,6 +121,7 @@ def practice_results_response(saved_session) -> PracticeResultsResponse:
                 submitted_display=submitted_answer_display(attempt, question),
                 expected_display=expected_answer_display(question),
                 submitted_work=submitted_work(attempt),
+                feedback_code=feedback_code(attempt),
                 answer_type=question.answer_type,
             )
             for question, attempt in attempts
@@ -159,6 +160,12 @@ def submitted_work(attempt) -> str | None:
         if isinstance(work, str) and work:
             return work
     return None
+
+
+def feedback_code(attempt) -> str | None:
+    detail = getattr(attempt, "evaluation_detail", None) or {}
+    code = detail.get("feedback_code")
+    return str(code) if code else None
 
 
 def expected_answer_display(question) -> str | None:

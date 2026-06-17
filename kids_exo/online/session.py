@@ -15,9 +15,13 @@ from kids_exo.online.french_alphabet import (
 )
 from kids_exo.online.models import OnlineQuestionSnapshot, PracticeSessionSnapshot
 from kids_exo.online.signed_integer import create_signed_integer_session
+from kids_exo.online.spelling import create_french_common_word_spelling_session
 from kids_exo.online.word_problem import create_chicken_rabbit_word_problem_session
 from kids_exo.plugins.chicken_rabbit_word_problems.settings import (
     load_settings as load_chicken_rabbit_word_problem_settings,
+)
+from kids_exo.plugins.french_common_word_spelling.settings import (
+    load_settings as load_french_common_word_spelling_settings,
 )
 from kids_exo.plugins.registry import get_plugin_definition
 
@@ -47,6 +51,9 @@ def create_practice_session(request: OnlineSessionRequest) -> PracticeSessionSna
     if request.plugin == "chicken_rabbit_word_problems":
         settings = load_chicken_rabbit_word_problem_settings(request.plugin_settings)
         return create_chicken_rabbit_word_problem_session(request, settings)
+    if request.plugin == "french_common_word_spelling":
+        settings = load_french_common_word_spelling_settings(request.plugin_settings)
+        return create_french_common_word_spelling_session(request, settings)
     definition = get_plugin_definition(request.plugin)
     settings = load_online_plugin_settings(request.plugin, request.plugin_settings)
     if request.question_count > 30 and hasattr(settings, "allow_duplicates"):

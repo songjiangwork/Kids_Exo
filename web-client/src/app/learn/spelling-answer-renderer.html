@@ -1,0 +1,46 @@
+<section class="spelling-answer">
+  @if (showTranslation()) {
+    <p class="translation">Meaning: <strong>{{ translation() }}</strong></p>
+  }
+
+  @if (showAudio()) {
+    <button mat-stroked-button type="button" class="audio-button" [disabled]="disabled" (click)="playAudio()">
+      Replay audio
+    </button>
+  }
+
+  <mat-form-field appearance="outline" class="spelling-field">
+    <mat-label>{{ inputLabel() }}</mat-label>
+    <input
+      #spellingInput
+      matInput
+      autocomplete="off"
+      spellcheck="false"
+      [disabled]="disabled || submitting"
+      [(ngModel)]="text"
+      (ngModelChange)="updateAnswer()"
+      (keyup.enter)="submit()"
+    />
+  </mat-form-field>
+
+  @if (accentKeys().length) {
+    <div class="accent-panel" aria-label="Special characters">
+      <span>Special characters</span>
+      <div class="accent-keys">
+        @for (key of accentKeys(); track key) {
+          <button mat-stroked-button type="button" [disabled]="disabled || submitting" (click)="insertCharacter(key)">
+            {{ key }}
+          </button>
+        }
+      </div>
+    </div>
+  }
+
+  @if (validationMessage) {
+    <p class="validation">{{ validationMessage }}</p>
+  }
+
+  <button mat-flat-button class="check-button" type="button" [disabled]="disabled || submitting" (click)="submit()">
+    @if (submitting) { Checking... } @else { Check answer }
+  </button>
+</section>

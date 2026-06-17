@@ -18,6 +18,8 @@ def expected_answer_value(
         return payload["expected_index"]
     if answer_type in TEXT_ANSWER_TYPES and "expected_text" in payload:
         return str(payload["expected_text"])
+    if answer_type == "spelling_text" and "expected_text" in payload:
+        return {"text": str(payload["expected_text"])}
     if answer_type == "structured_word_problem" and "expected_values" in payload:
         return {"values": dict(payload["expected_values"])}
     return legacy_expected_answer
@@ -57,6 +59,9 @@ def answer_display(
     if value is None:
         return None
     if isinstance(value, dict):
+        text = value.get("text")
+        if isinstance(text, str):
+            return text
         values = value.get("values")
         if isinstance(values, dict):
             return ", ".join(f"{_humanize_key(key)}: {item}" for key, item in values.items())

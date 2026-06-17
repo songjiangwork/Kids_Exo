@@ -12,8 +12,16 @@
       @for (missed of results.incorrect_questions; track missed.prompt) {
         <div class="missed-question">
           <strong>{{ missed.prompt }}</strong>
-          <span>Your answer: {{ missed.submitted_display ?? missed.submitted_answer }}</span>
-          <span>Answer: {{ missed.expected_display ?? missed.expected_answer }}</span>
+          @if (missed.answer_type === 'spelling_text') {
+            <span>Submitted: {{ missed.submitted_display ?? missed.submitted_answer }}</span>
+            <span>Correct: {{ missed.expected_display ?? missed.expected_answer }}</span>
+            @if (hintText(missed.feedback_code)) {
+              <span>Hint: {{ hintText(missed.feedback_code) }}</span>
+            }
+          } @else {
+            <span>Your answer: {{ missed.submitted_display ?? missed.submitted_answer }}</span>
+            <span>Answer: {{ missed.expected_display ?? missed.expected_answer }}</span>
+          }
           @if (missed.submitted_work) {
             <div class="submitted-work">
               <span>Your work:</span>

@@ -40,6 +40,34 @@ describe('PracticeResultsCard', () => {
     expect(fixture.nativeElement.textContent).toContain('20 x 2 = 40');
   });
 
+  it('displays submitted spelling, correct spelling, and hint for wrong spelling', async () => {
+    const fixture = await createFixture();
+    fixture.componentRef.setInput('results', {
+      status: 'completed',
+      total_questions: 1,
+      answered_questions: 1,
+      correct_answers: 0,
+      elapsed_seconds: null,
+      incorrect_questions: [
+        {
+          prompt: 'Spell the French word for: brother',
+          submitted_answer: { text: 'frere' },
+          expected_answer: { text: 'frère' },
+          submitted_display: 'frere',
+          expected_display: 'frère',
+          feedback_code: 'missing_or_wrong_accents',
+          answer_type: 'spelling_text',
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Submitted: frere');
+    expect(fixture.nativeElement.textContent).toContain('Correct: frère');
+    expect(fixture.nativeElement.textContent).toContain('Hint: Check the accent marks.');
+    expect(fixture.nativeElement.textContent).not.toContain('[object Object]');
+  });
+
   it('defaults the back button to home instead of parent studio', async () => {
     const fixture = await createFixture();
     fixture.componentRef.setInput('results', {

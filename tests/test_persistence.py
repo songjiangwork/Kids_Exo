@@ -460,6 +460,37 @@ class PracticeRepositoryTests(unittest.TestCase):
         )
         self.assertTrue(attempt.evaluation_detail["work_submitted"])
 
+    def test_persists_spelling_answer_in_generic_payload(self) -> None:
+        learner = self.repository.create_learner("Alex")
+        snapshot = create_practice_session(
+            OnlineSessionRequest(
+                plugin="french_common_word_spelling",
+                plugin_settings={"strategy": ["translation"]},
+                question_count=10,
+                seed=123,
+            )
+        )
+        self.repository.create_practice_session(
+            learner.id,
+            snapshot,
+            student_token="spelling-token",
+        )
+        session = self.repository.get_session_by_student_token("spelling-token")
+        question = session.questions[0]
+        expected_text = question.evaluation_payload["expected_text"]
+
+        attempt = self.repository.submit_answer(
+            "spelling-token",
+            question.public_identifier,
+            {"text": expected_text.upper()},
+        )
+
+        self.assertTrue(attempt.is_correct)
+        self.assertIsNone(attempt.normalized_answer)
+        self.assertEqual(attempt.submitted_payload, {"raw": {"text": expected_text.upper()}})
+        self.assertEqual(attempt.normalized_payload, {"value": {"text": expected_text.upper()}})
+        self.assertEqual(attempt.evaluation_detail["answer_type"], "spelling_text")
+
     def test_tracks_active_elapsed_time_and_settles_stale_timer_on_reopen(self) -> None:
         learner = self.repository.create_learner("Alex")
         self.repository.create_practice_session(

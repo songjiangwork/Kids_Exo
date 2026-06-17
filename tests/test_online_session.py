@@ -258,6 +258,69 @@ class OnlinePracticeSessionTests(unittest.TestCase):
         self.assertTrue(first.audio_url.startswith("/audio/tts/fr/fr-FR-DeniseNeural/common-words/family/"))
         self.assertTrue(first.audio_url.endswith(".mp3"))
 
+    def test_french_common_word_spelling_generates_dictation_questions(self) -> None:
+        session = create_practice_session(
+            OnlineSessionRequest(
+                plugin="french_common_word_spelling",
+                plugin_settings={"strategy": ["dictation"]},
+                question_count=10,
+                seed=123,
+            )
+        )
+        first = session.questions[0]
+
+        self.assertEqual(session.subject, "French")
+        self.assertEqual(session.category, "Spelling")
+        self.assertEqual(session.skill, "French Common Word Spelling")
+        self.assertEqual(first.renderer_type, "spelling_answer")
+        self.assertEqual(first.answer_type, "spelling_text")
+        self.assertEqual(first.public_payload["prompt_mode"], "dictation")
+        self.assertIn("audio_url", first.public_payload)
+        self.assertNotIn("translation", first.public_payload)
+        self.assertNotIn("expected_text", first.public_payload)
+        self.assertEqual(first.evaluation_payload["expected_text"], first.speech_text)
+        self.assertTrue(
+            session.evaluate_answer(
+                first.identifier,
+                {"text": first.evaluation_payload["expected_text"].upper()},
+            ).is_correct
+        )
+
+    def test_french_common_word_spelling_generates_translation_questions(self) -> None:
+        session = create_practice_session(
+            OnlineSessionRequest(
+                plugin="french_common_word_spelling",
+                plugin_settings={"strategy": ["translation"]},
+                question_count=10,
+                seed=123,
+            )
+        )
+        first = session.questions[0]
+
+        self.assertEqual(first.public_payload["prompt_mode"], "translation")
+        self.assertIn("translation", first.public_payload)
+        self.assertNotIn("audio_url", first.public_payload)
+        self.assertIsNone(first.audio_url)
+        self.assertNotIn("expected_text", first.public_payload)
+
+    def test_french_common_word_spelling_generates_combined_questions(self) -> None:
+        session = create_practice_session(
+            OnlineSessionRequest(
+                plugin="french_common_word_spelling",
+                plugin_settings={"strategy": ["combined"]},
+                question_count=10,
+                seed=123,
+            )
+        )
+        first = session.questions[0]
+
+        self.assertEqual(first.public_payload["prompt_mode"], "combined")
+        self.assertIn("translation", first.public_payload)
+        self.assertIn("audio_url", first.public_payload)
+        self.assertIn("œ", first.public_payload["accent_keys"])
+        self.assertIn("’", first.public_payload["accent_keys"])
+        self.assertNotIn("expected_text", first.public_payload)
+
     def test_chicken_rabbit_word_problem_session_generates_structured_questions(self) -> None:
         session = create_practice_session(
             OnlineSessionRequest(

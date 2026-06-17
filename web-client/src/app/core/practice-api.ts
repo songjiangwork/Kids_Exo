@@ -205,6 +205,7 @@ export interface IncorrectQuestion {
   submitted_display?: string | null;
   expected_display?: string | null;
   submitted_work?: string | null;
+  feedback_code?: string | null;
   answer_type?: string | null;
 }
 

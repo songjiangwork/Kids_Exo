@@ -3,6 +3,11 @@ import random
 
 from kids_exo.localization import LocalizedPresentation, LocalizedText
 from kids_exo.online.catalog import get_online_plugin
+from kids_exo.online.french_vocabulary import (
+    FRENCH_FAMILY_WORDS,
+    FrenchVocabularyItem,
+    french_family_word_audio_url,
+)
 from kids_exo.online.models import OnlineQuestionSnapshot, PracticeSessionSnapshot
 
 
@@ -43,28 +48,6 @@ FRENCH_LETTERS: tuple[FrenchSoundItem, ...] = (
     FrenchSoundItem("Z", "Z", "letter Z"),
 )
 
-FRENCH_FAMILY_WORDS: tuple[FrenchSoundItem, ...] = (
-    FrenchSoundItem("maman", "maman", "mom", "maman"),
-    FrenchSoundItem("papa", "papa", "dad", "papa"),
-    FrenchSoundItem("parents", "parents", "parents", "parents"),
-    FrenchSoundItem("famille", "famille", "family", "famille"),
-    FrenchSoundItem("bébé", "bébé", "baby", "bebe"),
-    FrenchSoundItem("enfant", "enfant", "child", "enfant"),
-    FrenchSoundItem("fils", "fils", "son", "fils"),
-    FrenchSoundItem("fille", "fille", "daughter / girl", "fille"),
-    FrenchSoundItem("frère", "frère", "brother", "frere"),
-    FrenchSoundItem("sœur", "sœur", "sister", "soeur"),
-    FrenchSoundItem("grand-mère", "grand-mère", "grandmother", "grand-mere"),
-    FrenchSoundItem("grand-père", "grand-père", "grandfather", "grand-pere"),
-    FrenchSoundItem("grands-parents", "grands-parents", "grandparents", "grands-parents"),
-    FrenchSoundItem("oncle", "oncle", "uncle", "oncle"),
-    FrenchSoundItem("tante", "tante", "aunt", "tante"),
-    FrenchSoundItem("cousin", "cousin", "male cousin", "cousin"),
-    FrenchSoundItem("cousine", "cousine", "female cousin", "cousine"),
-    FrenchSoundItem("mari", "mari", "husband", "mari"),
-    FrenchSoundItem("femme", "femme", "wife / woman", "femme"),
-)
-
 STRATEGY_LABELS = {
     "letter_name_to_letter": "letter names",
 }
@@ -74,7 +57,6 @@ WORD_STRATEGY_LABELS = {
 }
 
 FRENCH_ALPHABET_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/alphabet"
-FRENCH_FAMILY_WORD_AUDIO_BASE_URL = "/audio/tts/fr/fr-FR-DeniseNeural/common-words/family"
 SIMILAR_LETTER_GROUPS: tuple[frozenset[str], ...] = (
     frozenset(("B", "C", "D", "G", "P", "T", "V")),
     frozenset(("M", "N")),
@@ -159,7 +141,7 @@ def _question_for_strategy(
     strategy: str,
     position: int,
     rng: random.Random,
-    target: FrenchSoundItem | None = None,
+    target: FrenchSoundItem | FrenchVocabularyItem | None = None,
 ) -> OnlineQuestionSnapshot:
     items = FRENCH_LETTERS if strategy == "letter_name_to_letter" else FRENCH_FAMILY_WORDS
     target = target or rng.choice(items)
@@ -217,9 +199,9 @@ def _family_word_questions(
 
 def _distractor_pool(
     strategy: str,
-    target: FrenchSoundItem,
-    items: tuple[FrenchSoundItem, ...],
-) -> list[FrenchSoundItem]:
+    target: FrenchSoundItem | FrenchVocabularyItem,
+    items: tuple[FrenchSoundItem | FrenchVocabularyItem, ...],
+) -> list[FrenchSoundItem | FrenchVocabularyItem]:
     if strategy != "letter_name_to_letter":
         return [item for item in items if item.text != target.text]
     confusing = _similar_letters(target.text)
@@ -240,8 +222,8 @@ def _similar_letters(letter: str) -> frozenset[str]:
 def _audio_url_for_strategy(strategy: str, target: FrenchSoundItem) -> str | None:
     if strategy == "letter_name_to_letter":
         return f"{FRENCH_ALPHABET_AUDIO_BASE_URL}/{target.text.lower()}.mp3"
-    if strategy == "family_words" and target.audio_slug:
-        return f"{FRENCH_FAMILY_WORD_AUDIO_BASE_URL}/{target.audio_slug}.mp3"
+    if strategy == "family_words" and isinstance(target, FrenchVocabularyItem):
+        return french_family_word_audio_url(target)
     return None
 
 

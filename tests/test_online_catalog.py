@@ -29,6 +29,7 @@ class OnlinePluginCatalogTests(unittest.TestCase):
                 "chicken_rabbit_word_problems",
                 "french_alphabet_sounds",
                 "french_common_word_sounds",
+                "french_common_word_spelling",
             ),
         )
 
@@ -111,6 +112,7 @@ class OnlinePluginCatalogTests(unittest.TestCase):
         word_problems = get_online_plugin("chicken_rabbit_word_problems")
         french_alphabet = get_online_plugin("french_alphabet_sounds")
         french_common_words = get_online_plugin("french_common_word_sounds")
+        french_spelling = get_online_plugin("french_common_word_spelling")
 
         self.assertEqual(distributive.title, "Distributive Property Multiplication")
         self.assertEqual(tuple(setting.name for setting in distributive.settings), ("strategies",))
@@ -174,6 +176,16 @@ class OnlinePluginCatalogTests(unittest.TestCase):
             ("family_words",),
         )
         self.assertEqual(french_common_words.answer_types, ("multiple_choice_index",))
+        self.assertEqual(french_spelling.subject, "French")
+        self.assertEqual(french_spelling.category, "Spelling")
+        self.assertEqual(french_spelling.title, "French Common Word Spelling")
+        self.assertEqual(french_spelling.answer_types, ("spelling_text",))
+        self.assertEqual(french_spelling.supported_delivery_modes, ("web_practice",))
+        self.assertEqual(tuple(setting.name for setting in french_spelling.settings), ("strategy",))
+        self.assertEqual(
+            tuple(option.value for option in french_spelling.settings[0].options),
+            ("dictation", "translation", "combined"),
+        )
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { AnswerValue, StudentQuestion } from '../core/practice-api';
 import { ChoiceAnswerRenderer } from './choice-answer-renderer';
 import { NumericAnswerRenderer } from './numeric-answer-renderer';
+import { SpellingAnswerRenderer } from './spelling-answer-renderer';
 import { WordProblemAnswerRenderer } from './word-problem-answer-renderer';
 
 @Component({
@@ -9,6 +10,7 @@ import { WordProblemAnswerRenderer } from './word-problem-answer-renderer';
   imports: [
     ChoiceAnswerRenderer,
     NumericAnswerRenderer,
+    SpellingAnswerRenderer,
     WordProblemAnswerRenderer,
   ],
   templateUrl: './question-renderer-host.html',

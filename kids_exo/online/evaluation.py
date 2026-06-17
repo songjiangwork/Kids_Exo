@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Any
+import unicodedata
 
 from kids_exo.online.answer_display import AnswerValue
 
@@ -54,6 +55,8 @@ def evaluate_answer(
         )
     if answer_type == "structured_word_problem":
         return _evaluate_structured_word_problem(evaluation_payload, submitted_answer)
+    if answer_type == "spelling_text":
+        return _evaluate_spelling_text(evaluation_payload, submitted_answer)
     raise ValueError(f"Unsupported answer_type: {answer_type}")
 
 
@@ -220,3 +223,145 @@ def _structured_feedback_code(
     if any(not result.get("is_correct") for result in field_results.values()):
         return "field_value_mismatch"
     return "field_value_mismatch"
+
+
+def _evaluate_spelling_text(
+    evaluation_payload: dict[str, Any],
+    submitted_answer: str | int | dict[str, Any],
+) -> EvaluationResult:
+    submitted_text = _submitted_spelling_text(submitted_answer)
+    expected_text = str(evaluation_payload["expected_text"])
+    accepted_answers = tuple(
+        str(item) for item in evaluation_payload.get("accepted_answers", ())
+    ) or (expected_text,)
+    case_sensitive = bool(evaluation_payload.get("case_sensitive", False))
+    normalize_apostrophe = bool(evaluation_payload.get("normalize_apostrophe", True))
+
+    normalized_submitted = _normalize_spelling_base(
+        submitted_text,
+        case_sensitive=case_sensitive,
+        normalize_apostrophe=normalize_apostrophe,
+    )
+    normalized_accepted = tuple(
+        _normalize_spelling_base(
+            answer,
+            case_sensitive=case_sensitive,
+            normalize_apostrophe=normalize_apostrophe,
+        )
+        for answer in accepted_answers
+    )
+    is_correct = normalized_submitted in normalized_accepted
+    checks = _spelling_checks(
+        submitted_text,
+        expected_text,
+        case_sensitive=case_sensitive,
+        normalize_apostrophe=normalize_apostrophe,
+    )
+    return EvaluationResult(
+        normalized_answer={"text": submitted_text},
+        is_correct=is_correct,
+        detail={
+            "answer_type": "spelling_text",
+            "submitted_text": submitted_text,
+            "expected_text": expected_text,
+            "checks": checks,
+            "feedback_code": "correct" if is_correct else _spelling_feedback_code(checks),
+        },
+    )
+
+
+def _submitted_spelling_text(submitted_answer: str | int | dict[str, Any]) -> str:
+    if isinstance(submitted_answer, dict):
+        text = submitted_answer.get("text", "")
+    else:
+        text = submitted_answer
+    return _collapse_internal_whitespace(str(text).strip())
+
+
+def _normalize_spelling_base(
+    value: str,
+    *,
+    case_sensitive: bool,
+    normalize_apostrophe: bool,
+) -> str:
+    normalized = _collapse_internal_whitespace(value.strip())
+    if normalize_apostrophe:
+        normalized = normalized.replace("'", "’")
+    if not case_sensitive:
+        normalized = normalized.casefold()
+    return normalized
+
+
+def _spelling_checks(
+    submitted_text: str,
+    expected_text: str,
+    *,
+    case_sensitive: bool,
+    normalize_apostrophe: bool,
+) -> dict[str, bool]:
+    exact_match = submitted_text == expected_text
+    normalized_submitted = _normalize_spelling_base(
+        submitted_text,
+        case_sensitive=case_sensitive,
+        normalize_apostrophe=normalize_apostrophe,
+    )
+    normalized_expected = _normalize_spelling_base(
+        expected_text,
+        case_sensitive=case_sensitive,
+        normalize_apostrophe=normalize_apostrophe,
+    )
+    case_insensitive_match = _normalize_spelling_base(
+        submitted_text,
+        case_sensitive=False,
+        normalize_apostrophe=normalize_apostrophe,
+    ) == _normalize_spelling_base(
+        expected_text,
+        case_sensitive=False,
+        normalize_apostrophe=normalize_apostrophe,
+    )
+    accent_insensitive_match = _strip_accents(normalized_submitted) == _strip_accents(
+        normalized_expected
+    )
+    hyphen_normalized_match = normalized_submitted.replace("-", " ") == normalized_expected.replace(
+        "-",
+        " ",
+    )
+    apostrophe_normalized_match = _normalize_apostrophes(submitted_text).casefold() == (
+        _normalize_apostrophes(expected_text).casefold()
+    )
+    return {
+        "exact_match": exact_match,
+        "case_insensitive_match": case_insensitive_match,
+        "accent_insensitive_match": accent_insensitive_match,
+        "hyphen_normalized_match": hyphen_normalized_match,
+        "apostrophe_normalized_match": apostrophe_normalized_match,
+        "normalized_match": normalized_submitted == normalized_expected,
+    }
+
+
+def _spelling_feedback_code(checks: dict[str, bool]) -> str:
+    if checks["case_insensitive_match"]:
+        return "case_mismatch"
+    if checks["accent_insensitive_match"]:
+        return "missing_or_wrong_accents"
+    if checks["hyphen_normalized_match"]:
+        return "hyphen_mismatch"
+    if checks["apostrophe_normalized_match"]:
+        return "apostrophe_mismatch"
+    return "special_character_mismatch"
+
+
+def _collapse_internal_whitespace(value: str) -> str:
+    return " ".join(value.split())
+
+
+def _normalize_apostrophes(value: str) -> str:
+    return value.replace("'", "’")
+
+
+def _strip_accents(value: str) -> str:
+    return "".join(
+        char
+        for char in unicodedata.normalize("NFD", value)
+        if unicodedata.category(char) != "Mn"
+    )

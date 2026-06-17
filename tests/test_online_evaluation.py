@@ -134,6 +134,69 @@ class OnlineEvaluationTests(unittest.TestCase):
         self.assertFalse(result.is_correct)
         self.assertEqual(result.normalized_answer, "mama")
 
+    def test_spelling_text_accepts_case_insensitive_match(self) -> None:
+        result = evaluate_answer(
+            "spelling_text",
+            {
+                "expected_text": "frère",
+                "accepted_answers": ["frère"],
+                "case_sensitive": False,
+                "normalize_apostrophe": True,
+            },
+            {"text": "FRÈRE"},
+        )
+
+        self.assertTrue(result.is_correct)
+        self.assertEqual(result.normalized_answer, {"text": "FRÈRE"})
+        self.assertEqual(result.detail["feedback_code"], "correct")
+
+    def test_spelling_text_rejects_missing_accents_with_hint(self) -> None:
+        result = evaluate_answer(
+            "spelling_text",
+            {
+                "expected_text": "frère",
+                "accepted_answers": ["frère"],
+                "case_sensitive": False,
+                "normalize_apostrophe": True,
+            },
+            {"text": "frere"},
+        )
+
+        self.assertFalse(result.is_correct)
+        self.assertEqual(result.detail["feedback_code"], "missing_or_wrong_accents")
+        self.assertTrue(result.detail["checks"]["accent_insensitive_match"])
+
+    def test_spelling_text_rejects_hyphen_mismatch_with_hint(self) -> None:
+        result = evaluate_answer(
+            "spelling_text",
+            {
+                "expected_text": "grand-mère",
+                "accepted_answers": ["grand-mère"],
+                "case_sensitive": False,
+                "normalize_apostrophe": True,
+            },
+            {"text": "grand mère"},
+        )
+
+        self.assertFalse(result.is_correct)
+        self.assertEqual(result.detail["feedback_code"], "hyphen_mismatch")
+        self.assertTrue(result.detail["checks"]["hyphen_normalized_match"])
+
+    def test_spelling_text_rejects_special_character_mismatch(self) -> None:
+        result = evaluate_answer(
+            "spelling_text",
+            {
+                "expected_text": "sœur",
+                "accepted_answers": ["sœur"],
+                "case_sensitive": False,
+                "normalize_apostrophe": True,
+            },
+            {"text": "soeur"},
+        )
+
+        self.assertFalse(result.is_correct)
+        self.assertEqual(result.detail["feedback_code"], "special_character_mismatch")
+
     def test_structured_word_problem_accepts_correct_integer_fields_and_work(self) -> None:
         result = evaluate_answer(
             "structured_word_problem",

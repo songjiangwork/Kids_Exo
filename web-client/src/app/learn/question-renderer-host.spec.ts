@@ -82,6 +82,28 @@ describe('QuestionRendererHost', () => {
     expect(fixture.nativeElement.querySelector('app-word-problem-answer-renderer')).not.toBeNull();
   });
 
+  it('renders spelling questions through the spelling answer renderer', async () => {
+    const fixture = await createFixture();
+    fixture.componentRef.setInput('question', {
+      identifier: 'question-1',
+      position: 1,
+      total_questions: 1,
+      prompt: 'Spell the French word.',
+      renderer_type: 'spelling_answer',
+      public_payload: {
+        prompt_mode: 'translation',
+        input_label: 'French word',
+        translation: 'brother',
+        accent_keys: ['é', 'è'],
+      },
+    });
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('French word');
+    expect(fixture.nativeElement.textContent).toContain('brother');
+    expect(fixture.nativeElement.querySelector('app-spelling-answer-renderer')).not.toBeNull();
+  });
+
   it('shows an unsupported message for unknown renderer types', async () => {
     const fixture = await createFixture();
     fixture.componentRef.setInput('question', {
